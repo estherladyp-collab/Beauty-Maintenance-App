@@ -95,7 +95,7 @@ function load(){
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){ toast = 'Storage is full. Remove a photo to keep saving.'; } }
 
-let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
+let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
 let toast = '';
 
 /* ---------- garments ---------- */
@@ -289,16 +289,18 @@ function wardrobe(){
   const list = inCat.filter(i => ui.sty==='all' || i.style===ui.sty).filter(i => ui.occ==='all' || (i.occasions||[]).includes(ui.occ));
   return `<h1 class="page-title">Your <em>wardrobe</em></h1>
   <p class="lede">One card per piece. Tap a dot to switch colors. Tick what you own.</p>
-  <div class="card" style="margin:20px 0 14px"><div class="row between"><b>${have} of ${state.items.length} pieces owned</b><div class="row" style="gap:8px"><label class="btn small ghost" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Upload photos<input type="file" id="wardup" accept="image/*" multiple hidden></label><button class="btn small" data-act="add">Add a piece</button></div></div><div class="progress"><i style="width:${state.items.length?have/state.items.length*100:0}%"></i></div></div>
+  <div class="card" style="margin:20px 0 14px"><div class="row between"><b>${have} of ${state.items.length} pieces owned</b><div class="row" style="gap:8px"><label class="btn small ghost" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Upload photos<input type="file" id="wardup" accept="image/*" multiple hidden></label><button class="btn small" data-act="add">Add a piece</button></div></div><div class="row" style="gap:8px;margin-top:10px"><button class="btn small ghost" data-act="smart">Smart merge</button><button class="btn small ghost" data-act="selmode">${ui.selMode?'Cancel selecting':'Select to merge'}</button></div><div class="progress"><i style="width:${state.items.length?have/state.items.length*100:0}%"></i></div></div>
   <div class="chips" role="group" aria-label="Category">${[['all','All'],...CATS].map(c=>`<button class="chip" aria-pressed="${ui.cat===c[0]}" data-act="cat" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
   ${ui.cat!=='all'&&styles.length>1?`<div class="chips" role="group" aria-label="Style">${[['all','All styles'],...styles.map(s=>[s,s])].map(c=>`<button class="chip" aria-pressed="${ui.sty===c[0]}" data-act="sty" data-v="${esc(c[0])}">${esc(c[1])}</button>`).join('')}</div>`:''}
   ${occs.length?`<div class="chips" role="group" aria-label="Occasion">${[['all','Any occasion'],...occs.map(o=>[o,o])].map(c=>`<button class="chip s" aria-pressed="${ui.occ===c[0]}" data-act="occ" data-v="${esc(c[0])}">${esc(c[1])}</button>`).join('')}</div>`:''}
-  ${list.length?`<div class="grid" style="margin-top:12px">${list.map(itemCard).join('')}</div>`:`<div class="empty-state" style="margin-top:12px">Nothing here yet. Add your first piece.</div>`}`;
+  ${list.length?`<div class="grid" style="margin-top:12px">${list.map(itemCard).join('')}</div>`:`<div class="empty-state" style="margin-top:12px">Nothing here yet. Upload photos of your clothes to start.</div>`}
+  ${ui.selMode?`<div class="selbar"><span>${ui.sel.length} selected</span><button class="btn small" data-act="mergesel">Merge as colors</button></div>`:''}`;
 }
 function itemCard(it){
   const v = vOf(it, ui.vsel[it.id]), r = rating(it);
-  return `<div class="item ${v.have?'have':'need'}"><div class="pic" data-act="pdp" data-v="${it.id}" role="button" tabindex="0" aria-label="View ${esc(it.name)}">${pic(it,v)}</div>
-    <button class="tick" data-act="own" data-v="${it.id}" aria-pressed="${v.have}" aria-label="${v.have?'Owned':'Not owned'}: ${esc(it.name)}, ${esc(colorName(v.color))}">${v.have?'✓':''}</button>
+  const on = ui.selMode && ui.sel.includes(it.id);
+  return `<div class="item ${v.have?'have':'need'} ${on?'sel':''}"><div class="pic" data-act="${ui.selMode?'selpick':'pdp'}" data-v="${it.id}" role="button" tabindex="0" aria-label="View ${esc(it.name)}">${pic(it,v)}</div>
+    <button class="tick" ${ui.selMode?'hidden':''} data-act="own" data-v="${it.id}" aria-pressed="${v.have}" aria-label="${v.have?'Owned':'Not owned'}: ${esc(it.name)}, ${esc(colorName(v.color))}">${v.have?'✓':''}</button>
     <h3>${esc(it.name)}</h3><p>${esc(it.style)} · ${esc(colorName(v.color))}</p>
     ${dots(it,v.id,'vpick',it.id)}
     ${r==='pos'?'<span class="tag ok">Balances</span>':r==='neg'?'<span class="tag warn">Style with care</span>':''}</div>`;
@@ -440,12 +442,16 @@ function sheet(){
     const opts = state.items.filter(i => i.cat===s.slot);
     inner = `<h2>Choose ${SLOT_LABEL[s.slot].toLowerCase()}</h2>${opts.length?`<div class="grid">${opts.map(it=>`<button class="item ${it.have?'have':'need'}" data-act="set" data-v="${it.id}"><div class="pic">${pic(it)}</div><h3>${esc(it.name)}</h3><p>${it.have?esc(colorName(it.color)):'On your list'}</p></button>`).join('')}</div>`:`<div class="empty-state">No ${SLOT_LABEL[s.slot].toLowerCase()} in your wardrobe yet.</div>`}
       <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="clear" data-v="${s.slot}">Clear</button><button class="btn ghost small" data-act="close">Close</button></div>`;
+  } else if (s.type==='merge'){
+    const nm = g => g.map(id => (state.items.find(i=>i.id===id)||{}).name).filter(Boolean).join(' · ');
+    inner = `<h2>Smart merge</h2>${s.busy?'<p class="status">Looking for pieces that match…</p>':s.groups.length?`<p class="status" style="margin-bottom:12px">These look like the same piece in different colors.</p>${s.groups.map((g,gi)=>`<div class="card mgroup"><div class="mthumbs">${g.map(id=>{const it=state.items.find(i=>i.id===id);return it?`<span class="mth">${pic(it)}</span>`:''}).join('')}</div><div class="row between" style="flex-wrap:nowrap"><span class="status" style="min-width:0">${esc(nm(g))}</span><button class="btn small" data-act="mergegroup" data-v="${gi}">Merge ${g.length}</button></div></div>`).join('')}<button class="btn" style="margin-top:6px" data-act="mergeall">Merge all ${s.groups.length}</button>`:'<div class="empty-state">No matches found. Pieces that look alike will show up here.</div>'}<div class="row" style="margin-top:14px"><button class="btn ghost small" data-act="close">Close</button></div>`;
   } else if (s.type==='pdp'){
     inner = pdp(s);
   } else if (s.type==='sort'){
     const cats = s.mode==='ward' ? CATS : TAGS.map(t=>[t,t]), todo = s.items.filter(f=>!f.cat).length;
     inner = `<h2>Sort your pictures</h2>
     <div class="chips" role="group" aria-label="Where do these go"><button class="chip" aria-pressed="${s.mode==='ward'}" data-act="sortmode" data-v="ward">My wardrobe</button><button class="chip" aria-pressed="${s.mode==='insp'}" data-act="sortmode" data-v="insp">Inspiration</button></div>
+    ${s.mode==='ward'?`<div class="chk" style="margin-top:12px"><input type="checkbox" id="autog" data-act="autog" ${s.group?'checked':''}><label for="autog" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso)">Group similar photos as colors of one piece</label></div>`:''}
     <div class="eyebrow" style="margin:10px 0 6px">Put them all in</div>
     <div class="chips" style="flex-wrap:wrap">${cats.map(c=>`<button class="chip s" data-act="sortall" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
     <div class="sortgrid" style="margin-top:14px">${s.items.map((f,i)=>`<div class="sorti ${f.cat?'':'todo'}"><img src="${f.src}" alt=""><button class="x" data-act="sortdel" data-v="${i}" aria-label="Remove picture">✕</button><div class="chips" style="flex-wrap:wrap;gap:4px">${cats.map(c=>`<button class="chip s" aria-pressed="${f.cat===c[0]}" data-act="sortcat" data-v="${i}:${c[0]}">${c[1]}</button>`).join('')}</div></div>`).join('')}</div>
@@ -500,7 +506,7 @@ function sheet(){
         <label>Photo of this color (optional)<input type="file" id="iphoto" accept="image/*"></label>
         ${v.photo?`<div class="row"><img src="${v.photo}" alt="" style="width:96px;border-radius:12px"><button class="btn small ghost" data-act="vphotoclear">Remove photo</button></div>`:''}
         <div class="chk"><input type="checkbox" id="vown" data-act="vown" ${v.have?'checked':''}><label for="vown" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso)">I own this color</label></div>
-        ${it.variants.length>1?`<button class="btn small ghost" style="justify-self:start" data-act="vdel">Remove this color</button>`:''}
+        ${it.variants.length>1?`<div class="row"><button class="btn small ghost" data-act="vsplit">Make this its own piece</button><button class="btn small ghost" data-act="vdel">Remove this color</button></div>`:''}
       </div>
       <div class="row" style="margin-top:8px"><button class="btn" data-act="saveitem">Save</button><button class="btn ghost" data-act="close">Cancel</button>${s.isNew?'':`<button class="btn ghost" data-act="delitem">Delete</button>`}</div></div>`;
   }
@@ -622,13 +628,8 @@ const actions = {
   sortcat(v){ const [i,c]=v.split(':'); ui.sheet.items[+i].cat=c; },
   sortall(v){ ui.sheet.items.forEach(f=>{ if(!f.cat) f.cat=v; }); },
   sortdel(v){ ui.sheet.items.splice(+v,1); if(!ui.sheet.items.length) ui.sheet=null; },
-  sortsave(){ const s=ui.sheet; if(s.items.some(f=>!f.cat)) return setToast('Choose a category for every picture first.');
-    const cats=[...new Set(s.items.map(f=>f.cat))], one=cats.length===1?cats[0]:'all';
-    [...s.items].reverse().forEach(f=>{
-      if(s.mode==='ward') state.items.unshift({id:uid(),cat:f.cat,name:'New '+SLOT_LABEL[f.cat].toLowerCase(),style:STYLES[f.cat][0][0],color:f.hex,have:true,photo:null,variants:[{id:uid(),color:f.hex,photo:f.src,have:true}]});
-      else (state.pics=state.pics||[]).unshift({id:uid(),src:f.src,tag:f.cat,at:isoDay(),fav:false}); });
-    if(s.mode==='ward'){ ui.tab='wardrobe'; ui.cat=one; ui.sty='all'; } else { ui.tab='mood'; ui.ptag=one; }
-    const n=s.items.length; save(); ui.sheet=null; window.scrollTo(0,0); setToast(n+(n===1?' picture saved.':' pictures saved.')+(s.mode==='ward'?' Tap one to name it and set its colors.':'')); },
+  autog(){ ui.sheet.group=!ui.sheet.group; },
+  sortsave(){ const s=ui.sheet; if(s.items.some(f=>!f.cat)) return setToast('Choose a category for every picture first.'); finishSort(s); },
   tsrc(v){ ui.tsrc=v; },
   newtoday(){ actions.newlook(); ui.assignDay=dow(); },
   startward(v){ const [id,vid]=v.split(':'), it=state.items.find(i=>i.id===id); actions.newlook(); ui.assignDay=dow();
@@ -637,6 +638,19 @@ const actions = {
   cfil(v){ ui.cfil=v; },
   applook(v){ const a=ui.adraft; a.lookId = a.lookId===v ? null : v; const l=state.looks.find(x=>x.id===v);
     if(a.lookId && l && (a.title===defTitle('outfit')||!a.title.trim())) a.title='Outfit: '+l.name; },
+  smart(){ ui.sheet={type:'merge',busy:true,groups:[]}; render(); findGroups().then(g => { if(ui.sheet && ui.sheet.type==='merge'){ ui.sheet.busy=false; ui.sheet.groups=g; render(); } }); },
+  mergegroup(v){ const g=ui.sheet.groups[+v]; const t=mergeItems(g); ui.sheet.groups.splice(+v,1); save(); setToast(t?'Merged into '+t.name+'.':'Nothing to merge.'); },
+  mergeall(){ const n=ui.sheet.groups.length; ui.sheet.groups.forEach(g=>mergeItems(g)); ui.sheet.groups=[]; save(); setToast('Merged '+n+' group'+(n===1?'':'s')+'.'); },
+  selmode(){ ui.selMode=!ui.selMode; ui.sel=[]; },
+  selpick(v){ const i=ui.sel.indexOf(v); if(i>=0) ui.sel.splice(i,1); else ui.sel.push(v); },
+  mergesel(){ const its=ui.sel.map(id=>state.items.find(i=>i.id===id)).filter(Boolean);
+    if(its.length<2) return setToast('Select at least two pieces to merge.');
+    if(new Set(its.map(i=>i.cat)).size>1) return setToast('Pick pieces from the same category.');
+    const t=mergeItems(ui.sel); ui.selMode=false; ui.sel=[]; save(); if(t) ui.vsel[t.id]=t.variants[0].id; setToast('Merged into '+t.name+'.'); },
+  vsplit(){ readItemForm(); const s=ui.sheet, it=s.item, vi=s.vi||0; if(it.variants.length<2) return;
+    const v=it.variants.splice(vi,1)[0]; s.vi=0;
+    const orig=state.items.findIndex(x=>x.id===it.id); syncHave(it); if(orig>=0) state.items[orig]=it;
+    state.items.unshift({id:uid(),cat:it.cat,name:it.name,style:it.style,color:v.color,have:v.have,photo:null,occasions:[...(it.occasions||[])],variants:[v]}); save(); setToast('Moved into its own piece.'); },
   pdp(v){ ui.sheet={type:'pdp',id:v}; },
   occ(v){ ui.occ=v; },
   occtoggle(v){ readItemForm(); const it=ui.sheet.item; it.occasions=it.occasions||[]; const i=it.occasions.indexOf(v); if(i>=0) it.occasions.splice(i,1); else it.occasions.push(v); },
@@ -676,6 +690,77 @@ function shrink(file){
     c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
     res(c.toDataURL('image/jpeg',.75)); }; img.onerror=()=>res(null); img.src=fr.result; }; fr.onerror=()=>res(null); fr.readAsDataURL(file); });
 }
+/* ---------- smart matching: compare garment silhouettes ---------- */
+const GW = 24, GH = 30, THR = 0.72;
+function silhouette(x, w, h){
+  const d = x.getImageData(0,0,w,h).data, bx = [], by = [], bz = [];
+  const pt = (px,py) => { const i=(py*w+px)*4; bx.push(d[i]); by.push(d[i+1]); bz.push(d[i+2]); };
+  for(let px=0; px<w; px+=4){ pt(px,0); pt(px,h-1); }
+  for(let py=0; py<h; py+=4){ pt(0,py); pt(w-1,py); }
+  const med = arr => arr.sort((p,q)=>p-q)[arr.length>>1], br=med(bx), bg=med(by), bb=med(bz);
+  const m = new Uint8Array(w*h); let x0=w, x1=0, y0=h, y1=0;
+  for(let py=0; py<h; py++) for(let px=0; px<w; px++){ const i=(py*w+px)*4;
+    if(Math.abs(d[i]-br)+Math.abs(d[i+1]-bg)+Math.abs(d[i+2]-bb) > 30){ m[py*w+px]=1; if(px<x0)x0=px; if(px>x1)x1=px; if(py<y0)y0=py; if(py>y1)y1=py; } }
+  if(x1-x0<w*.2 || y1-y0<h*.2) return null;
+  const bw=x1-x0+1, bh=y1-y0+1; let grid=new Uint8Array(GW*GH);
+  for(let gy=0; gy<GH; gy++) for(let gx=0; gx<GW; gx++){
+    const sx=x0+Math.floor(gx*bw/GW), ex=x0+Math.floor((gx+1)*bw/GW), sy=y0+Math.floor(gy*bh/GH), ey=y0+Math.floor((gy+1)*bh/GH);
+    let on=0, n=0; for(let py=sy; py<Math.max(ey,sy+1); py++) for(let px=sx; px<Math.max(ex,sx+1); px++){ on+=m[py*w+px]; n++; }
+    grid[gy*GW+gx] = on/n > .5 ? 1 : 0; }
+  // keep the largest connected blob (drops shadows and noise)
+  const seen=new Uint8Array(GW*GH); let best=[];
+  for(let s=0; s<GW*GH; s++){ if(!grid[s]||seen[s]) continue; const st=[s], comp=[]; seen[s]=1;
+    while(st.length){ const c=st.pop(); comp.push(c); const cx=c%GW, cy=(c/GW)|0;
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{ const nx=cx+dx, ny=cy+dy; if(nx<0||ny<0||nx>=GW||ny>=GH) return; const ni=ny*GW+nx; if(grid[ni]&&!seen[ni]){ seen[ni]=1; st.push(ni); } }); }
+    if(comp.length>best.length) best=comp; }
+  const out = new Uint8Array(GW*GH); best.forEach(c => out[c]=1);
+  return (bw/bh).toFixed(2)+'|'+Array.from(out).join('');
+}
+function sim(a, b){
+  if(!a || !b) return 0;
+  const [ra,sa]=a.split('|'), [rb,sb]=b.split('|');
+  if(Math.max(ra/rb, rb/ra) > 1.4) return 0;
+  let i=0, u=0; for(let k=0; k<sa.length; k++){ const p=sa[k]==='1', q=sb[k]==='1'; if(p&&q) i++; if(p||q) u++; }
+  return u ? i/u : 0;
+}
+function loadImg(src){ return new Promise(res => { const im=new Image(); im.onload=()=>res(im); im.onerror=()=>res(null); im.src=src; }); }
+async function sigOf(src){
+  const im = await loadImg(src); if(!im) return null;
+  const s=Math.min(1,160/Math.max(im.width,im.height)), c=document.createElement('canvas');
+  c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
+  const x=c.getContext('2d'); x.drawImage(im,0,0,c.width,c.height);
+  try{ return silhouette(x,c.width,c.height); }catch(e){ return null; }
+}
+async function ensureSig(v){ if(v.photo && v.sig===undefined){ v.sig = await sigOf(v.photo); } return v.sig; }
+async function pieceSim(it, sig){
+  let best=0; for(const v of it.variants){ if(!v.photo) continue; const s=await ensureSig(v); best=Math.max(best,sim(s,sig)); } return best;
+}
+async function findMatch(cat, sig, list){
+  if(!sig) return null; let top=null, ts=0;
+  for(const it of list){ if(it.cat!==cat) continue; const s=await pieceSim(it,sig); if(s>=THR && s>ts){ top=it; ts=s; } }
+  return top;
+}
+async function findGroups(){
+  const its = state.items.filter(i => i.variants.some(v => v.photo)), par = {};
+  its.forEach(i => par[i.id]=i.id);
+  const find = x => par[x]===x ? x : (par[x]=find(par[x]));
+  for(let i=0; i<its.length; i++) for(let j=i+1; j<its.length; j++){
+    if(its[i].cat!==its[j].cat) continue;
+    let best=0; for(const v of its[i].variants){ if(!v.photo) continue; best=Math.max(best, await pieceSim(its[j], await ensureSig(v))); }
+    if(best>=THR) par[find(its[i].id)] = find(its[j].id); }
+  const groups = {}; its.forEach(i => (groups[find(i.id)] = groups[find(i.id)] || []).push(i.id));
+  return Object.values(groups).filter(g => g.length>1);
+}
+function mergeItems(ids){
+  const its = ids.map(id => state.items.find(i => i.id===id)).filter(Boolean); if(its.length<2) return null;
+  const isDef = n => /^new /i.test(n), target = its.find(i => !isDef(i.name)) || its[0];
+  its.forEach(o => { if(o===target) return;
+    o.variants.forEach(v => target.variants.push(v));
+    (o.occasions||[]).forEach(x => { if(!target.occasions.includes(x)) target.occasions.push(x); });
+    state.looks.forEach(l => { for(const k in l.slots){ if(l.slots[k]===o.id){ l.slots[k]=target.id; l.vars=l.vars||{}; if(!o.variants.some(v => v.id===l.vars[k])) l.vars[k]=o.variants[0].id; } } });
+    state.items = state.items.filter(i => i.id!==o.id); });
+  syncHave(target); return target;
+}
 function prepare(file){
   return new Promise(res => { const fr=new FileReader(); fr.onload=()=>{ const img=new Image(); img.onload=()=>{
     const s=Math.min(1,640/Math.max(img.width,img.height)), c=document.createElement('canvas');
@@ -685,12 +770,33 @@ function prepare(file){
       let r=0,g=0,b=0,n=0; for(let i=0;i<d.length;i+=16){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++; } r/=n; g/=n; b/=n;
       let best=1e9; COLORS.forEach(cl=>{ const p=cl[1], dr=parseInt(p.slice(1,3),16)-r, dg=parseInt(p.slice(3,5),16)-g, db=parseInt(p.slice(5,7),16)-b, dist=dr*dr+dg*dg+db*db; if(dist<best){ best=dist; hex=p; } });
     }catch(e){}
-    res({src:c.toDataURL('image/jpeg',.75),hex}); }; img.onerror=()=>res(null); img.src=fr.result; }; fr.onerror=()=>res(null); fr.readAsDataURL(file); });
+    let sig=null; try{ const sc=Math.min(1,160/Math.max(c.width,c.height)), c2=document.createElement('canvas'); c2.width=Math.round(c.width*sc); c2.height=Math.round(c.height*sc); const x2=c2.getContext('2d'); x2.drawImage(c,0,0,c2.width,c2.height); sig=silhouette(x2,c2.width,c2.height); }catch(e){}
+    res({src:c.toDataURL('image/jpeg',.75),hex,sig}); }; img.onerror=()=>res(null); img.src=fr.result; }; fr.onerror=()=>res(null); fr.readAsDataURL(file); });
+}
+async function finishSort(s){
+  const cats=[...new Set(s.items.map(f=>f.cat))], one=cats.length===1?cats[0]:'all', n=s.items.length;
+  if(s.mode==='ward'){
+    const created=[], notes=[]; let grouped=0;
+    for(const f of s.items){
+      const v={id:uid(),color:f.hex,photo:f.src,have:true,sig:f.sig};
+      const target = s.group ? await findMatch(f.cat, f.sig, [...created, ...state.items]) : null;
+      if(target){ target.variants.push(v); syncHave(target); grouped++; if(!notes.includes(target.name)) notes.push(target.name); }
+      else created.push({id:uid(),cat:f.cat,name:'New '+SLOT_LABEL[f.cat].toLowerCase(),style:STYLES[f.cat][0][0],color:f.hex,have:true,photo:null,occasions:[],variants:[v]});
+    }
+    [...created].reverse().forEach(it => state.items.unshift(it));
+    ui.tab='wardrobe'; ui.cat=one; ui.sty='all'; ui.occ='all';
+    save(); ui.sheet=null; window.scrollTo(0,0); render();
+    setToast(grouped ? `${n} photo${n===1?'':'s'} saved. ${grouped} added as extra colors of a piece you already have.` : `${n} picture${n===1?'':'s'} saved. Tap one to name it and set its colors.`);
+  } else {
+    [...s.items].reverse().forEach(f => (state.pics=state.pics||[]).unshift({id:uid(),src:f.src,tag:f.cat,at:isoDay(),fav:false}));
+    ui.tab='mood'; ui.ptag=one; save(); ui.sheet=null; window.scrollTo(0,0); render();
+    setToast(n+(n===1?' picture saved.':' pictures saved.'));
+  }
 }
 async function startSort(files, mode){
   const prepared=[]; for(const f of files){ const p=await prepare(f); if(p) prepared.push({...p,cat:null}); }
   if(!prepared.length) return;
-  if(ui.sheet && ui.sheet.type==='sort') ui.sheet.items.push(...prepared); else ui.sheet={type:'sort',mode,items:prepared};
+  if(ui.sheet && ui.sheet.type==='sort') ui.sheet.items.push(...prepared); else ui.sheet={type:'sort',mode,items:prepared,group:true};
   render();
 }
 async function addFiles(files, mode){
@@ -749,6 +855,7 @@ function render(){
   document.getElementById('app').innerHTML = view();
   if (id){ const n=document.getElementById(id); if(n && n.focus) n.focus(); }
 }
+window.MuseDebug = {sigOf, sim, findGroups, get state(){ return state; }};
 render();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
