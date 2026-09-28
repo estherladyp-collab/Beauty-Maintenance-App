@@ -27,7 +27,7 @@ const COLORS = [
   ['Gold','#c39a4d',1],['Olive','#6b6a3a',1],['Forest','#3f5238',1],['Burgundy','#6e2a30',1],
   ['Blush nude','#e2c0b0',1],['Warm cream','#efe1cf',1],['Ivory','#f4ecdd',2],['Black','#161110',2],
   ['White','#fbf8f3',2],['Denim','#4c6280',2],['Navy','#1f2a44',0],['Icy pink','#e9c4d6',0],
-  ['Lavender','#b7a6d3',0],['Silver grey','#a9adb3',0],['Charcoal','#4a4845',2],['Champagne','#dccdb4',1]
+  ['Lavender','#b7a6d3',0],['Silver grey','#a9adb3',0],['Charcoal','#4a4845',2],['Champagne','#dccdb4',1],['Mocha brown','#5a3a22',1]
 ];
 const OCC = ['Casual Outing','Formal Event','Birthday Party','Special Occasion','Work','Church','Date Night','Brunch','Travel'];
 const NAILS = [['Milky pink','#efd3d0'],['Sheer nude','#e3c2b3'],['Champagne shimmer','#eadbd6'],['Rose beige','#d7aa9b'],['Cocoa','#7a4a3a'],['Espresso','#3a231c'],['Sheer red','#a83a3a']];
@@ -60,19 +60,6 @@ const ROUTINE = [
   ['face','Exfoliate + face mask',7],['body','Body scrub + oil',7],['lips','Lip scrub + mask',7],['pedi','Pedicure',28]
 ];
 
-const EXTRA = {'Fitted V-neck knit':['#4b2e22','#a5502e'],'Wrap top':['#6b6a3a','#efe1cf'],'Scoop-neck tee':['#161110','#b98a5a'],'Wide-leg trousers':['#efe1cf','#161110'],'A-line midi skirt':['#161110','#4b2e22'],'Flared jeans':['#161110']};
-const SEED = [
-  ['top','Fitted V-neck knit','V-neck','#efe1cf'],['top','Wrap top','Wrap top','#a5502e'],['top','Bodysuit','Bodysuit','#2a1b16'],
-  ['top','Scoop-neck tee','Scoop neck','#fbf8f3'],['top','Silk camisole','V-neck','#b98a5a'],
-  ['bottom','Wide-leg trousers','Wide-leg trousers','#4b2e22'],['bottom','A-line midi skirt','A-line skirt','#6b6a3a'],['bottom','Flared jeans','Flared jeans','#4c6280'],
-  ['bottom','Pleated skirt','Pleated skirt','#b98a5a'],['bottom','Straight jeans','Straight jeans','#161110'],
-  ['dress','Wrap dress','Wrap dress','#a5502e'],['dress','Little black dress','A-line dress','#161110'],['dress','Fit-and-flare dress','Fit-and-flare','#3f5238'],
-  ['outer','Longline camel coat','Longline coat','#b98a5a'],['outer','Belted trench','Belted trench','#c39a4d'],['outer','Soft blazer','Soft blazer','#4b2e22'],
-  ['shoes','Nude heeled sandal','Heeled sandal','#e2c0b0'],['shoes','Black pointed pump','Pointed pump','#161110'],['shoes','Clean white sneaker','Clean sneaker','#fbf8f3'],['shoes','Chocolate ankle boot','Ankle boot','#4b2e22'],
-  ['bag','Everyday shoulder bag','Shoulder bag','#a86b3c'],['bag','Evening mini bag','Mini bag','#161110'],
-  ['jewel','Gold hoops','Gold hoops','#c39a4d'],['jewel','Layered gold chains','Layered chains','#c39a4d'],['jewel','Statement earrings','Statement earrings','#c39a4d']
-].map((s,i) => ({id:'s'+i,cat:s[0],name:s[1],style:s[2],color:s[3],have:false,photo:null,variants:[s[3],...(EXTRA[s[1]]||[])].map((c,j) => ({id:'sv'+i+'_'+j,color:c,photo:null,have:false}))}));
-
 const PCHIPS = [['all','All'],['fav','Favorites'],...TAGS.map(t=>[t,t])];
 const inTag = (p,t) => t==='all' || (t==='fav' ? p.fav : p.tag===t);
 const uid = () => Math.random().toString(36).slice(2,9);
@@ -87,12 +74,24 @@ function migrate(it){ it.occasions = it.occasions || []; if(!it.variants) it.var
 let state = load();
 state.appts = state.appts || [];
 if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
+if(!state.seedVer2 && window.MUSE_SEED_ITEMS){
+  window.MUSE_SEED_ITEMS.forEach(s => { const it = state.items.find(i => i.id===s.id); if(!it) return;
+    s.variants.forEach(sv => { it.variants = it.variants || []; const v = it.variants.find(x => x.id===sv.id);
+      if(!v) it.variants.push(JSON.parse(JSON.stringify(sv))); else if(!v.photo && sv.photo){ v.photo = sv.photo; v.have = sv.have; } }); });
+  state.seedVer2 = true;
+}
+if(!state.cleanup1){
+  state.items = state.items.filter(i => !/^s\d+$/.test(i.id));
+  state.items.forEach(i => { if(['x1','x2','x3'].includes(i.id) && i.variants){ const keep = i.variants.filter(v => v.photo); if(keep.length) i.variants = keep; } });
+  state.cleanup1 = true;
+}
 state.items.forEach(migrate);
+save();
 if(!state.seedFix){ const sp=(state.pics||[]).find(p=>p.id==='seed4'&&p.tag==='Makeup'); if(sp) sp.tag='Hair'; state.seedFix=true; }
 if (!state.seeded && window.MUSE_SEED){ state.pics=[...window.MUSE_SEED,...(state.pics||[])]; state.seeded=true; save(); }
 function load(){
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) return s; } catch(e){}
-  return {items:SEED, looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[]};
+  return {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[]};
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){ toast = 'Storage is full. Remove a photo to keep saving.'; } }
 
