@@ -287,3 +287,26 @@ img.lead{height:52px;object-fit:cover}
 .day{position:relative;padding:0;gap:0;justify-content:flex-start}
 .dayb{width:100%;flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 2px 10px;min-height:110px;border-radius:14px}
 .dayx{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(249,242,237,.92);font-size:10px;line-height:1;color:var(--espresso);box-shadow:0 1px 3px rgba(0,0,0,.25);display:grid;place-items:center}
+
+/* product detail */
+.sheet.pdp{padding:0;max-width:520px;overflow:auto;background:var(--card)}
+.pdp-img{position:relative;background:#e2dedb;min-height:260px;display:grid;place-items:center}
+.pdp-img img{width:100%;max-height:60vh;object-fit:contain;display:block}
+.pdp-draw{width:56%;padding:36px 0}
+.pdp-draw svg{width:100%;height:auto;filter:drop-shadow(0 8px 10px rgba(36,23,19,.25))}
+.expand{position:absolute;right:14px;bottom:14px;width:44px;height:44px;background:rgba(249,242,237,.95);border:1px solid var(--line);font-size:20px;display:grid;place-items:center}
+.pdp-add{position:absolute;left:14px;bottom:14px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px}
+.pdp-body{padding:22px 20px 30px;background:var(--card)}
+.pdp-name{font-family:var(--body);font-weight:500;text-transform:uppercase;letter-spacing:.02em;font-size:22px;line-height:1.2}
+.pdp-x{font-size:20px;color:var(--muted);padding:4px 8px}
+.pdp-color{font-family:var(--display);font-style:italic;font-size:20px;color:var(--muted);margin:14px 0 18px}
+.pdp-count{color:var(--muted);margin-bottom:10px}
+.pdp-dots{display:flex;gap:10px;flex-wrap:wrap}
+.pdp-dot{width:48px;height:48px;border-radius:50%;border:3px solid #ddd3c8;display:grid;place-items:center;padding:0;background:var(--card)}
+.pdp-dot i{width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.22)}
+.pdp-dot.on{border-color:#6e2a30}
+.pdp-dot.off{border-style:dashed}
+.pdp-occ{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.pdp-occ span{background:#eadfd0;padding:8px 16px;border-radius:999px;font-size:15px}
+.lightbox{position:fixed;inset:0;z-index:60;background:rgba(20,12,9,.94);display:grid;place-items:center;padding:16px;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:92vh;object-fit:contain}

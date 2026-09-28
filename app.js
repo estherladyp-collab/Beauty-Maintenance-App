@@ -27,8 +27,9 @@ const COLORS = [
   ['Gold','#c39a4d',1],['Olive','#6b6a3a',1],['Forest','#3f5238',1],['Burgundy','#6e2a30',1],
   ['Blush nude','#e2c0b0',1],['Warm cream','#efe1cf',1],['Ivory','#f4ecdd',2],['Black','#161110',2],
   ['White','#fbf8f3',2],['Denim','#4c6280',2],['Navy','#1f2a44',0],['Icy pink','#e9c4d6',0],
-  ['Lavender','#b7a6d3',0],['Silver grey','#a9adb3',0]
+  ['Lavender','#b7a6d3',0],['Silver grey','#a9adb3',0],['Charcoal','#4a4845',2],['Champagne','#dccdb4',1]
 ];
+const OCC = ['Casual Outing','Formal Event','Birthday Party','Special Occasion','Work','Church','Date Night','Brunch','Travel'];
 const NAILS = [['Milky pink','#efd3d0'],['Sheer nude','#e3c2b3'],['Champagne shimmer','#eadbd6'],['Rose beige','#d7aa9b'],['Cocoa','#7a4a3a'],['Espresso','#3a231c'],['Sheer red','#a83a3a']];
 const LIPS = [['Brown gloss','#7b4a3c'],['Mocha','#5a3328'],['Nude rosewood','#a86a5c'],['Terracotta','#b5573f'],['Plum brown','#5b2c33'],['Clear gloss','#c98f7a']];
 const APPT_TYPES = [['hair','Hair','#7a5240'],['nails','Nails','#d7aa9b'],['outfit','Outfit','#c39a4d'],['lashes','Lashes','#4a3128'],['brows','Brows','#4c6280'],['skin','Skin','#65735b'],['pedi','Pedicure','#a86a5c'],['other','Other','#8d7a70']];
@@ -82,9 +83,10 @@ const daysSince = iso => Math.floor((new Date(isoDay())-new Date(iso))/864e5);
 
 const vOf = (it, vid) => it.variants.find(v => v.id===vid) || it.variants.find(v => v.have) || it.variants[0];
 const syncHave = it => { it.have = it.variants.some(v => v.have); };
-function migrate(it){ if(!it.variants) it.variants=[{id:uid(),color:it.color,photo:it.photo||null,have:!!it.have}]; syncHave(it); }
+function migrate(it){ it.occasions = it.occasions || []; if(!it.variants) it.variants=[{id:uid(),color:it.color,photo:it.photo||null,have:!!it.have}]; syncHave(it); }
 let state = load();
 state.appts = state.appts || [];
+if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
 state.items.forEach(migrate);
 if(!state.seedFix){ const sp=(state.pics||[]).find(p=>p.id==='seed4'&&p.tag==='Makeup'); if(sp) sp.tag='Hair'; state.seedFix=true; }
 if (!state.seeded && window.MUSE_SEED){ state.pics=[...window.MUSE_SEED,...(state.pics||[])]; state.seeded=true; save(); }
@@ -94,7 +96,7 @@ function load(){
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){ toast = 'Storage is full. Remove a photo to keep saving.'; } }
 
-let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
+let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
 let toast = '';
 
 /* ---------- garments ---------- */
@@ -178,7 +180,7 @@ function view(){
   return `<div class="brand brand-fixed" aria-hidden="true">Muse</div>
   <main class="shell"><header class="top"><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${tabs.map(t=>`<button data-act="tab" data-v="${t[0]}" ${ui.tab===t[0]&&!ui.draft?'aria-current="page"':''}>${t[1]}</button>`).join('')}</div></nav>
-  ${ui.sheet || ui.draft || ui.tab==='calendar' ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
+  ${ui.sheet || ui.draft || ui.tab==='calendar' ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${ui.lightbox?`<div class="lightbox" data-act="lbclose" role="dialog" aria-label="Photo"><img src="${ui.lightbox}" alt=""></div>`:''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
 }
 
 function today(){
@@ -268,21 +270,35 @@ function weekLog(){ let n=0; for(let i=0;i<7;i++){ const d=new Date(); d.setDate
 function dots(it, cur, act, key){
   return it.variants.length>1 ? `<div class="vdots" role="group" aria-label="Colors">${it.variants.map(x=>`<button class="vdot ${x.id===cur?'on':''}" style="background:${x.color}" data-act="${act}" data-v="${key}:${x.id}" aria-pressed="${x.id===cur}" aria-label="${esc(colorName(x.color))}${x.have?'':' (on list)'}"></button>`).join('')}</div>` : '';
 }
+function pdp(s){
+  const it = state.items.find(i => i.id===s.id); if(!it) return '';
+  const v = vOf(it, ui.vsel[it.id]);
+  const img = v.photo ? `<img src="${v.photo}" alt="${esc(it.name)}, ${esc(colorName(v.color))}">` : `<div class="pdp-draw">${garment(it.cat,it.style,v.color)}</div>`;
+  return `<div class="pdp-img">${img}${v.photo?`<button class="expand" data-act="lightbox" data-v="${it.id}" aria-label="View larger">⤢</button>`:`<label class="btn small pdp-add">Add a photo of this color<input type="file" id="pdpphoto" accept="image/*" hidden></label>`}</div>
+  <div class="pdp-body"><div class="row between" style="align-items:flex-start;flex-wrap:nowrap"><h2 class="pdp-name">${esc(it.name)}</h2><button class="pdp-x" data-act="close" aria-label="Close">✕</button></div>
+    <p class="pdp-color">${esc(colorName(v.color))}${v.have?'':' · on my list'}</p>
+    <div class="pdp-count">${it.variants.length} color${it.variants.length===1?'':'s'}</div>
+    <div class="pdp-dots" role="group" aria-label="Colors">${it.variants.map(x=>`<button class="pdp-dot ${x.id===v.id?'on':''} ${x.have?'':'off'}" data-act="vpick" data-v="${it.id}:${x.id}" aria-pressed="${x.id===v.id}" aria-label="${esc(colorName(x.color))}${x.have?'':' (on list)'}"><i style="background:${x.color}"></i></button>`).join('')}</div>
+    ${(it.occasions||[]).length?`<div class="pdp-occ">${it.occasions.map(o=>`<span>${esc(o)}</span>`).join('')}</div>`:''}
+    <div class="row" style="margin-top:20px"><button class="btn" data-act="own" data-v="${it.id}">${v.have?'✓ In my wardrobe':'Add to my wardrobe'}</button><button class="btn ghost" data-act="pdplook" data-v="${it.id}">Add to a look</button><button class="btn ghost" data-act="edit" data-v="${it.id}">Edit</button></div></div>`;
+}
 function wardrobe(){
   const have = state.items.filter(i=>i.have).length;
   const inCat = state.items.filter(i => ui.cat==='all' || i.cat===ui.cat);
   const styles = [...new Set(inCat.map(i=>i.style))];
-  const list = inCat.filter(i => ui.sty==='all' || i.style===ui.sty);
+  const occs = [...new Set(state.items.flatMap(i => i.occasions||[]))];
+  const list = inCat.filter(i => ui.sty==='all' || i.style===ui.sty).filter(i => ui.occ==='all' || (i.occasions||[]).includes(ui.occ));
   return `<h1 class="page-title">Your <em>wardrobe</em></h1>
   <p class="lede">One card per piece. Tap a dot to switch colors. Tick what you own.</p>
   <div class="card" style="margin:20px 0 14px"><div class="row between"><b>${have} of ${state.items.length} pieces owned</b><div class="row" style="gap:8px"><label class="btn small ghost" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Upload photos<input type="file" id="wardup" accept="image/*" multiple hidden></label><button class="btn small" data-act="add">Add a piece</button></div></div><div class="progress"><i style="width:${state.items.length?have/state.items.length*100:0}%"></i></div></div>
   <div class="chips" role="group" aria-label="Category">${[['all','All'],...CATS].map(c=>`<button class="chip" aria-pressed="${ui.cat===c[0]}" data-act="cat" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
   ${ui.cat!=='all'&&styles.length>1?`<div class="chips" role="group" aria-label="Style">${[['all','All styles'],...styles.map(s=>[s,s])].map(c=>`<button class="chip" aria-pressed="${ui.sty===c[0]}" data-act="sty" data-v="${esc(c[0])}">${esc(c[1])}</button>`).join('')}</div>`:''}
+  ${occs.length?`<div class="chips" role="group" aria-label="Occasion">${[['all','Any occasion'],...occs.map(o=>[o,o])].map(c=>`<button class="chip s" aria-pressed="${ui.occ===c[0]}" data-act="occ" data-v="${esc(c[0])}">${esc(c[1])}</button>`).join('')}</div>`:''}
   ${list.length?`<div class="grid" style="margin-top:12px">${list.map(itemCard).join('')}</div>`:`<div class="empty-state" style="margin-top:12px">Nothing here yet. Add your first piece.</div>`}`;
 }
 function itemCard(it){
   const v = vOf(it, ui.vsel[it.id]), r = rating(it);
-  return `<div class="item ${v.have?'have':'need'}"><div class="pic" data-act="edit" data-v="${it.id}" role="button" tabindex="0" aria-label="Edit ${esc(it.name)}">${pic(it,v)}</div>
+  return `<div class="item ${v.have?'have':'need'}"><div class="pic" data-act="pdp" data-v="${it.id}" role="button" tabindex="0" aria-label="View ${esc(it.name)}">${pic(it,v)}</div>
     <button class="tick" data-act="own" data-v="${it.id}" aria-pressed="${v.have}" aria-label="${v.have?'Owned':'Not owned'}: ${esc(it.name)}, ${esc(colorName(v.color))}">${v.have?'✓':''}</button>
     <h3>${esc(it.name)}</h3><p>${esc(it.style)} · ${esc(colorName(v.color))}</p>
     ${dots(it,v.id,'vpick',it.id)}
@@ -425,6 +441,8 @@ function sheet(){
     const opts = state.items.filter(i => i.cat===s.slot);
     inner = `<h2>Choose ${SLOT_LABEL[s.slot].toLowerCase()}</h2>${opts.length?`<div class="grid">${opts.map(it=>`<button class="item ${it.have?'have':'need'}" data-act="set" data-v="${it.id}"><div class="pic">${pic(it)}</div><h3>${esc(it.name)}</h3><p>${it.have?esc(colorName(it.color)):'On your list'}</p></button>`).join('')}</div>`:`<div class="empty-state">No ${SLOT_LABEL[s.slot].toLowerCase()} in your wardrobe yet.</div>`}
       <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="clear" data-v="${s.slot}">Clear</button><button class="btn ghost small" data-act="close">Close</button></div>`;
+  } else if (s.type==='pdp'){
+    inner = pdp(s);
   } else if (s.type==='sort'){
     const cats = s.mode==='ward' ? CATS : TAGS.map(t=>[t,t]), todo = s.items.filter(f=>!f.cat).length;
     inner = `<h2>Sort your pictures</h2>
@@ -473,6 +491,8 @@ function sheet(){
       <label>Name<input type="text" id="iname" value="${esc(it.name)}" maxlength="40" placeholder="e.g. Ribbed V-neck top"></label>
       <label>Category<select id="icat" data-act="icat">${CATS.map(c=>`<option value="${c[0]}" ${it.cat===c[0]?'selected':''}>${c[1]}</option>`).join('')}</select></label>
       <label>Style<select id="istyle">${STYLES[it.cat].map(x=>`<option ${it.style===x[0]?'selected':''}>${x[0]}</option>`).join('')}</select></label>
+      <div class="eyebrow" style="margin-top:8px">Good for</div>
+      <div class="chips" style="flex-wrap:wrap">${OCC.map(o=>`<button class="chip s" data-act="occtoggle" data-v="${esc(o)}" aria-pressed="${(it.occasions||[]).includes(o)}">${o}</button>`).join('')}</div>
       <div class="eyebrow" style="margin-top:8px">Colors of this piece</div>
       <div class="row" style="gap:8px">${it.variants.map((x,i)=>`<button class="vchip ${i===vi?'on':''}" data-act="vsel" data-v="${i}" aria-pressed="${i===vi}"><i style="background:${x.color}"></i>${esc(colorName(x.color))}</button>`).join('')}<button class="chip" data-act="vadd">＋ Add a color</button></div>
       <div class="card" style="display:grid;gap:12px">
@@ -485,7 +505,7 @@ function sheet(){
       </div>
       <div class="row" style="margin-top:8px"><button class="btn" data-act="saveitem">Save</button><button class="btn ghost" data-act="close">Cancel</button>${s.isNew?'':`<button class="btn ghost" data-act="delitem">Delete</button>`}</div></div>`;
   }
-  return `<div class="overlay" data-act="overlay"><div class="sheet" role="dialog" aria-modal="true">${inner}</div></div>`;
+  return `<div class="overlay" data-act="overlay"><div class="sheet ${s.type==='pdp'?'pdp':''}" role="dialog" aria-modal="true">${inner}</div></div>`;
 }
 
 /* ---------- actions ---------- */
@@ -499,11 +519,11 @@ function logToday(){ const t=isoDay(); if(!state.log.includes(t)) state.log.push
 
 const actions = {
   tab(v){ ui.tab=v; ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
-  cat(v){ ui.cat=v; ui.sty='all'; },
+  cat(v){ ui.cat=v; ui.sty='all'; ui.occ='all'; },
   sty(v){ ui.sty=v; },
   vpick(v){ const [id,vid]=v.split(':'); ui.vsel[id]=vid; },
   own(v){ const it=state.items.find(i=>i.id===v), c=vOf(it,ui.vsel[v]); c.have=!c.have; ui.vsel[v]=c.id; syncHave(it); save(); },
-  add(){ ui.sheet={type:'item',isNew:true,item:{id:uid(),cat:'top',name:'',style:STYLES.top[0][0],have:true,variants:[{id:uid(),color:COLORS[2][1],photo:null,have:true}]},vi:0}; },
+  add(){ ui.sheet={type:'item',isNew:true,item:{id:uid(),cat:'top',name:'',style:STYLES.top[0][0],have:true,occasions:[],variants:[{id:uid(),color:COLORS[2][1],photo:null,have:true}]},vi:0}; },
   edit(v){ ui.sheet={type:'item',item:JSON.parse(JSON.stringify(state.items.find(i=>i.id===v))),vi:Math.max(0,state.items.find(i=>i.id===v).variants.indexOf(vOf(state.items.find(i=>i.id===v),ui.vsel[v])))}; },
   icat(){ readItemForm(); const it=ui.sheet.item; it.cat=document.getElementById('icat').value; it.style=STYLES[it.cat][0][0]; },
   color(v){ readItemForm(); ui.sheet.item.variants[ui.sheet.vi||0].color=v; },
@@ -618,6 +638,13 @@ const actions = {
   cfil(v){ ui.cfil=v; },
   applook(v){ const a=ui.adraft; a.lookId = a.lookId===v ? null : v; const l=state.looks.find(x=>x.id===v);
     if(a.lookId && l && (a.title===defTitle('outfit')||!a.title.trim())) a.title='Outfit: '+l.name; },
+  pdp(v){ ui.sheet={type:'pdp',id:v}; },
+  occ(v){ ui.occ=v; },
+  occtoggle(v){ readItemForm(); const it=ui.sheet.item; it.occasions=it.occasions||[]; const i=it.occasions.indexOf(v); if(i>=0) it.occasions.splice(i,1); else it.occasions.push(v); },
+  lightbox(v){ const it=state.items.find(i=>i.id===v), c=vOf(it,ui.vsel[v]); ui.lightbox=c.photo; },
+  lbclose(){ ui.lightbox=null; },
+  pdplook(v){ const it=state.items.find(i=>i.id===v), c=vOf(it,ui.vsel[v]); ui.sheet=null; actions.newlook();
+    ui.draft.slots[it.cat]=v; ui.draft.vars={[it.cat]:c.id}; if(it.cat==='dress') ui.omode='dress'; ui.btab=['bag','jewel'].includes(it.cat)?'acc':'outfit'; },
   wore(){ logToday(); save(); setToast('Logged. Nice work showing up.'); },
   done(v){ state.routine[v]=isoDay(); logToday(); save(); }
 };
@@ -690,6 +717,7 @@ document.addEventListener('change', async e => {
   if ((e.target.id==='picup'||e.target.id==='picfab') && e.target.files.length){
     const fs=[...e.target.files]; e.target.value=''; await addFiles(fs, e.target.id==='picup'&&ui.tab==='mood'?'insp':undefined); return;
   }
+  if (e.target.id==='pdpphoto' && e.target.files[0]){ const it=state.items.find(i=>i.id===ui.sheet.id), c=vOf(it,ui.vsel[it.id]); const r=await prepare(e.target.files[0]); if(r){ c.photo=r.src; syncHave(it); save(); render(); } return; }
   if (e.target.id==='wardup' && e.target.files.length){ const fs=[...e.target.files].filter(f=>f.type.startsWith('image/')); e.target.value=''; await startSort(fs,'ward'); return; }
   if (e.target.id==='sortmore' && e.target.files.length){ const fs=[...e.target.files].filter(f=>f.type.startsWith('image/')); e.target.value=''; await startSort(fs,ui.sheet.mode); return; }
   if (e.target.id==='import' && e.target.files[0]){
@@ -713,7 +741,7 @@ document.addEventListener('change', async e => {
   }
 });
 document.addEventListener('keydown', e => {
-  if (e.key==='Escape' && ui.sheet){ ui.sheet=null; render(); }
+  if (e.key==='Escape' && ui.lightbox){ ui.lightbox=null; render(); } else if (e.key==='Escape' && ui.sheet){ ui.sheet=null; render(); }
   if ((e.key==='Enter'||e.key===' ') && e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); }
 });
 
