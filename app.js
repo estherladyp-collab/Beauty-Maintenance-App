@@ -61,6 +61,7 @@ const dow = (d=new Date()) => (d.getDay()+6)%7;
 const daysSince = iso => Math.floor((new Date(isoDay())-new Date(iso))/864e5);
 
 let state = load();
+if (!state.seeded && window.MUSE_SEED){ state.pics=[...window.MUSE_SEED,...(state.pics||[])]; state.seeded=true; save(); }
 function load(){
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) return s; } catch(e){}
   return {items:SEED, looks:[], plan:{}, routine:{}, log:[], pics:[]};
