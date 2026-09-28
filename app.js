@@ -52,7 +52,9 @@ const typeInfo = t => APPT_TYPES.find(x => x[0]===t) || APPT_TYPES[6];
 const addDays = (iso,n) => { const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return isoDay(d); };
 const fmtDate = iso => new Date(iso+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
 const TAGS = ['Outfit','Hair','Nails','Makeup','Accessories'];
-const HAIR = ['Big blowout','Sleek low bun','Half-up','Silk press','Braids','Wash-and-go curls'];
+const HAIR = ['Blowout','Braids','Silk press','Curls','Sleek bun','Ponytail','Half-up','Other'];
+const HCOLORS = [['Jet black','#141010'],['Soft black','#2a1d1a'],['Dark brown','#3d2618'],['Chestnut','#5b3a24'],['Auburn','#7a3b22'],['Honey blonde','#b88a4a'],['Blonde','#d8bc84'],['Burgundy','#5a1f2b'],['Silver grey','#9a9a9a']];
+const hairName = hex => (HCOLORS.find(c => c[1]===hex)||['Hair color'])[0];
 
 const ROUTINE = [
   ['nails','Nail fill or fresh set',21],['lashes','Lash lift or fill',28],['brows','Brow shaping',21],
@@ -89,13 +91,15 @@ state.items.forEach(migrate);
 save();
 if(!state.seedFix){ const sp=(state.pics||[]).find(p=>p.id==='seed4'&&p.tag==='Makeup'); if(sp) sp.tag='Hair'; state.seedFix=true; }
 if (!state.seeded && window.MUSE_SEED){ state.pics=[...window.MUSE_SEED,...(state.pics||[])]; state.seeded=true; save(); }
+(state.pics||[]).forEach(p => { if(p.tag==='Hair' && !p.style){ p.style = p.id==='seed4' ? 'Blowout' : 'Other'; } if(p.tag==='Hair' && !p.hcolor) p.hcolor = '#141010'; });
+save();
 function load(){
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) return s; } catch(e){}
   return {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[]};
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){ toast = 'Storage is full. Remove a photo to keep saving.'; } }
 
-let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
+let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
 let toast = '';
 
 /* ---------- garments ---------- */
@@ -236,7 +240,8 @@ function startRail(){
       `<label class="ptile addp"><span>＋</span><span>Upload</span><input type="file" id="wardup" accept="image/*" multiple hidden></label>`;
   } else {
     const tag = src==='hair' ? 'Hair' : 'Nails';
-    rail = (state.pics||[]).filter(p => p.tag===tag).map(p => `<button class="ptile" data-act="startpic" data-v="${p.id}:${src}" aria-label="Start a look with this ${tag.toLowerCase()} picture"><img src="${p.src}" alt=""></button>`).join('') +
+    const pool = src==='hair' ? hairGroups().map(g => g.pics[0]) : (state.pics||[]).filter(p => p.tag===tag);
+    rail = pool.map(p => `<button class="ptile" data-act="startpic" data-v="${p.id}:${src}" aria-label="Start a look with this ${tag.toLowerCase()} picture"><img src="${p.src}" alt=""></button>`).join('') +
       `<label class="ptile addp"><span>＋</span><span>Upload</span><input type="file" id="picup" accept="image/*" multiple hidden></label>`;
   }
   return `<section><div class="row between"><h2>Plan a look</h2><button class="btn small ghost" data-act="newtoday">Start blank</button></div>
@@ -338,7 +343,11 @@ function builder(){
       ${mode==='dress' ? itemRow('Dress','dress',d) : itemRow('Top','top',d)+itemRow('Bottom','bottom',d)}
       ${itemRow('Outerwear','outer',d)}${itemRow('Shoes','shoes',d)}${picsRow('Outfit',d,'Outfit inspiration')}`;
   } else if (ui.btab==='hair'){
-    body = `<div class="brow"><div class="eyebrow">Hairstyle</div><div class="chips" style="flex-wrap:wrap">${HAIR.map(h=>`<button class="chip" data-act="beauty" data-k="hair" data-v="${esc(h)}" aria-pressed="${d.beauty.hair===h}">${esc(h)}</button>`).join('')}</div></div>${picsRow('Hair',d,'Hair inspiration')}`;
+    const groups = hairGroups(), sel = d.pics||[];
+    body = `<div class="brow"><div class="eyebrow">Hairstyle</div><div class="chips" style="flex-wrap:wrap">${HAIR.map(h=>`<button class="chip" data-act="beauty" data-k="hair" data-v="${esc(h)}" aria-pressed="${d.beauty.hair===h}">${esc(h)}</button>`).join('')}</div></div>
+    <div class="brow"><div class="eyebrow">Your hair pictures</div><div class="hscroll">${groups.map(g=>{ const cur = g.pics.find(p=>sel.includes(p.id)) || g.pics.find(p=>p.id===ui.hsel[g.style]) || g.pics[0], on = g.pics.some(p=>sel.includes(p.id));
+      return `<div class="tile ${on?'on':''}"><button class="tp hairtp" data-act="hairsel" data-v="${cur.id}" aria-pressed="${on}" aria-label="${esc(g.style)}, ${esc(hairName(cur.hcolor))}"><img src="${cur.src}" alt=""></button><span class="tn">${esc(g.style)}</span>${hdots(g,cur.id,'hairsel')}</div>`; }).join('')}
+      <label class="ptile addp" data-tag="Hair"><span>＋</span><span>Upload</span><input type="file" id="picup" accept="image/*" multiple hidden></label></div></div>`;
   } else if (ui.btab==='nails'){
     body = `<div class="brow"><div class="eyebrow">Nails</div><div class="pick">${NAILS.map(n=>`<figure><button class="nail lg" style="background:${n[1]}" data-act="beauty" data-k="nails" data-v="${esc(n[0])}" aria-pressed="${d.beauty.nails===n[0]}" aria-label="${esc(n[0])}"></button>${esc(n[0])}</figure>`).join('')}</div></div>
       ${picsRow('Nails',d,'Nail inspiration')}
@@ -369,7 +378,7 @@ function mood(){
   <p class="lede">Hair, nails, makeup and outfit ideas you love. Pick from these when you build a look.</p>
   <div class="chips" style="margin-top:18px" role="group" aria-label="Filter">${PCHIPS.map(c=>`<button class="chip" aria-pressed="${ui.ptag===c[0]}" data-act="ptag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
   <div class="note" style="margin-top:14px" id="dropzone"><b>Add fresh looks anytime.</b> Save an image from Pinterest or take a screenshot, then upload it here. You can also drag pictures onto this page, or copy an image on your computer and paste it.</div>
-  ${list.length?`<div class="pics" style="margin-top:12px">${list.map(p=>`<button class="pic-tile" data-act="picopen" data-v="${p.id}" aria-label="Open picture, ${esc(p.tag)}"><img src="${p.src}" alt=""><span class="tag">${esc(p.tag)}</span>${p.fav?'<span class="heart" aria-label="Favorite">♥</span>':''}${isNew(p)?'<span class="new">New</span>':''}</button>`).join('')}</div>`
+  ${list.length?`<div class="pics" style="margin-top:12px">${(()=>{ const seen=new Set(); return list.map(p=>{ if(p.tag==='Hair'){ const k=p.style||'Other'; if(seen.has(k)) return ''; seen.add(k); const g=list.filter(x=>x.tag==='Hair'&&(x.style||'Other')===k); return `<button class="pic-tile" data-act="hairopen" data-v="${esc(k)}" aria-label="${esc(k)}, ${g.length} variation${g.length===1?'':'s'}"><img src="${g[0].src}" alt=""><span class="tag">${esc(k)}</span>${g.length>1?`<span class="count">${g.length}</span>`:''}${g.some(isNew)?'<span class="new">New</span>':''}</button>`; } return `<button class="pic-tile" data-act="picopen" data-v="${p.id}" aria-label="Open picture, ${esc(p.tag)}"><img src="${p.src}" alt=""><span class="tag">${esc(p.tag)}</span>${p.fav?'<span class="heart" aria-label="Favorite">♥</span>':''}${isNew(p)?'<span class="new">New</span>':''}</button>`; }).join(''); })()}</div>`
   :`<div class="empty-state" style="margin-top:12px">${all.length?'No pictures here yet.':'No pictures yet. Tap “Upload pictures” and pick as many as you like.'}</div>`}`;
 }
 
@@ -445,6 +454,16 @@ function sheet(){
   } else if (s.type==='merge'){
     const nm = g => g.map(id => (state.items.find(i=>i.id===id)||{}).name).filter(Boolean).join(' · ');
     inner = `<h2>Smart merge</h2>${s.busy?'<p class="status">Looking for pieces that match…</p>':s.groups.length?`<p class="status" style="margin-bottom:12px">These look like the same piece in different colors.</p>${s.groups.map((g,gi)=>`<div class="card mgroup"><div class="mthumbs">${g.map(id=>{const it=state.items.find(i=>i.id===id);return it?`<span class="mth">${pic(it)}</span>`:''}).join('')}</div><div class="row between" style="flex-wrap:nowrap"><span class="status" style="min-width:0">${esc(nm(g))}</span><button class="btn small" data-act="mergegroup" data-v="${gi}">Merge ${g.length}</button></div></div>`).join('')}<button class="btn" style="margin-top:6px" data-act="mergeall">Merge all ${s.groups.length}</button>`:'<div class="empty-state">No matches found. Pieces that look alike will show up here.</div>'}<div class="row" style="margin-top:14px"><button class="btn ghost small" data-act="close">Close</button></div>`;
+  } else if (s.type==='hair'){
+    const g = hairGroups().find(x => x.style===s.style);
+    if(!g) inner = '<div class="empty-state">No pictures in this style.</div>';
+    else { const cur = g.pics.find(p => p.id===ui.hsel[s.style]) || g.pics[0];
+      inner = `<div class="pdp-img"><img src="${cur.src}" alt="${esc(s.style)}, ${esc(hairName(cur.hcolor))}"><button class="expand" data-act="lbsrc" data-v="${cur.id}" aria-label="View larger">⤢</button></div>
+      <div class="pdp-body"><div class="row between" style="align-items:flex-start;flex-wrap:nowrap"><h2 class="pdp-name">${esc(s.style)}</h2><button class="pdp-x" data-act="close" aria-label="Close">✕</button></div>
+        <p class="pdp-color">${esc(hairName(cur.hcolor))}</p>
+        <div class="pdp-count">${g.pics.length} variation${g.pics.length===1?'':'s'}</div>
+        <div class="pdp-dots" role="group" aria-label="Hair colors">${g.pics.map(p=>`<button class="pdp-dot ${p.id===cur.id?'on':''}" data-act="hairpick" data-v="${esc(s.style)}:${p.id}" aria-pressed="${p.id===cur.id}" aria-label="${esc(hairName(p.hcolor))}"><i style="background:${p.hcolor||'#141010'}"></i></button>`).join('')}</div>
+        <div class="row" style="margin-top:20px"><button class="btn" data-act="hairlook" data-v="${cur.id}">Use in a look</button><button class="btn ghost" data-act="picopen" data-v="${cur.id}">Edit</button></div></div>`; }
   } else if (s.type==='pdp'){
     inner = pdp(s);
   } else if (s.type==='sort'){
@@ -454,7 +473,8 @@ function sheet(){
     ${s.mode==='ward'?`<div class="chk" style="margin-top:12px"><input type="checkbox" id="autog" data-act="autog" ${s.group?'checked':''}><label for="autog" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso)">Group similar photos as colors of one piece</label></div>`:''}
     <div class="eyebrow" style="margin:10px 0 6px">Put them all in</div>
     <div class="chips" style="flex-wrap:wrap">${cats.map(c=>`<button class="chip s" data-act="sortall" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
-    <div class="sortgrid" style="margin-top:14px">${s.items.map((f,i)=>`<div class="sorti ${f.cat?'':'todo'}"><img src="${f.src}" alt=""><button class="x" data-act="sortdel" data-v="${i}" aria-label="Remove picture">✕</button><div class="chips" style="flex-wrap:wrap;gap:4px">${cats.map(c=>`<button class="chip s" aria-pressed="${f.cat===c[0]}" data-act="sortcat" data-v="${i}:${c[0]}">${c[1]}</button>`).join('')}</div></div>`).join('')}</div>
+    ${s.mode==='insp'&&s.items.some(f=>f.cat==='Hair')?`<div class="eyebrow" style="margin:12px 0 6px">Hairstyle for all hair pictures</div><div class="chips" style="flex-wrap:wrap">${HAIR.map(h=>`<button class="chip s" data-act="hairall" data-v="${h}">${h}</button>`).join('')}</div>`:''}
+    <div class="sortgrid" style="margin-top:14px">${s.items.map((f,i)=>`<div class="sorti ${f.cat?'':'todo'}"><img src="${f.src}" alt=""><button class="x" data-act="sortdel" data-v="${i}" aria-label="Remove picture">✕</button><div class="chips" style="flex-wrap:wrap;gap:4px">${cats.map(c=>`<button class="chip s" aria-pressed="${f.cat===c[0]}" data-act="sortcat" data-v="${i}:${c[0]}">${c[1]}</button>`).join('')}</div>${s.mode==='insp'&&f.cat==='Hair'?`<div class="eyebrow">Hairstyle · ${esc(hairName(f.hair))}</div><div class="chips" style="flex-wrap:wrap;gap:4px">${HAIR.map(h=>`<button class="chip s" aria-pressed="${(f.hstyle||'Other')===h}" data-act="sorthair" data-v="${i}:${h}">${h}</button>`).join('')}</div>`:''}</div>`).join('')}</div>
     <div class="row" style="margin-top:16px"><label class="btn ghost small" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Add more<input type="file" id="sortmore" accept="image/*" multiple hidden></label><button class="btn small" data-act="sortsave" ${todo?'aria-disabled="true"':''}>${todo?`Sort ${todo} more`:`Save ${s.items.length} picture${s.items.length===1?'':'s'}`}</button><button class="btn ghost small" data-act="close">Cancel</button></div>`;
   } else if (s.type==='appt'){
     const a = ui.adraft, ti = typeInfo(a.type), pics = (a.pics||[]).map(id=>(state.pics||[]).find(p=>p.id===id)).filter(Boolean);
@@ -486,6 +506,7 @@ function sheet(){
     const p = (state.pics||[]).find(x=>x.id===s.id);
     inner = `<img src="${p.src}" alt="" style="width:100%;max-height:60vh;object-fit:contain;border-radius:16px;background:var(--card)">
     <div class="chips" style="margin-top:14px;flex-wrap:wrap" role="group" aria-label="Tag">${TAGS.map(t=>`<button class="chip" aria-pressed="${p.tag===t}" data-act="retag" data-v="${t}">${t}</button>`).join('')}</div>
+    ${p.tag==='Hair'?`<div class="eyebrow" style="margin-top:14px">Hairstyle</div><div class="chips" style="flex-wrap:wrap">${HAIR.map(h=>`<button class="chip s" aria-pressed="${(p.style||'Other')===h}" data-act="pstyle" data-v="${h}">${h}</button>`).join('')}</div><div class="eyebrow" style="margin-top:14px">Hair color</div><div class="swatches">${HCOLORS.map(c=>`<button class="sw" style="background:${c[1]}" data-act="pcolor" data-v="${c[1]}" aria-pressed="${p.hcolor===c[1]}" aria-label="${c[0]}"></button>`).join('')}</div>`:''}
     <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="favpic" aria-pressed="${!!p.fav}">${p.fav?'♥ Favorite':'♡ Add to favorites'}</button><button class="btn ghost small" data-act="delpic">Delete picture</button><button class="btn small" data-act="close">Close</button></div>`;
   } else if (s.type==='assign'){
     inner = `<h2>${DAYS[s.day]}'s look</h2>${state.looks.length?`<div class="grid wide">${state.looks.map(l=>`<button class="card" style="text-align:left" data-act="plan" data-v="${l.id}">${board(l)}<h3 style="font-size:20px;margin-top:10px">${esc(l.name)}</h3></button>`).join('')}</div>`:`<div class="empty-state">Create a look first, then plan your week.</div>`}
@@ -510,7 +531,7 @@ function sheet(){
       </div>
       <div class="row" style="margin-top:8px"><button class="btn" data-act="saveitem">Save</button><button class="btn ghost" data-act="close">Cancel</button>${s.isNew?'':`<button class="btn ghost" data-act="delitem">Delete</button>`}</div></div>`;
   }
-  return `<div class="overlay" data-act="overlay"><div class="sheet ${s.type==='pdp'?'pdp':''}" role="dialog" aria-modal="true">${inner}</div></div>`;
+  return `<div class="overlay" data-act="overlay"><div class="sheet ${s.type==='pdp'||s.type==='hair'?'pdp':''}" role="dialog" aria-modal="true">${inner}</div></div>`;
 }
 
 /* ---------- actions ---------- */
@@ -591,7 +612,16 @@ const actions = {
   ptag(v){ ui.ptag=v; },
   sheettag(v){ ui.sheet.tag=v; },
   picopen(v){ ui.sheet={type:'pic',id:v}; },
-  retag(v){ const p=state.pics.find(x=>x.id===ui.sheet.id); p.tag=v; save(); },
+  retag(v){ const p=state.pics.find(x=>x.id===ui.sheet.id); p.tag=v; if(v==='Hair'){ p.style=p.style||'Other'; p.hcolor=p.hcolor||'#141010'; } save(); },
+  pstyle(v){ state.pics.find(x=>x.id===ui.sheet.id).style=v; save(); },
+  pcolor(v){ state.pics.find(x=>x.id===ui.sheet.id).hcolor=v; save(); },
+  hairopen(v){ ui.sheet={type:'hair',style:v}; },
+  hairpick(v){ const [st,id]=v.split(/:(.+)/); ui.hsel[st]=id; },
+  lbsrc(v){ ui.lightbox=state.pics.find(p=>p.id===v).src; },
+  hairlook(v){ const p=state.pics.find(x=>x.id===v); ui.sheet=null; actions.newlook(); ui.draft.pics=[v]; ui.draft.beauty.hair=p.style||'Other'; ui.btab='hair'; },
+  hairsel(v){ const p=state.pics.find(x=>x.id===v), d=ui.draft, hairIds=(state.pics||[]).filter(x=>x.tag==='Hair').map(x=>x.id);
+    d.pics=d.pics||[]; const had=d.pics.includes(v); d.pics=d.pics.filter(id=>!hairIds.includes(id));
+    if(!had){ d.pics.push(v); d.beauty.hair=p.style||'Other'; } ui.hsel[p.style||'Other']=v; },
   delpic(){ const id=ui.sheet.id; state.pics=state.pics.filter(p=>p.id!==id);
     state.looks.forEach(l=>{ l.pics=(l.pics||[]).filter(x=>x!==id); }); save(); ui.sheet=null; },
   pickpics(){ syncDraft(); ui.sheet={type:'pics',tag:'all'}; },
@@ -628,6 +658,8 @@ const actions = {
   sortcat(v){ const [i,c]=v.split(':'); ui.sheet.items[+i].cat=c; },
   sortall(v){ ui.sheet.items.forEach(f=>{ if(!f.cat) f.cat=v; }); },
   sortdel(v){ ui.sheet.items.splice(+v,1); if(!ui.sheet.items.length) ui.sheet=null; },
+  sorthair(v){ const [i,h]=v.split(':'); ui.sheet.items[+i].hstyle=h; },
+  hairall(v){ ui.sheet.items.forEach(f=>{ if(f.cat==='Hair') f.hstyle=v; }); },
   autog(){ ui.sheet.group=!ui.sheet.group; },
   sortsave(){ const s=ui.sheet; if(s.items.some(f=>!f.cat)) return setToast('Choose a category for every picture first.'); finishSort(s); },
   tsrc(v){ ui.tsrc=v; },
@@ -723,6 +755,14 @@ function sim(a, b){
   let i=0, u=0; for(let k=0; k<sa.length; k++){ const p=sa[k]==='1', q=sb[k]==='1'; if(p&&q) i++; if(p||q) u++; }
   return u ? i/u : 0;
 }
+function hairGroups(){
+  const map = new Map();
+  (state.pics||[]).filter(p => p.tag==='Hair').forEach(p => { const k = p.style || 'Other'; if(!map.has(k)) map.set(k,[]); map.get(k).push(p); });
+  return [...map.entries()].map(([style,pics]) => ({style,pics}));
+}
+function hdots(g, cur, act){
+  return g.pics.length>1 ? `<div class="vdots" role="group" aria-label="Hair colors">${g.pics.map(p=>`<button class="vdot ${p.id===cur?'on':''}" style="background:${p.hcolor||'#141010'}" data-act="${act}" data-v="${p.id}" aria-pressed="${p.id===cur}" aria-label="${esc(hairName(p.hcolor))}"></button>`).join('')}</div>` : '';
+}
 function loadImg(src){ return new Promise(res => { const im=new Image(); im.onload=()=>res(im); im.onerror=()=>res(null); im.src=src; }); }
 async function sigOf(src){
   const im = await loadImg(src); if(!im) return null;
@@ -770,8 +810,14 @@ function prepare(file){
       let r=0,g=0,b=0,n=0; for(let i=0;i<d.length;i+=16){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++; } r/=n; g/=n; b/=n;
       let best=1e9; COLORS.forEach(cl=>{ const p=cl[1], dr=parseInt(p.slice(1,3),16)-r, dg=parseInt(p.slice(3,5),16)-g, db=parseInt(p.slice(5,7),16)-b, dist=dr*dr+dg*dg+db*db; if(dist<best){ best=dist; hex=p; } });
     }catch(e){}
+    let hair=HCOLORS[1][1]; try{ const w=c.width, h=c.height, d=x.getImageData(Math.round(w*.3),Math.round(h*.06),Math.max(1,Math.round(w*.4)),Math.max(1,Math.round(h*.24))).data, px=[];
+      for(let i=0;i<d.length;i+=16) px.push([d[i],d[i+1],d[i+2]]);
+      px.sort((p,q)=>(p[0]+p[1]+p[2])-(q[0]+q[1]+q[2])); const dk=px.slice(0,Math.max(1,Math.floor(px.length*.4)));
+      const r=dk.reduce((s,p)=>s+p[0],0)/dk.length, g=dk.reduce((s,p)=>s+p[1],0)/dk.length, bl=dk.reduce((s,p)=>s+p[2],0)/dk.length;
+      let best=1e9; HCOLORS.forEach(cl=>{ const q=cl[1], dr=parseInt(q.slice(1,3),16)-r, dg=parseInt(q.slice(3,5),16)-g, db=parseInt(q.slice(5,7),16)-bl, dist=dr*dr+dg*dg+db*db; if(dist<best){ best=dist; hair=q; } });
+    }catch(e){}
     let sig=null; try{ const sc=Math.min(1,160/Math.max(c.width,c.height)), c2=document.createElement('canvas'); c2.width=Math.round(c.width*sc); c2.height=Math.round(c.height*sc); const x2=c2.getContext('2d'); x2.drawImage(c,0,0,c2.width,c2.height); sig=silhouette(x2,c2.width,c2.height); }catch(e){}
-    res({src:c.toDataURL('image/jpeg',.75),hex,sig}); }; img.onerror=()=>res(null); img.src=fr.result; }; fr.onerror=()=>res(null); fr.readAsDataURL(file); });
+    res({src:c.toDataURL('image/jpeg',.75),hex,sig,hair}); }; img.onerror=()=>res(null); img.src=fr.result; }; fr.onerror=()=>res(null); fr.readAsDataURL(file); });
 }
 async function finishSort(s){
   const cats=[...new Set(s.items.map(f=>f.cat))], one=cats.length===1?cats[0]:'all', n=s.items.length;
@@ -788,7 +834,7 @@ async function finishSort(s){
     save(); ui.sheet=null; window.scrollTo(0,0); render();
     setToast(grouped ? `${n} photo${n===1?'':'s'} saved. ${grouped} added as extra colors of a piece you already have.` : `${n} picture${n===1?'':'s'} saved. Tap one to name it and set its colors.`);
   } else {
-    [...s.items].reverse().forEach(f => (state.pics=state.pics||[]).unshift({id:uid(),src:f.src,tag:f.cat,at:isoDay(),fav:false}));
+    [...s.items].reverse().forEach(f => (state.pics=state.pics||[]).unshift(Object.assign({id:uid(),src:f.src,tag:f.cat,at:isoDay(),fav:false}, f.cat==='Hair' ? {style:f.hstyle||'Other',hcolor:f.hair} : {})));
     ui.tab='mood'; ui.ptag=one; save(); ui.sheet=null; window.scrollTo(0,0); render();
     setToast(n+(n===1?' picture saved.':' pictures saved.'));
   }
@@ -807,8 +853,8 @@ async function addFiles(files, mode){
   let tag = inSheet ? ui.sheet.tag : (ui.draft && upTag) ? upTag : ui.ptag;
   if(!TAGS.includes(tag)) tag=TAGS[0];
   state.pics = state.pics||[]; let n=0;
-  for (const f of files){ const src=await shrink(f); if(!src) continue;
-    const p={id:uid(),src,tag,at:isoDay(),fav:false}; state.pics.unshift(p); n++;
+  for (const f of files){ const pr=await prepare(f); if(!pr) continue; const src=pr.src;
+    const p={id:uid(),src,tag,at:isoDay(),fav:false}; if(tag==='Hair'){ p.style=(ui.draft&&ui.draft.beauty&&ui.draft.beauty.hair)||'Other'; p.hcolor=pr.hair; } state.pics.unshift(p); n++;
     if(inSheet){ tgt.pics=tgt.pics||[]; tgt.pics.push(p.id); }
     else if(ui.draft && !ui.sheet){ ui.draft.pics=ui.draft.pics||[]; ui.draft.pics.push(p.id); } }
   if(n && !ui.draft && !ui.sheet) ui.tab='mood';
