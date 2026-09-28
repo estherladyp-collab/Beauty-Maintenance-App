@@ -187,8 +187,8 @@ function today(){
   const look = dayOutfit ? state.looks.find(l => l.id===dayOutfit.lookId) : state.looks.find(l => l.id===state.plan[d]);
   const week = DAYS.map((n,i) => {
     const l = state.looks.find(x => x.id===state.plan[i]);
-    return `<button class="day" data-act="assign" data-v="${i}" ${i===d?'aria-current="date"':''} aria-label="${n}: ${l?esc(l.name):'no look planned'}">
-      <small>${n}</small>${l?`<div class="mini thumbboard">${boardParts(l).core}</div>`:`<span class="plus">+</span>`}</button>`;
+    return `<div class="day" ${i===d?'aria-current="date"':''}><button class="dayb" data-act="assign" data-v="${i}" aria-label="${n}: ${l?esc(l.name):'no look planned'}">
+      <small>${n}</small>${l?`<div class="mini thumbboard">${boardParts(l).core}</div>`:`<span class="plus">+</span>`}</button>${l?`<button class="dayx" data-act="clearplan" data-v="${i}" aria-label="Remove ${DAYFULL[i]}'s look">✕</button>`:''}</div>`;
   }).join('');
   const due = ROUTINE.map(r => ({r, left: dueIn(r)})).sort((a,b)=>a.left-b.left).slice(0,3);
   const checked = weekLog();
@@ -204,6 +204,7 @@ function today(){
       <div class="row">
         ${look?`<button class="btn gold" data-act="wore" data-v="${d}">I wore this</button>`:''}
         <button class="btn ${look?'ghost':'gold'}" style="${look?'color:var(--milk);border-color:rgba(255,255,255,.4)':''}" data-act="assign" data-v="${d}">${look?'Change':'Plan today'}</button>
+        ${look&&!dayOutfit?`<button class="btn ghost" style="color:var(--milk);border-color:rgba(255,255,255,.4)" data-act="clearplan" data-v="${d}">Remove</button>`:''}
       </div>
     </div>
     ${look?`<div>${board(look,true)}</div>`:''}
@@ -334,7 +335,7 @@ function builder(){
   <div class="builder"><div class="pv">${parts.core}<div class="pvside">
     <input type="text" id="lname" value="${esc(d.name)}" placeholder="Name this look" maxlength="40" aria-label="Look name">
     <input type="text" id="locc" value="${esc(d.occasion)}" placeholder="Occasion" maxlength="50" aria-label="Occasion">
-    <button class="btn" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>${ui.assignDay!==null&&state.plan[ui.assignDay]?'<button class="btn small ghost" data-act="clearday">Clear this day</button>':''}${parts.strip}${parts.mood}</div></div>
+    <button class="btn" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>${ui.assignDay!==null&&state.plan[ui.assignDay]?'<button class="btn small ghost" data-act="clearday">Clear this day</button>':''}${d.id?'<button class="btn small ghost" data-act="delcur">Delete this look</button>':''}${parts.strip}${parts.mood}</div></div>
   <div class="bmain">${ui.assignDay!==null&&state.looks.length?`<div class="brow"><div class="eyebrow">Or start from a saved look</div><div class="hscroll">${state.looks.map(l=>`<button class="tile" data-act="uselook" data-v="${l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div></div>`:''}<div class="chips" role="tablist" aria-label="Look parts">${BTABS.map(t=>`<button class="chip" role="tab" aria-selected="${ui.btab===t[0]}" aria-pressed="${ui.btab===t[0]}" data-act="btab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
     <div class="bbody">${body}</div>
     ${notes.length?`<div class="eyebrow" style="margin-top:14px">Style check</div><div class="slots" style="margin-top:8px">${notes.map(n=>`<div class="note ${n.warn?'warn':''}">${esc(n.t)}</div>`).join('')}</div>`:''}
@@ -553,6 +554,10 @@ const actions = {
     if(cur){ const c=JSON.parse(JSON.stringify(cur)); if(cur.forDay!==day) delete c.id; c.vars=c.vars||{}; c.pics=c.pics||[]; ui.draft=c; ui.omode=c.slots.dress?'dress':'split'; }
     else ui.draft.name=DAYFULL[day]+' look'; },
   uselook(v){ const l=state.looks.find(x=>x.id===v), d=ui.draft; d.slots=JSON.parse(JSON.stringify(l.slots)); d.vars=JSON.parse(JSON.stringify(l.vars||{})); d.pics=[...(l.pics||[])]; d.beauty=JSON.parse(JSON.stringify(l.beauty)); ui.omode=d.slots.dress?'dress':'split'; },
+  clearplan(v){ delete state.plan[v]; save(); },
+  delcur(){ const id=ui.draft.id; if(!confirm('Delete this look?')) return; state.looks=state.looks.filter(l=>l.id!==id);
+    for(const k in state.plan) if(state.plan[k]===id) delete state.plan[k];
+    state.appts.forEach(x=>{ if(x.lookId===id) x.lookId=null; }); save(); ui.draft=null; ui.assignDay=null; },
   clearday(){ delete state.plan[ui.assignDay]; save(); ui.draft=null; ui.assignDay=null; },
   plan(v){ const d=ui.sheet.day; if(v) state.plan[d]=v; else delete state.plan[d]; save(); ui.sheet=null; },
   export(){ const b=new Blob([JSON.stringify(state)],{type:'application/json'}), u=URL.createObjectURL(b), l=document.createElement('a');
