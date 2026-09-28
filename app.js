@@ -76,31 +76,76 @@ const daysSince = iso => Math.floor((new Date(isoDay())-new Date(iso))/864e5);
 const vOf = (it, vid) => it.variants.find(v => v.id===vid) || it.variants.find(v => v.have) || it.variants[0];
 const syncHave = it => { it.have = it.variants.some(v => v.have); };
 function migrate(it){ it.occasions = it.occasions || []; if(!it.variants) it.variants=[{id:uid(),color:it.color,photo:it.photo||null,have:!!it.have}]; syncHave(it); }
-let state = load();
-state.appts = state.appts || [];
-if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
-if(!state.seedVer2 && window.MUSE_SEED_ITEMS){
-  window.MUSE_SEED_ITEMS.forEach(s => { const it = state.items.find(i => i.id===s.id); if(!it) return;
-    s.variants.forEach(sv => { it.variants = it.variants || []; const v = it.variants.find(x => x.id===sv.id);
-      if(!v) it.variants.push(JSON.parse(JSON.stringify(sv))); else if(!v.photo && sv.photo){ v.photo = sv.photo; v.have = sv.have; } }); });
-  state.seedVer2 = true;
+let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[]};
+let booted = false;
+function init(){
+  state.appts = state.appts || [];
+  if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
+  if(!state.seedVer2 && window.MUSE_SEED_ITEMS){
+    window.MUSE_SEED_ITEMS.forEach(s => { const it = state.items.find(i => i.id===s.id); if(!it) return;
+      s.variants.forEach(sv => { it.variants = it.variants || []; const v = it.variants.find(x => x.id===sv.id);
+        if(!v) it.variants.push(JSON.parse(JSON.stringify(sv))); else if(!v.photo && sv.photo){ v.photo = sv.photo; v.have = sv.have; } }); });
+    state.seedVer2 = true;
+  }
+  if(!state.cleanup1){
+    state.items = state.items.filter(i => !/^s\d+$/.test(i.id));
+    state.items.forEach(i => { if(['x1','x2','x3'].includes(i.id) && i.variants){ const keep = i.variants.filter(v => v.photo); if(keep.length) i.variants = keep; } });
+    state.cleanup1 = true;
+  }
+  state.items.forEach(migrate);
+  if(!state.seedFix){ const sp=(state.pics||[]).find(p=>p.id==='seed4'&&p.tag==='Makeup'); if(sp) sp.tag='Hair'; state.seedFix=true; }
+  if (!state.seeded && window.MUSE_SEED){ state.pics=[...window.MUSE_SEED,...(state.pics||[])]; state.seeded=true; save(); }
+  (state.pics||[]).forEach(p => { if(p.tag==='Hair' && !p.style){ p.style = p.id==='seed4' ? 'Blowout' : 'Other'; } if(p.tag==='Hair' && !p.hcolor) p.hcolor = '#141010'; });
 }
-if(!state.cleanup1){
-  state.items = state.items.filter(i => !/^s\d+$/.test(i.id));
-  state.items.forEach(i => { if(['x1','x2','x3'].includes(i.id) && i.variants){ const keep = i.variants.filter(v => v.photo); if(keep.length) i.variants = keep; } });
-  state.cleanup1 = true;
+
+/* ---------- storage: IndexedDB (big photos fit), autosave, and unfinished-work drafts ---------- */
+const DRAFT_KEY = 'muse.draft';
+let saveTimer = null, dirty = false, draftTimer = null, lastDraft = '';
+function idb(){ return new Promise((res,rej) => { const r = indexedDB.open('muse',1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function idbGet(k){ const db = await idb(); return new Promise((res,rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
+async function idbSet(k,v){ const db = await idb(); return new Promise((res,rej) => { const t = db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); }); }
+function flash(){ const el = document.getElementById('savedmark'); if(el){ el.classList.add('on'); clearTimeout(flash.t); flash.t = setTimeout(() => el.classList.remove('on'), 1600); } }
+function save(){ dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(persist, 250); }
+async function persist(){
+  if(!dirty && booted) return; dirty = false; clearTimeout(saveTimer);
+  try { await idbSet(KEY, state); flash(); }
+  catch(e){ try { localStorage.setItem(KEY, JSON.stringify(state)); flash(); } catch(e2){ toast = 'Storage is full. Remove a photo to keep saving.'; render(); } }
 }
-state.items.forEach(migrate);
-save();
-if(!state.seedFix){ const sp=(state.pics||[]).find(p=>p.id==='seed4'&&p.tag==='Makeup'); if(sp) sp.tag='Hair'; state.seedFix=true; }
-if (!state.seeded && window.MUSE_SEED){ state.pics=[...window.MUSE_SEED,...(state.pics||[])]; state.seeded=true; save(); }
-(state.pics||[]).forEach(p => { if(p.tag==='Hair' && !p.style){ p.style = p.id==='seed4' ? 'Blowout' : 'Other'; } if(p.tag==='Hair' && !p.hcolor) p.hcolor = '#141010'; });
-save();
-function load(){
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) return s; } catch(e){}
-  return {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[]};
+function draftSnapshot(){
+  const sh = ui.sheet && ['sort','appt','item'].includes(ui.sheet.type) ? ui.sheet : (ui.sheet && ui.sheet.type==='apppics' ? {type:'appt',isNew:ui.sheet.isNew} : null);
+  if(sh && sh.type==='appt' && !ui.adraft) return null;
+  if(!ui.draft && !sh) return null;
+  return {tab:ui.tab, draft:ui.draft, btab:ui.btab, omode:ui.omode, assignDay:ui.assignDay, sheet:sh, adraft:ui.adraft, calSel:ui.calSel, cal:ui.cal};
 }
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){ toast = 'Storage is full. Remove a photo to keep saving.'; } }
+async function flushDraft(){
+  if(!booted) return; const snap = draftSnapshot(), str = snap ? JSON.stringify(snap) : '';
+  if(str===lastDraft) return; lastDraft = str;
+  try { await idbSet(DRAFT_KEY, snap); flash(); } catch(e){}
+}
+function saveDraftSoon(){ clearTimeout(draftTimer); draftTimer = setTimeout(flushDraft, 400); }
+function restoreDraft(d){
+  if(!d) return false;
+  ui.tab = d.tab || ui.tab; ui.draft = d.draft || null; ui.btab = d.btab || 'outfit'; ui.omode = d.omode || 'split';
+  ui.assignDay = d.assignDay ?? null; ui.adraft = d.adraft || null; ui.sheet = d.sheet || null;
+  if(ui.sheet && ui.sheet.type==='appt' && !ui.adraft) ui.sheet = null;
+  if(d.calSel) ui.calSel = d.calSel; if(d.cal) ui.cal = d.cal;
+  lastDraft = JSON.stringify(d);
+  return !!(ui.draft || ui.sheet);
+}
+async function boot(){
+  let s = null, fromLocal = false;
+  try { s = await idbGet(KEY); } catch(e){}
+  if(!s){ try { s = JSON.parse(localStorage.getItem(KEY)); fromLocal = !!s; } catch(e){} }
+  if(s && Array.isArray(s.items)) state = s;
+  init(); dirty = true; await persist();
+  if(fromLocal){ try { const chk = await idbGet(KEY); if(chk && chk.items && chk.items.length===state.items.length) localStorage.removeItem(KEY); } catch(e){} }
+  try { if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
+  let restored = false; try { restored = restoreDraft(await idbGet(DRAFT_KEY)); } catch(e){}
+  booted = true; render();
+  if(restored) setToast('Picked up where you left off.');
+}
+document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); } });
+window.addEventListener('pagehide', () => { persist(); flushDraft(); });
 
 let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
 let toast = '';
@@ -184,7 +229,7 @@ function view(){
   const tabs = [['today','Today'],['wardrobe','Wardrobe'],['looks','Looks'],['mood','Mood'],['calendar','Calendar'],['beauty','Beauty']];
   const body = ui.draft ? builder() : {today,wardrobe,looks,mood,calendar,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true">Muse</div>
-  <main class="shell"><header class="top"><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span></header>${body}</main>
+  <main class="shell"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${tabs.map(t=>`<button data-act="tab" data-v="${t[0]}" ${ui.tab===t[0]&&!ui.draft?'aria-current="page"':''}>${t[1]}</button>`).join('')}</div></nav>
   ${ui.sheet || ui.draft || ui.tab==='calendar' ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${ui.lightbox?`<div class="lightbox" data-act="lbclose" role="dialog" aria-label="Photo"><img src="${ui.lightbox}" alt=""></div>`:''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
 }
@@ -876,7 +921,11 @@ async function addFiles(files, mode){
   save(); render();
   if(n) setToast(n+(n===1?' picture added.':' pictures added.')+(inSheet?'':' Tap one to set its tag.'));
 }
-document.addEventListener('input', e => { if(e.target.classList && e.target.classList.contains('sname') && ui.sheet && ui.sheet.items) ui.sheet.items[+e.target.dataset.i].name = e.target.value; });
+document.addEventListener('input', e => {
+  if(ui.draft && !ui.sheet && (e.target.id==='lname'||e.target.id==='locc')) syncDraft();
+  if(ui.adraft && ui.sheet && ui.sheet.type==='appt') syncAppt();
+  if(ui.sheet && ui.sheet.type==='item' && (e.target.id==='iname'||e.target.id==='istyle')) readItemForm();
+  saveDraftSoon(); if(e.target.classList && e.target.classList.contains('sname') && ui.sheet && ui.sheet.items) ui.sheet.items[+e.target.dataset.i].name = e.target.value; });
 document.addEventListener('paste', e => { const fs=[...(e.clipboardData?.files||[])]; if(fs.length){ e.preventDefault(); addFiles(fs); } });
 document.addEventListener('dragover', e => { if([...(e.dataTransfer?.types||[])].includes('Files')) e.preventDefault(); });
 document.addEventListener('drop', e => { if(e.dataTransfer?.files?.length){ e.preventDefault(); addFiles(e.dataTransfer.files); } });
@@ -916,8 +965,9 @@ function render(){
   const a = document.activeElement, id = a && a.id;
   document.getElementById('app').innerHTML = view();
   if (id){ const n=document.getElementById(id); if(n && n.focus) n.focus(); }
+  saveDraftSoon();
 }
-window.MuseDebug = {sigOf, sim, findGroups, guessBottom, get state(){ return state; }};
-render();
+window.MuseDebug = {sigOf, sim, findGroups, guessBottom, get state(){ return state; }, get ready(){ return booted; }, flush: async () => { await persist(); await flushDraft(); }};
+boot();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
