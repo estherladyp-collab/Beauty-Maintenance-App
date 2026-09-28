@@ -52,6 +52,8 @@ const SEED = [
   ['jewel','Gold hoops','Gold hoops','#c39a4d'],['jewel','Layered gold chains','Layered chains','#c39a4d'],['jewel','Statement earrings','Statement earrings','#c39a4d']
 ].map((s,i) => ({id:'s'+i,cat:s[0],name:s[1],style:s[2],color:s[3],have:false,photo:null}));
 
+const PCHIPS = [['all','All'],['fav','Favorites'],...TAGS.map(t=>[t,t])];
+const inTag = (p,t) => t==='all' || (t==='fav' ? p.fav : p.tag===t);
 const uid = () => Math.random().toString(36).slice(2,9);
 const esc = s => String(s ?? '').replace(/[&<>"']/g,c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isoDay = (d=new Date()) => { const z = new Date(d.getTime()-d.getTimezoneOffset()*6e4); return z.toISOString().slice(0,10); };
@@ -146,7 +148,7 @@ function view(){
   return `<div class="brand brand-fixed" aria-hidden="true">Muse</div>
   <main class="shell"><header class="top"><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${tabs.map(t=>`<button data-act="tab" data-v="${t[0]}" ${ui.tab===t[0]&&!ui.draft?'aria-current="page"':''}>${t[1]}</button>`).join('')}</div></nav>
-  ${ui.sheet ? sheet() : ''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
+  ${ui.sheet || ui.draft ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
 }
 
 function today(){
@@ -174,10 +176,17 @@ function today(){
     </div>
     ${look?`<div>${board(look,true)}</div>`:`<div class="board" style="background:transparent;border:1px dashed rgba(255,255,255,.25);place-items:center;display:grid;aspect-ratio:auto;min-height:180px"><span class="eyebrow">No look yet</span></div>`}
   </div>
+  ${freshNudge()}
   <section><div class="row between"><h2>This week</h2><span class="eyebrow">Tap a day to plan it</span></div><div class="week" style="margin-top:14px">${week}</div></section>
   <section><h2>Due next</h2><div class="list" style="margin-top:14px">${due.map(x=>task(x.r)).join('')}</div></section>
   <section><div class="card"><div class="eyebrow">Wardrobe</div><h3 style="font-size:26px;margin:6px 0">${have} of ${state.items.length} pieces owned</h3>
     <div class="progress"><i style="width:${state.items.length?have/state.items.length*100:0}%"></i></div></div></section>`;
+}
+function freshNudge(){
+  const n = lastAdded();
+  if (n!==null && n<=14) return '';
+  const msg = n===null ? 'Start your mood library. Upload outfits, hair and nails you love, then pick from them when you plan your week.' : `Your last new picture was ${n} day${n===1?'':'s'} ago. Add a few fresh ones so your looks keep evolving.`;
+  return `<div class="note warn" style="margin-top:20px"><b>Time for fresh inspiration.</b> ${msg}<div style="margin-top:10px"><button class="btn small" data-act="tab" data-v="mood">Open Mood</button></div></div>`;
 }
 function miniLook(l){
   const p = (l.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
@@ -248,15 +257,18 @@ function builder(){
   </div></div>`;
 }
 
+function isNew(p){ return p.at && daysSince(p.at)<=7; }
+function lastAdded(){ const d=(state.pics||[]).map(p=>p.at).filter(Boolean).sort().pop(); return d ? daysSince(d) : null; }
 function mood(){
   const all = state.pics||[];
-  const list = all.filter(p => ui.ptag==='all' || p.tag===ui.ptag);
+  const list = all.filter(p => inTag(p, ui.ptag));
   return `<div class="row between"><h1 class="page-title">Your <em>mood</em></h1>
     <label class="btn" style="display:inline-block;cursor:pointer;text-transform:none;letter-spacing:0;font-size:14px;color:var(--milk)">Upload pictures<input type="file" id="picup" accept="image/*" multiple hidden></label></div>
   <p class="lede">Save the outfits, hair, nails and makeup you love. When you build a look, pick from these to see your week.</p>
-  <div class="chips" style="margin-top:18px" role="group" aria-label="Filter">${[['all','All'],...TAGS.map(t=>[t,t])].map(c=>`<button class="chip" aria-pressed="${ui.ptag===c[0]}" data-act="ptag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
-  ${list.length?`<div class="pics" style="margin-top:12px">${list.map(p=>`<button class="pic-tile" data-act="picopen" data-v="${p.id}" aria-label="Open picture, ${esc(p.tag)}"><img src="${p.src}" alt=""><span class="tag">${esc(p.tag)}</span></button>`).join('')}</div>`
-  :`<div class="empty-state" style="margin-top:12px">${all.length?'No pictures with this tag yet.':'No pictures yet. Tap “Upload pictures” and pick as many as you like.'}</div>`}`;
+  <div class="chips" style="margin-top:18px" role="group" aria-label="Filter">${PCHIPS.map(c=>`<button class="chip" aria-pressed="${ui.ptag===c[0]}" data-act="ptag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
+  <div class="note" style="margin-top:14px" id="dropzone"><b>Add fresh looks anytime.</b> Save an image from Pinterest or take a screenshot, then upload it here. You can also drag pictures onto this page, or copy an image on your computer and paste it.</div>
+  ${list.length?`<div class="pics" style="margin-top:12px">${list.map(p=>`<button class="pic-tile" data-act="picopen" data-v="${p.id}" aria-label="Open picture, ${esc(p.tag)}"><img src="${p.src}" alt=""><span class="tag">${esc(p.tag)}</span>${p.fav?'<span class="heart" aria-label="Favorite">♥</span>':''}${isNew(p)?'<span class="new">New</span>':''}</button>`).join('')}</div>`
+  :`<div class="empty-state" style="margin-top:12px">${all.length?'No pictures here yet.':'No pictures yet. Tap “Upload pictures” and pick as many as you like.'}</div>`}`;
 }
 
 function beauty(){
@@ -282,16 +294,16 @@ function sheet(){
     inner = `<h2>Choose ${SLOT_LABEL[s.slot].toLowerCase()}</h2>${opts.length?`<div class="grid">${opts.map(it=>`<button class="item ${it.have?'have':'need'}" data-act="set" data-v="${it.id}"><div class="pic">${pic(it)}</div><h3>${esc(it.name)}</h3><p>${it.have?esc(colorName(it.color)):'On your list'}</p></button>`).join('')}</div>`:`<div class="empty-state">No ${SLOT_LABEL[s.slot].toLowerCase()} in your wardrobe yet.</div>`}
       <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="clear" data-v="${s.slot}">Clear</button><button class="btn ghost small" data-act="close">Close</button></div>`;
   } else if (s.type==='pics'){
-    const all = state.pics||[], list = all.filter(p => s.tag==='all' || p.tag===s.tag), sel = ui.draft.pics||[];
+    const all = state.pics||[], list = all.filter(p => inTag(p, s.tag)), sel = ui.draft.pics||[];
     inner = `<h2>Choose pictures</h2>
-    <div class="chips" role="group" aria-label="Filter">${[['all','All'],...TAGS.map(t=>[t,t])].map(c=>`<button class="chip" aria-pressed="${s.tag===c[0]}" data-act="sheettag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Filter">${PCHIPS.map(c=>`<button class="chip" aria-pressed="${s.tag===c[0]}" data-act="sheettag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
     ${list.length?`<div class="pics" style="margin-top:10px">${list.map(p=>`<button class="pic-tile ${sel.includes(p.id)?'on':''}" data-act="togglepic" data-v="${p.id}" aria-pressed="${sel.includes(p.id)}" aria-label="${esc(p.tag)} picture"><img src="${p.src}" alt=""><span class="check">${sel.includes(p.id)?'✓':''}</span></button>`).join('')}</div>`:`<div class="empty-state" style="margin-top:10px">${all.length?'No pictures with this tag.':'Your library is empty. Upload your first pictures below.'}</div>`}
     <div class="row" style="margin-top:16px"><label class="btn ghost small" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Upload more<input type="file" id="picup" accept="image/*" multiple hidden></label><button class="btn small" data-act="close">Done · ${sel.length} picked</button></div>`;
   } else if (s.type==='pic'){
     const p = (state.pics||[]).find(x=>x.id===s.id);
     inner = `<img src="${p.src}" alt="" style="width:100%;max-height:60vh;object-fit:contain;border-radius:16px;background:var(--card)">
     <div class="chips" style="margin-top:14px;flex-wrap:wrap" role="group" aria-label="Tag">${TAGS.map(t=>`<button class="chip" aria-pressed="${p.tag===t}" data-act="retag" data-v="${t}">${t}</button>`).join('')}</div>
-    <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="delpic">Delete picture</button><button class="btn small" data-act="close">Close</button></div>`;
+    <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="favpic" aria-pressed="${!!p.fav}">${p.fav?'♥ Favorite':'♡ Add to favorites'}</button><button class="btn ghost small" data-act="delpic">Delete picture</button><button class="btn small" data-act="close">Close</button></div>`;
   } else if (s.type==='assign'){
     inner = `<h2>${DAYS[s.day]}'s look</h2>${state.looks.length?`<div class="grid wide">${state.looks.map(l=>`<button class="card" style="text-align:left" data-act="plan" data-v="${l.id}">${board(l)}<h3 style="font-size:20px;margin-top:10px">${esc(l.name)}</h3></button>`).join('')}</div>`:`<div class="empty-state">Create a look first, then plan your week.</div>`}
       <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="plan" data-v="">Clear day</button><button class="btn ghost small" data-act="close">Close</button></div>`;
@@ -354,6 +366,7 @@ const actions = {
   plan(v){ const d=ui.sheet.day; if(v) state.plan[d]=v; else delete state.plan[d]; save(); ui.sheet=null; },
   export(){ const b=new Blob([JSON.stringify(state)],{type:'application/json'}), u=URL.createObjectURL(b), l=document.createElement('a');
     l.href=u; l.download='muse-backup-'+isoDay()+'.json'; l.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); },
+  favpic(){ const p=state.pics.find(x=>x.id===ui.sheet.id); p.fav=!p.fav; save(); },
   ptag(v){ ui.ptag=v; },
   sheettag(v){ ui.sheet.tag=v; },
   picopen(v){ ui.sheet={type:'pic',id:v}; },
@@ -385,17 +398,26 @@ function shrink(file){
     c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
     res(c.toDataURL('image/jpeg',.75)); }; img.onerror=()=>res(null); img.src=fr.result; }; fr.onerror=()=>res(null); fr.readAsDataURL(file); });
 }
+async function addFiles(files){
+  files=[...files].filter(f=>f.type.startsWith('image/'));
+  if(!files.length) return;
+  const inSheet=ui.sheet && ui.sheet.type==='pics';
+  let tag = inSheet ? ui.sheet.tag : ui.ptag;
+  if(!TAGS.includes(tag)) tag=TAGS[0];
+  state.pics = state.pics||[]; let n=0;
+  for (const f of files){ const src=await shrink(f); if(!src) continue;
+    const p={id:uid(),src,tag,at:isoDay(),fav:false}; state.pics.unshift(p); n++;
+    if(inSheet){ ui.draft.pics=ui.draft.pics||[]; ui.draft.pics.push(p.id); } }
+  if(n && !ui.draft && !ui.sheet) ui.tab='mood';
+  save(); render();
+  if(n) setToast(n+(n===1?' picture added.':' pictures added.')+(inSheet?'':' Tap one to set its tag.'));
+}
+document.addEventListener('paste', e => { const fs=[...(e.clipboardData?.files||[])]; if(fs.length){ e.preventDefault(); addFiles(fs); } });
+document.addEventListener('dragover', e => { if([...(e.dataTransfer?.types||[])].includes('Files')) e.preventDefault(); });
+document.addEventListener('drop', e => { if(e.dataTransfer?.files?.length){ e.preventDefault(); addFiles(e.dataTransfer.files); } });
 document.addEventListener('change', async e => {
-  if (e.target.id==='picup' && e.target.files.length){
-    const files=[...e.target.files], inSheet=ui.sheet && ui.sheet.type==='pics';
-    const tag = inSheet ? (ui.sheet.tag!=='all'?ui.sheet.tag:TAGS[0]) : (ui.ptag!=='all'?ui.ptag:TAGS[0]);
-    state.pics = state.pics||[]; let n=0;
-    for (const f of files){ const src=await shrink(f); if(!src) continue;
-      const p={id:uid(),src,tag}; state.pics.unshift(p); n++;
-      if(inSheet){ ui.draft.pics=ui.draft.pics||[]; ui.draft.pics.push(p.id); } }
-    e.target.value=''; save(); render();
-    if(n) setToast(n+(n===1?' picture added.':' pictures added.')+(inSheet?'':' Tap one to set its tag.'));
-    return;
+  if ((e.target.id==='picup'||e.target.id==='picfab') && e.target.files.length){
+    const fs=[...e.target.files]; e.target.value=''; await addFiles(fs); return;
   }
   if (e.target.id==='import' && e.target.files[0]){
     const fr=new FileReader();

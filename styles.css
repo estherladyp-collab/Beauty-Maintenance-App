@@ -175,3 +175,9 @@ label{display:grid;gap:5px;font-size:12px;letter-spacing:.08em;text-transform:up
 .hero>*,.builder>*,.card{min-width:0}
 .mood img{width:0}
 .collage img{min-width:0}
+
+.fab{position:fixed;right:18px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:30;width:56px;height:56px;border-radius:50%;background:var(--espresso);color:var(--milk);display:grid;place-items:center;font-size:28px;line-height:1;cursor:pointer;box-shadow:0 8px 20px rgba(36,23,19,.35)}
+.fab:focus-within{outline:2px solid var(--gold);outline-offset:3px}
+@media(min-width:860px){.fab{bottom:28px;right:28px}}
+.pic-tile .heart{position:absolute;top:6px;right:8px;color:#fff;font-size:16px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.pic-tile .new{position:absolute;top:6px;left:6px;background:var(--gold);color:#fff;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:99px}
