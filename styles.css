@@ -257,3 +257,25 @@ label{display:grid;gap:5px;font-size:12px;letter-spacing:.08em;text-transform:up
 .tile .tp img{width:calc(100% + 16px);height:calc(100% + 16px);margin:-8px}
 .tile .vdots{gap:2px}
 .tile .vdot{width:18px;height:18px;border-width:2px}
+
+/* sorter + rails + thumbs */
+.sortgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.sorti{position:relative;border-radius:16px;background:var(--card);padding:6px;display:grid;gap:6px;border:2px solid transparent;align-content:start;min-width:0}
+.sorti.todo{border:2px dashed #d9b48a}
+.sorti img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;display:block}
+.sorti .x{position:absolute;top:10px;right:10px;background:rgba(249,242,237,.92);border-radius:50%;width:26px;height:26px;font-size:12px}
+.chip.s{padding:4px 10px;font-size:12px}
+.btn[aria-disabled=true]{opacity:.55}
+.rail .ptile{width:96px}
+.ptile.draw{background:linear-gradient(160deg,#f6ede7,#ead9cf);padding:10px;display:grid;place-items:center}
+.ptile.draw svg{width:100%;height:100%;filter:drop-shadow(0 4px 5px rgba(36,23,19,.2))}
+.ptile.need{opacity:.6}
+.thumbboard{display:block;width:100%}
+.thumbboard .board{padding:5px;gap:3px;border-radius:12px}
+.thumbboard .slot.empty{font-size:0;border-radius:6px}
+.tile .thumbboard{width:100%}
+.lead{width:40px;flex:none;border-radius:8px}
+img.lead{height:52px;object-fit:cover}
+.appt .lead.thumbboard{width:44px}
+
+@media(min-width:700px){.hero.solo{grid-template-columns:1fr}}
