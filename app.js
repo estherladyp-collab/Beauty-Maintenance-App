@@ -30,6 +30,7 @@ const COLORS = [
 ];
 const NAILS = [['Milky pink','#efd3d0'],['Sheer nude','#e3c2b3'],['Champagne shimmer','#eadbd6'],['Rose beige','#d7aa9b'],['Cocoa','#7a4a3a'],['Espresso','#3a231c'],['Sheer red','#a83a3a']];
 const LIPS = [['Brown gloss','#7b4a3c'],['Mocha','#5a3328'],['Nude rosewood','#a86a5c'],['Terracotta','#b5573f'],['Plum brown','#5b2c33'],['Clear gloss','#c98f7a']];
+const TAGS = ['Outfit','Hair','Nails','Makeup','Accessories'];
 const HAIR = ['Big blowout','Sleek low bun','Half-up','Silk press','Braids','Wash-and-go curls'];
 
 const ROUTINE = [
@@ -60,11 +61,11 @@ const daysSince = iso => Math.floor((new Date(isoDay())-new Date(iso))/864e5);
 let state = load();
 function load(){
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.items) return s; } catch(e){}
-  return {items:SEED, looks:[], plan:{}, routine:{}, log:[]};
+  return {items:SEED, looks:[], plan:{}, routine:{}, log:[], pics:[]};
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){ toast = 'Storage is full. Remove a photo to keep saving.'; } }
 
-let ui = {tab:'today', cat:'all', draft:null, sheet:null};
+let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all'};
 let toast = '';
 
 /* ---------- garments ---------- */
@@ -105,7 +106,11 @@ function board(look, dark){
     const it = state.items.find(i => i.id===look.slots[s]);
     return it ? `<div class="slot s-${s}">${pic(it)}</div>` : `<div class="slot s-${s} empty">${SLOT_LABEL[s]}</div>`;
   }).join('');
-  return `<div class="board" role="img" aria-label="Look board">${cells}</div>${beautyStrip(look.beauty)}`;
+  const pics = (look.pics||[]).map(id => (state.pics||[]).find(p => p.id===id)).filter(Boolean);
+  const hasSlots = Object.keys(look.slots).length > 0;
+  if (!hasSlots && pics.length) return `<div class="collage n${Math.min(pics.length,4)}">${pics.slice(0,4).map(p=>`<img src="${p.src}" alt="">`).join('')}</div>${beautyStrip(look.beauty)}`;
+  const mood = pics.length ? `<div class="mood">${pics.slice(0,4).map(p=>`<img src="${p.src}" alt="">`).join('')}</div>` : '';
+  return `<div class="board" role="img" aria-label="Look board">${cells}</div>${mood}${beautyStrip(look.beauty)}`;
 }
 function beautyStrip(b){
   if (!b) return '';
@@ -136,8 +141,8 @@ function lookNotes(look){
 
 /* ---------- views ---------- */
 function view(){
-  const tabs = [['today','Today'],['wardrobe','Wardrobe'],['looks','Looks'],['beauty','Beauty']];
-  const body = ui.draft ? builder() : {today,wardrobe,looks,beauty}[ui.tab]();
+  const tabs = [['today','Today'],['wardrobe','Wardrobe'],['looks','Looks'],['mood','Mood'],['beauty','Beauty']];
+  const body = ui.draft ? builder() : {today,wardrobe,looks,mood,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true">Muse</div>
   <main class="shell"><header class="top"><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${tabs.map(t=>`<button data-act="tab" data-v="${t[0]}" ${ui.tab===t[0]&&!ui.draft?'aria-current="page"':''}>${t[1]}</button>`).join('')}</div></nav>
@@ -175,6 +180,8 @@ function today(){
     <div class="progress"><i style="width:${state.items.length?have/state.items.length*100:0}%"></i></div></div></section>`;
 }
 function miniLook(l){
+  const p = (l.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
+  if (p) return `<img src="${p.src}" alt="" style="width:34px;height:46px;object-fit:cover;border-radius:8px;display:block">`;
   const its = ['top','dress','bottom'].map(s => state.items.find(i=>i.id===l.slots[s])).filter(Boolean);
   if (!its.length) return '<span class="plus" style="border-style:solid">·</span>';
   return its.map(i => garment(i.cat,i.style,i.color)).join('').replace(/<svg /g,'<svg style="display:block;width:34px;height:'+(its.length>1?'24':'40')+'px" ');
@@ -223,6 +230,9 @@ function builder(){
   <div class="builder"><div>${board(d)}</div><div class="slots">
     <label>Name<input type="text" id="lname" value="${esc(d.name)}" placeholder="e.g. Sunday brunch" maxlength="40"></label>
     <label>Occasion<input type="text" id="locc" value="${esc(d.occasion)}" placeholder="e.g. Brunch, church, meetings" maxlength="50"></label>
+    <div class="eyebrow" style="margin-top:8px">Inspiration pictures</div>
+    <div class="picked">${(d.pics||[]).map(id=>(state.pics||[]).find(p=>p.id===id)).filter(Boolean).map(p=>`<img src="${p.src}" alt="">`).join('')}
+      <button class="slotbtn" style="width:auto;min-height:72px" data-act="pickpics"><span class="thumb">＋</span><span><b>${(d.pics||[]).length?'Change pictures':'Choose pictures'}</b></span></button></div>
     <div class="eyebrow" style="margin-top:8px">Outfit</div>
     ${slots.map(s => { const it = state.items.find(i=>i.id===d.slots[s]);
       return `<button class="slotbtn" data-act="pick" data-v="${s}"><span class="thumb">${it?pic(it):'＋'}</span><span><b>${SLOT_LABEL[s]}</b><span>${it?esc(it.name):'Choose'}</span></span></button>`; }).join('')}
@@ -236,6 +246,17 @@ function builder(){
     ${notes.length?`<div class="eyebrow" style="margin-top:12px">Style check</div>${notes.map(n=>`<div class="note ${n.warn?'warn':''}">${esc(n.t)}</div>`).join('')}`:''}
     <button class="btn" style="margin-top:14px" data-act="savelook">Save look</button>
   </div></div>`;
+}
+
+function mood(){
+  const all = state.pics||[];
+  const list = all.filter(p => ui.ptag==='all' || p.tag===ui.ptag);
+  return `<div class="row between"><h1 class="page-title">Your <em>mood</em></h1>
+    <label class="btn" style="display:inline-block;cursor:pointer;text-transform:none;letter-spacing:0;font-size:14px;color:var(--milk)">Upload pictures<input type="file" id="picup" accept="image/*" multiple hidden></label></div>
+  <p class="lede">Save the outfits, hair, nails and makeup you love. When you build a look, pick from these to see your week.</p>
+  <div class="chips" style="margin-top:18px" role="group" aria-label="Filter">${[['all','All'],...TAGS.map(t=>[t,t])].map(c=>`<button class="chip" aria-pressed="${ui.ptag===c[0]}" data-act="ptag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
+  ${list.length?`<div class="pics" style="margin-top:12px">${list.map(p=>`<button class="pic-tile" data-act="picopen" data-v="${p.id}" aria-label="Open picture, ${esc(p.tag)}"><img src="${p.src}" alt=""><span class="tag">${esc(p.tag)}</span></button>`).join('')}</div>`
+  :`<div class="empty-state" style="margin-top:12px">${all.length?'No pictures with this tag yet.':'No pictures yet. Tap “Upload pictures” and pick as many as you like.'}</div>`}`;
 }
 
 function beauty(){
@@ -260,6 +281,17 @@ function sheet(){
     const opts = state.items.filter(i => i.cat===s.slot);
     inner = `<h2>Choose ${SLOT_LABEL[s.slot].toLowerCase()}</h2>${opts.length?`<div class="grid">${opts.map(it=>`<button class="item ${it.have?'have':'need'}" data-act="set" data-v="${it.id}"><div class="pic">${pic(it)}</div><h3>${esc(it.name)}</h3><p>${it.have?esc(colorName(it.color)):'On your list'}</p></button>`).join('')}</div>`:`<div class="empty-state">No ${SLOT_LABEL[s.slot].toLowerCase()} in your wardrobe yet.</div>`}
       <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="clear" data-v="${s.slot}">Clear</button><button class="btn ghost small" data-act="close">Close</button></div>`;
+  } else if (s.type==='pics'){
+    const all = state.pics||[], list = all.filter(p => s.tag==='all' || p.tag===s.tag), sel = ui.draft.pics||[];
+    inner = `<h2>Choose pictures</h2>
+    <div class="chips" role="group" aria-label="Filter">${[['all','All'],...TAGS.map(t=>[t,t])].map(c=>`<button class="chip" aria-pressed="${s.tag===c[0]}" data-act="sheettag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
+    ${list.length?`<div class="pics" style="margin-top:10px">${list.map(p=>`<button class="pic-tile ${sel.includes(p.id)?'on':''}" data-act="togglepic" data-v="${p.id}" aria-pressed="${sel.includes(p.id)}" aria-label="${esc(p.tag)} picture"><img src="${p.src}" alt=""><span class="check">${sel.includes(p.id)?'✓':''}</span></button>`).join('')}</div>`:`<div class="empty-state" style="margin-top:10px">${all.length?'No pictures with this tag.':'Your library is empty. Upload your first pictures below.'}</div>`}
+    <div class="row" style="margin-top:16px"><label class="btn ghost small" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Upload more<input type="file" id="picup" accept="image/*" multiple hidden></label><button class="btn small" data-act="close">Done · ${sel.length} picked</button></div>`;
+  } else if (s.type==='pic'){
+    const p = (state.pics||[]).find(x=>x.id===s.id);
+    inner = `<img src="${p.src}" alt="" style="width:100%;max-height:60vh;object-fit:contain;border-radius:16px;background:var(--card)">
+    <div class="chips" style="margin-top:14px;flex-wrap:wrap" role="group" aria-label="Tag">${TAGS.map(t=>`<button class="chip" aria-pressed="${p.tag===t}" data-act="retag" data-v="${t}">${t}</button>`).join('')}</div>
+    <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="delpic">Delete picture</button><button class="btn small" data-act="close">Close</button></div>`;
   } else if (s.type==='assign'){
     inner = `<h2>${DAYS[s.day]}'s look</h2>${state.looks.length?`<div class="grid wide">${state.looks.map(l=>`<button class="card" style="text-align:left" data-act="plan" data-v="${l.id}">${board(l)}<h3 style="font-size:20px;margin-top:10px">${esc(l.name)}</h3></button>`).join('')}</div>`:`<div class="empty-state">Create a look first, then plan your week.</div>`}
       <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="plan" data-v="">Clear day</button><button class="btn ghost small" data-act="close">Close</button></div>`;
@@ -301,7 +333,7 @@ const actions = {
     state.looks.forEach(l=>{ for(const k in l.slots) if(l.slots[k]===id) delete l.slots[k]; }); save(); ui.sheet=null; },
   close(){ ui.sheet=null; },
   overlay(v,e){ if(e.target.classList.contains('overlay')) ui.sheet=null; },
-  newlook(){ ui.draft={name:'',occasion:'',slots:{},beauty:{nails:NAILS[0][0],lips:LIPS[0][0],hair:HAIR[0]}}; window.scrollTo(0,0); },
+  newlook(){ ui.draft={name:'',occasion:'',slots:{},pics:[],beauty:{nails:NAILS[0][0],lips:LIPS[0][0],hair:HAIR[0]}}; window.scrollTo(0,0); },
   editlook(v){ ui.draft=JSON.parse(JSON.stringify(state.looks.find(l=>l.id===v))); window.scrollTo(0,0); },
   cancel(){ ui.draft=null; },
   dellook(v){ if(!confirm('Delete this look?')) return; state.looks=state.looks.filter(l=>l.id!==v);
@@ -314,7 +346,7 @@ const actions = {
   nodress(){ syncDraft(); delete ui.draft.slots.dress; },
   beauty(v,e){ syncDraft(); ui.draft.beauty[e.currentTarget.dataset.k]=v; },
   savelook(){ syncDraft(); const d=ui.draft;
-    if(!Object.keys(d.slots).length){ return setToast('Pick at least one piece before saving.'); }
+    if(!Object.keys(d.slots).length && !(d.pics||[]).length){ return setToast('Pick at least one piece or picture before saving.'); }
     if(!d.name.trim()) d.name='Look '+(state.looks.length+1);
     if(d.id){ const i=state.looks.findIndex(l=>l.id===d.id); state.looks[i]=d; } else { d.id=uid(); state.looks.push(d); }
     save(); ui.draft=null; ui.tab='looks'; },
@@ -322,6 +354,14 @@ const actions = {
   plan(v){ const d=ui.sheet.day; if(v) state.plan[d]=v; else delete state.plan[d]; save(); ui.sheet=null; },
   export(){ const b=new Blob([JSON.stringify(state)],{type:'application/json'}), u=URL.createObjectURL(b), l=document.createElement('a');
     l.href=u; l.download='muse-backup-'+isoDay()+'.json'; l.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); },
+  ptag(v){ ui.ptag=v; },
+  sheettag(v){ ui.sheet.tag=v; },
+  picopen(v){ ui.sheet={type:'pic',id:v}; },
+  retag(v){ const p=state.pics.find(x=>x.id===ui.sheet.id); p.tag=v; save(); },
+  delpic(){ const id=ui.sheet.id; state.pics=state.pics.filter(p=>p.id!==id);
+    state.looks.forEach(l=>{ l.pics=(l.pics||[]).filter(x=>x!==id); }); save(); ui.sheet=null; },
+  pickpics(){ syncDraft(); ui.sheet={type:'pics',tag:'all'}; },
+  togglepic(v){ const d=ui.draft; d.pics=d.pics||[]; const i=d.pics.indexOf(v); if(i>=0) d.pics.splice(i,1); else d.pics.push(v); },
   wore(){ logToday(); save(); setToast('Logged. Nice work showing up.'); },
   done(v){ state.routine[v]=isoDay(); logToday(); save(); }
 };
@@ -339,12 +379,29 @@ document.addEventListener('click', e => {
   fn(el.dataset.v, {target:e.target, currentTarget:el});
   render();
 });
-document.addEventListener('change', e => {
+function shrink(file){
+  return new Promise(res => { const fr=new FileReader(); fr.onload=()=>{ const img=new Image(); img.onload=()=>{
+    const s=Math.min(1,640/Math.max(img.width,img.height)), c=document.createElement('canvas');
+    c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    res(c.toDataURL('image/jpeg',.75)); }; img.onerror=()=>res(null); img.src=fr.result; }; fr.onerror=()=>res(null); fr.readAsDataURL(file); });
+}
+document.addEventListener('change', async e => {
+  if (e.target.id==='picup' && e.target.files.length){
+    const files=[...e.target.files], inSheet=ui.sheet && ui.sheet.type==='pics';
+    const tag = inSheet ? (ui.sheet.tag!=='all'?ui.sheet.tag:TAGS[0]) : (ui.ptag!=='all'?ui.ptag:TAGS[0]);
+    state.pics = state.pics||[]; let n=0;
+    for (const f of files){ const src=await shrink(f); if(!src) continue;
+      const p={id:uid(),src,tag}; state.pics.unshift(p); n++;
+      if(inSheet){ ui.draft.pics=ui.draft.pics||[]; ui.draft.pics.push(p.id); } }
+    e.target.value=''; save(); render();
+    if(n) setToast(n+(n===1?' picture added.':' pictures added.')+(inSheet?'':' Tap one to set its tag.'));
+    return;
+  }
   if (e.target.id==='import' && e.target.files[0]){
     const fr=new FileReader();
     fr.onload=()=>{ try{ const s=JSON.parse(fr.result); if(!Array.isArray(s.items)||!Array.isArray(s.looks)) throw 0;
       if(!confirm('Replace what is on this device with the backup?')) return;
-      state={plan:{},routine:{},log:[],...s}; save(); render(); setToast('Backup loaded.'); }
+      state={plan:{},routine:{},log:[],pics:[],...s}; save(); render(); setToast('Backup loaded.'); }
       catch(err){ setToast('That file is not a Muse backup.'); } };
     fr.readAsText(e.target.files[0]);
   }
