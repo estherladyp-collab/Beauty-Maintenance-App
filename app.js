@@ -4,6 +4,7 @@
 /* ---------- data ---------- */
 const KEY = 'muse.v1';
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DAYFULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const CATS = [
   ['top','Tops'],['bottom','Bottoms'],['dress','Dresses'],['outer','Outerwear'],
   ['shoes','Shoes'],['bag','Bags'],['jewel','Jewelry']
@@ -187,7 +188,7 @@ function today(){
   const week = DAYS.map((n,i) => {
     const l = state.looks.find(x => x.id===state.plan[i]);
     return `<button class="day" data-act="assign" data-v="${i}" ${i===d?'aria-current="date"':''} aria-label="${n}: ${l?esc(l.name):'no look planned'}">
-      <small>${n}</small>${l?`<div class="mini">${miniLook(l)}</div>`:`<span class="plus">+</span>`}</button>`;
+      <small>${n}</small>${l?`<div class="mini thumbboard">${boardParts(l).core}</div>`:`<span class="plus">+</span>`}</button>`;
   }).join('');
   const due = ROUTINE.map(r => ({r, left: dueIn(r)})).sort((a,b)=>a.left-b.left).slice(0,3);
   const checked = weekLog();
@@ -202,15 +203,15 @@ function today(){
       <p style="opacity:.75;margin-bottom:16px">${look?esc(look.occasion||''):'Pick a look for today so you are not deciding in front of the mirror.'}</p>
       <div class="row">
         ${look?`<button class="btn gold" data-act="wore" data-v="${d}">I wore this</button>`:''}
-        <button class="btn ${look?'ghost':'gold'}" style="${look?'color:var(--milk);border-color:rgba(255,255,255,.4)':''}" data-act="assign" data-v="${d}">${look?'Change':'Choose a look'}</button>
+        <button class="btn ${look?'ghost':'gold'}" style="${look?'color:var(--milk);border-color:rgba(255,255,255,.4)':''}" data-act="assign" data-v="${d}">${look?'Change':'Plan today'}</button>
       </div>
     </div>
     ${look?`<div>${board(look,true)}</div>`:''}
   </div>
+  <section><div class="row between"><h2>This week</h2><span class="eyebrow">Tap a day</span></div><div class="week" style="margin-top:14px">${week}</div></section>
   ${startRail()}
   ${prepToday()}
   ${freshNudge()}
-  <section><div class="row between"><h2>This week</h2><span class="eyebrow">Tap a day to plan it</span></div><div class="week" style="margin-top:14px">${week}</div></section>
   <section><h2>Due next</h2><div class="list" style="margin-top:14px">${due.map(x=>task(x.r)).join('')}</div></section>
   <section><div class="card"><div class="eyebrow">Wardrobe</div><h3 style="font-size:26px;margin:6px 0">${have} of ${state.items.length} pieces owned</h3>
     <div class="progress"><i style="width:${state.items.length?have/state.items.length*100:0}%"></i></div></div></section>`;
@@ -329,12 +330,12 @@ function builder(){
     body = `${itemRow('Bag','bag',d)}${itemRow('Jewelry','jewel',d)}${picsRow('Accessories',d,'Accessories inspiration')}`;
   }
   return `<button class="back" data-act="cancel">← Back</button>
-  <h1 class="page-title" style="margin-bottom:12px">${d.id?'Edit':'Create a'} <em>look</em></h1>${ui.assignDay!==null?`<p class="status" style="margin:-6px 0 10px">Saving adds this look to ${DAYS[ui.assignDay]}.</p>`:''}
+  <h1 class="page-title" style="margin-bottom:12px">${ui.assignDay!==null?`Plan <em>${DAYFULL[ui.assignDay]}</em>`:`${d.id?'Edit':'Create a'} <em>look</em>`}</h1>
   <div class="builder"><div class="pv">${parts.core}<div class="pvside">
     <input type="text" id="lname" value="${esc(d.name)}" placeholder="Name this look" maxlength="40" aria-label="Look name">
     <input type="text" id="locc" value="${esc(d.occasion)}" placeholder="Occasion" maxlength="50" aria-label="Occasion">
-    <button class="btn" data-act="savelook">Save look</button>${parts.strip}${parts.mood}</div></div>
-  <div class="bmain"><div class="chips" role="tablist" aria-label="Look parts">${BTABS.map(t=>`<button class="chip" role="tab" aria-selected="${ui.btab===t[0]}" aria-pressed="${ui.btab===t[0]}" data-act="btab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
+    <button class="btn" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>${ui.assignDay!==null&&state.plan[ui.assignDay]?'<button class="btn small ghost" data-act="clearday">Clear this day</button>':''}${parts.strip}${parts.mood}</div></div>
+  <div class="bmain">${ui.assignDay!==null&&state.looks.length?`<div class="brow"><div class="eyebrow">Or start from a saved look</div><div class="hscroll">${state.looks.map(l=>`<button class="tile" data-act="uselook" data-v="${l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div></div>`:''}<div class="chips" role="tablist" aria-label="Look parts">${BTABS.map(t=>`<button class="chip" role="tab" aria-selected="${ui.btab===t[0]}" aria-pressed="${ui.btab===t[0]}" data-act="btab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
     <div class="bbody">${body}</div>
     ${notes.length?`<div class="eyebrow" style="margin-top:14px">Style check</div><div class="slots" style="margin-top:8px">${notes.map(n=>`<div class="note ${n.warn?'warn':''}">${esc(n.t)}</div>`).join('')}</div>`:''}
   </div></div>`;
@@ -542,11 +543,17 @@ const actions = {
   beauty(v,e){ syncDraft(); ui.draft.beauty[e.currentTarget.dataset.k]=v; },
   savelook(){ syncDraft(); const d=ui.draft;
     if(!Object.keys(d.slots).length && !(d.pics||[]).length){ return setToast('Pick at least one piece or picture before saving.'); }
-    if(!d.name.trim()) d.name='Look '+(state.looks.length+1);
+    if(ui.assignDay!==null) d.forDay=ui.assignDay;
+    if(!d.name.trim()) d.name=ui.assignDay!==null ? DAYFULL[ui.assignDay]+' look' : 'Look '+(state.looks.length+1);
     if(d.id){ const i=state.looks.findIndex(l=>l.id===d.id); state.looks[i]=d; } else { d.id=uid(); state.looks.push(d); }
     if(ui.assignDay!==null){ state.plan[ui.assignDay]=d.id; ui.tab='today'; } else ui.tab='looks';
     ui.assignDay=null; save(); ui.draft=null; window.scrollTo(0,0); },
-  assign(v){ ui.sheet={type:'assign',day:+v}; },
+  assign(v){ const day=+v, cur=state.looks.find(l=>l.id===state.plan[day]);
+    actions.newlook(); ui.assignDay=day;
+    if(cur){ const c=JSON.parse(JSON.stringify(cur)); if(cur.forDay!==day) delete c.id; c.vars=c.vars||{}; c.pics=c.pics||[]; ui.draft=c; ui.omode=c.slots.dress?'dress':'split'; }
+    else ui.draft.name=DAYFULL[day]+' look'; },
+  uselook(v){ const l=state.looks.find(x=>x.id===v), d=ui.draft; d.slots=JSON.parse(JSON.stringify(l.slots)); d.vars=JSON.parse(JSON.stringify(l.vars||{})); d.pics=[...(l.pics||[])]; d.beauty=JSON.parse(JSON.stringify(l.beauty)); ui.omode=d.slots.dress?'dress':'split'; },
+  clearday(){ delete state.plan[ui.assignDay]; save(); ui.draft=null; ui.assignDay=null; },
   plan(v){ const d=ui.sheet.day; if(v) state.plan[d]=v; else delete state.plan[d]; save(); ui.sheet=null; },
   export(){ const b=new Blob([JSON.stringify(state)],{type:'application/json'}), u=URL.createObjectURL(b), l=document.createElement('a');
     l.href=u; l.download='muse-backup-'+isoDay()+'.json'; l.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); },
