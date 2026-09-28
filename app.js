@@ -243,6 +243,7 @@ function beauty(){
   return `<h1 class="page-title">Beauty <em>upkeep</em></h1>
   <p class="lede">Tap Done when you finish something. It resets the clock so nothing slips.</p>
   <section style="margin-top:22px"><div class="list">${ROUTINE.map(task).join('')}</div></section>
+  <section><h2>Move to another device</h2><div class="card" style="margin-top:14px"><p class="lede" style="margin-bottom:14px">Your data lives on this device. Save a backup file, then load it on your other phone or laptop.</p><div class="row"><button class="btn small" data-act="export">Save backup</button><label class="btn small ghost" style="display:inline-block;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--espresso)">Load backup<input type="file" id="import" accept="application/json" hidden></label></div></div></section>
   <section><h2>Your style guide</h2><div class="guide" style="margin-top:14px">
     <div class="card"><div class="eyebrow">Inverted triangle</div><h3>Balance the shoulders</h3>
       <ul><li>V-necks, wraps and scoop necks open up the top and draw the eye in.</li><li>Wide-leg trousers, A-line and pleated skirts add volume below.</li><li>Belt at the waist, keep detail and texture on the bottom half.</li><li>Go easy on boat necks, puff sleeves, halters and padded shoulders.</li></ul></div>
@@ -319,6 +320,8 @@ const actions = {
     save(); ui.draft=null; ui.tab='looks'; },
   assign(v){ ui.sheet={type:'assign',day:+v}; },
   plan(v){ const d=ui.sheet.day; if(v) state.plan[d]=v; else delete state.plan[d]; save(); ui.sheet=null; },
+  export(){ const b=new Blob([JSON.stringify(state)],{type:'application/json'}), u=URL.createObjectURL(b), l=document.createElement('a');
+    l.href=u; l.download='muse-backup-'+isoDay()+'.json'; l.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); },
   wore(){ logToday(); save(); setToast('Logged. Nice work showing up.'); },
   done(v){ state.routine[v]=isoDay(); logToday(); save(); }
 };
@@ -337,6 +340,14 @@ document.addEventListener('click', e => {
   render();
 });
 document.addEventListener('change', e => {
+  if (e.target.id==='import' && e.target.files[0]){
+    const fr=new FileReader();
+    fr.onload=()=>{ try{ const s=JSON.parse(fr.result); if(!Array.isArray(s.items)||!Array.isArray(s.looks)) throw 0;
+      if(!confirm('Replace what is on this device with the backup?')) return;
+      state={plan:{},routine:{},log:[],...s}; save(); render(); setToast('Backup loaded.'); }
+      catch(err){ setToast('That file is not a Muse backup.'); } };
+    fr.readAsText(e.target.files[0]);
+  }
   if (e.target.id==='icat'){ actions.icat(); render(); }
   if (e.target.id==='iphoto' && e.target.files[0]){
     readItemForm();
@@ -360,4 +371,5 @@ function render(){
   if (id){ const n=document.getElementById(id); if(n && n.focus) n.focus(); }
 }
 render();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
