@@ -30,6 +30,33 @@ const COLORS = [
   ['White','#fbf8f3',2],['Denim','#4c6280',2],['Navy','#1f2a44',0],['Icy pink','#e9c4d6',0],
   ['Lavender','#b7a6d3',0],['Silver grey','#a9adb3',0],['Charcoal','#4a4845',2],['Champagne','#dccdb4',1],['Mocha brown','#5a3a22',1]
 ];
+const CART = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 4h2l2.4 10.2a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 8H6.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19" r="1.4" fill="currentColor"/><circle cx="17" cy="19" r="1.4" fill="currentColor"/></svg>';
+const SHOPS = [
+  ['H&M','https://www2.hm.com/de_de/search-results.html?q={q}'],
+  ['New Yorker','https://www.google.com/search?q={q}+site%3Anewyorker.de'],
+  ['SHEIN','https://de.shein.com/pdsearch/{q}/'],
+  ['Mango','https://www.google.com/search?q={q}+site%3Ashop.mango.com'],
+  ['ASOS','https://www.asos.com/de/search/?q={q}'],
+  ['About You','https://www.aboutyou.de/suche?term={q}'],
+  ['Zalando','https://www.zalando.de/catalog/?q={q}'],
+  ['Zara','https://www.zara.com/de/de/search?searchTerm={q}'],
+  ['C&A','https://www.google.com/search?q={q}+site%3Ac-and-a.com'],
+  ['Bershka','https://www.google.com/search?q={q}+site%3Abershka.com'],
+  ['OTTO','https://www.otto.de/suche/{q}/'],
+  ['Amazon','https://www.amazon.de/s?k={q}&i=fashion'],
+  ['Vinted (second-hand)','https://www.vinted.de/catalog?search_text={q}'],
+  ['All shops (Google Shopping)','https://www.google.com/search?tbm=shop&q={q}']
+];
+const COLOR_DE = {'Chocolate':'Schokobraun','Espresso':'Dunkelbraun','Camel':'Camel','Caramel':'Karamell','Rust':'Rostrot','Terracotta':'Terrakotta','Coral':'Koralle','Mustard':'Senfgelb','Gold':'Gold','Olive':'Oliv','Forest':'Waldgrün','Burgundy':'Bordeaux','Blush nude':'Nude','Warm cream':'Creme','Ivory':'Elfenbein','Black':'Schwarz','White':'Weiß','Denim':'Jeansblau','Navy':'Marineblau','Icy pink':'Rosa','Lavender':'Lavendel','Silver grey':'Grau','Charcoal':'Anthrazit','Champagne':'Champagner','Mocha brown':'Braun'};
+const STYLE_DE = {'V-neck':'V-Ausschnitt Bluse','Wrap top':'Wickelbluse','Scoop neck':'Top mit rundem Ausschnitt','Fitted knit':'Feinstrickpullover','Bodysuit':'Body','Wide-leg trousers':'Hose mit weitem Bein','A-line skirt':'A-Linie Rock','Flared jeans':'Schlaghose Jeans','Pleated skirt':'Plisseerock','Wrap skirt':'Wickelrock','Pencil skirt':'Bleistiftrock','Straight jeans':'Straight Jeans','Tailored trousers':'Anzughose','Pants':'Hose','Skirt':'Rock','Wrap dress':'Wickelkleid','A-line dress':'A-Linien Kleid','Longline coat':'Langer Mantel','Belted trench':'Trenchcoat','Soft blazer':'Blazer','Heeled sandal':'Sandalen mit Absatz','Pointed pump':'Pumps','Ankle boot':'Stiefeletten','Clean sneaker':'Sneaker','Shoulder bag':'Umhängetasche','Mini bag':'Mini Tasche','Tote':'Shopper'};
+const NOUN_DE = {top:'Bluse',bottom:'Hose',dress:'Kleid',outer:'Jacke',shoes:'Schuhe',bag:'Tasche',jewel:'Schmuck'};
+function shopQuery(it, v, lang){
+  const cn = colorName(v.color);
+  if(lang==='de') return ((COLOR_DE[cn]||cn)+' '+(STYLE_DE[it.style]||NOUN_DE[it.cat]||it.name)+' Damen').trim();
+  return (cn+' '+it.name+' women').trim();
+}
+const allShops = () => [...SHOPS, ...((state.shops||[]).map(s => [s.name, s.url]))];
+const shopUrl = (tpl, q) => tpl.replace('{q}', encodeURIComponent(q));
 const OCC = ['Casual Outing','Formal Event','Birthday Party','Special Occasion','Work','Church','Date Night','Brunch','Travel'];
 const NAILS = [['Milky pink','#efd3d0'],['Sheer nude','#e3c2b3'],['Champagne shimmer','#eadbd6'],['Rose beige','#d7aa9b'],['Cocoa','#7a4a3a'],['Espresso','#3a231c'],['Sheer red','#a83a3a']];
 const LIPS = [['Brown gloss','#7b4a3c'],['Mocha','#5a3328'],['Nude rosewood','#a86a5c'],['Terracotta','#b5573f'],['Plum brown','#5b2c33'],['Clear gloss','#c98f7a']];
@@ -339,7 +366,7 @@ function pdp(s){
     <div class="pdp-count">${it.variants.length} color${it.variants.length===1?'':'s'}</div>
     <div class="pdp-dots" role="group" aria-label="Colors">${it.variants.map(x=>`<button class="pdp-dot ${x.id===v.id?'on':''} ${x.have?'':'off'}" data-act="vpick" data-v="${it.id}:${x.id}" aria-pressed="${x.id===v.id}" aria-label="${esc(colorName(x.color))}${x.have?'':' (on list)'}"><i style="background:${x.color}"></i></button>`).join('')}</div>
     ${(it.occasions||[]).length?`<div class="pdp-occ">${it.occasions.map(o=>`<span>${esc(o)}</span>`).join('')}</div>`:''}
-    <div class="row" style="margin-top:20px"><button class="btn" data-act="own" data-v="${it.id}">${v.have?'✓ In my wardrobe':'Add to my wardrobe'}</button><button class="btn ghost" data-act="pdplook" data-v="${it.id}">Add to a look</button><button class="btn ghost" data-act="edit" data-v="${it.id}">Edit</button></div></div>`;
+    <div class="row" style="margin-top:20px"><button class="btn" data-act="own" data-v="${it.id}">${v.have?'✓ In my wardrobe':'Add to my wardrobe'}</button><button class="btn ghost" data-act="pdplook" data-v="${it.id}">Add to a look</button><button class="btn ghost" data-act="shop" data-v="${it.id}" aria-label="Shop this piece">${CART} Shop</button><button class="btn ghost" data-act="edit" data-v="${it.id}">Edit</button></div></div>`;
 }
 function wardrobe(){
   const have = state.items.filter(i=>i.have).length;
@@ -361,6 +388,7 @@ function itemCard(it){
   const v = vOf(it, ui.vsel[it.id]), r = rating(it);
   const on = ui.selMode && ui.sel.includes(it.id);
   return `<div class="item ${v.have?'have':'need'} ${on?'sel':''}"><div class="pic" data-act="${ui.selMode?'selpick':'pdp'}" data-v="${it.id}" role="button" tabindex="0" aria-label="View ${esc(it.name)}">${pic(it,v)}</div>
+    <button class="cart" ${ui.selMode?'hidden':''} data-act="shop" data-v="${it.id}" aria-label="Shop ${esc(it.name)} in ${esc(colorName(v.color))}">${CART}</button>
     <button class="tick" ${ui.selMode?'hidden':''} data-act="own" data-v="${it.id}" aria-pressed="${v.have}" aria-label="${v.have?'Owned':'Not owned'}: ${esc(it.name)}, ${esc(colorName(v.color))}">${v.have?'✓':''}</button>
     <h3>${esc(it.name)}</h3><p>${esc(it.style)} · ${esc(colorName(v.color))}</p>
     ${dots(it,v.id,'vpick',it.id)}
@@ -371,7 +399,7 @@ function looks(){
   return `<div class="row between"><h1 class="page-title">Your <em>looks</em></h1><button class="btn" data-act="newlook">Create a look</button></div>
   <p class="lede">Build outfits piece by piece, add nails, lips and hair, then drop them into your week.</p>
   ${state.looks.length?`<div class="grid wide" style="margin-top:22px">${state.looks.map(l=>`<div class="card"><button style="display:block;width:100%;text-align:left" data-act="editlook" data-v="${l.id}" aria-label="Edit ${esc(l.name)}">${board(l)}</button>
-    <div class="row between" style="margin-top:12px"><div><h3 style="font-size:22px">${esc(l.name)}</h3><span class="status">${esc(l.occasion||'')}</span></div><button class="btn small ghost" data-act="dellook" data-v="${l.id}">Delete</button></div></div>`).join('')}</div>`
+    <div class="row between" style="margin-top:12px"><div><h3 style="font-size:22px">${esc(l.name)}</h3><span class="status">${esc(l.occasion||'')}</span></div><div class="row" style="gap:6px"><button class="btn small ghost" data-act="shoplook" data-v="${l.id}" aria-label="Shop this look">${CART}</button><button class="btn small ghost" data-act="dellook" data-v="${l.id}">Delete</button></div></div></div>`).join('')}</div>`
   :`<div class="empty-state" style="margin-top:22px">No looks yet. Tap “Create a look” to build your first one.</div>`}`;
 }
 
@@ -417,7 +445,7 @@ function builder(){
   <div class="builder"><div class="pv">${parts.core}<div class="pvside">
     <input type="text" id="lname" value="${esc(d.name)}" placeholder="Name this look" maxlength="40" aria-label="Look name">
     <input type="text" id="locc" value="${esc(d.occasion)}" placeholder="Occasion" maxlength="50" aria-label="Occasion">
-    <button class="btn" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>${ui.assignDay!==null&&state.plan[ui.assignDay]?'<button class="btn small ghost" data-act="clearday">Clear this day</button>':''}${d.id?'<button class="btn small ghost" data-act="delcur">Delete this look</button>':''}${parts.strip}${parts.mood}</div></div>
+    <button class="btn" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>${Object.keys(d.slots).length?`<button class="btn small ghost" data-act="shoplook" data-v="draft">${CART} Shop this look</button>`:''}${ui.assignDay!==null&&state.plan[ui.assignDay]?'<button class="btn small ghost" data-act="clearday">Clear this day</button>':''}${d.id?'<button class="btn small ghost" data-act="delcur">Delete this look</button>':''}${parts.strip}${parts.mood}</div></div>
   <div class="bmain">${ui.assignDay!==null&&state.looks.length?`<div class="brow"><div class="eyebrow">Or start from a saved look</div><div class="hscroll">${state.looks.map(l=>`<button class="tile" data-act="uselook" data-v="${l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div></div>`:''}<div class="chips" role="tablist" aria-label="Look parts">${BTABS.map(t=>`<button class="chip" role="tab" aria-selected="${ui.btab===t[0]}" aria-pressed="${ui.btab===t[0]}" data-act="btab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
     <div class="bbody">${body}</div>
     ${notes.length?`<div class="eyebrow" style="margin-top:14px">Style check</div><div class="slots" style="margin-top:8px">${notes.map(n=>`<div class="note ${n.warn?'warn':''}">${esc(n.t)}</div>`).join('')}</div>`:''}
@@ -507,6 +535,22 @@ function sheet(){
     const opts = state.items.filter(i => i.cat===s.slot);
     inner = `<h2>Choose ${SLOT_LABEL[s.slot].toLowerCase()}</h2>${opts.length?`<div class="grid">${opts.map(it=>`<button class="item ${it.have?'have':'need'}" data-act="set" data-v="${it.id}"><div class="pic">${pic(it)}</div><h3>${esc(it.name)}</h3><p>${it.have?esc(colorName(it.color)):'On your list'}</p></button>`).join('')}</div>`:`<div class="empty-state">No ${SLOT_LABEL[s.slot].toLowerCase()} in your wardrobe yet.</div>`}
       <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="clear" data-v="${s.slot}">Clear</button><button class="btn ghost small" data-act="close">Close</button></div>`;
+  } else if (s.type==='shop'){
+    const it = state.items.find(i => i.id===s.id); if(!it){ inner=''; }
+    else { const v = vOf(it, s.vid), lang = s.lang||'en', q = s.q ?? shopQuery(it,v,lang);
+      inner = `<h2>Shop this piece</h2>
+      <div class="row" style="flex-wrap:nowrap;gap:12px"><span class="shopthumb">${pic(it,v)}</span><div style="min-width:0"><b>${esc(it.name)}</b><div class="status">${esc(colorName(v.color))}${v.have?' · in my wardrobe':' · on my list'}</div></div></div>
+      <div class="chips" style="margin:14px 0 8px" role="group" aria-label="Search language"><button class="chip s" aria-pressed="${lang==='en'}" data-act="shoplang" data-v="en">English words</button><button class="chip s" aria-pressed="${lang==='de'}" data-act="shoplang" data-v="de">Deutsche Wörter</button></div>
+      <label>Search words<input type="text" id="shopq" value="${esc(q)}" maxlength="80"></label>
+      <div class="shopgrid" style="margin-top:14px">${allShops().map(sh=>`<a class="shoplink" data-tpl="${esc(sh[1])}" href="${esc(shopUrl(sh[1],q))}" target="_blank" rel="noopener noreferrer">${esc(sh[0])}<span aria-hidden="true">↗</span></a>`).join('')}</div>
+      <p class="status" style="margin-top:10px">Opens the shop in a new tab. Some shops search through Google.</p>
+      <div class="eyebrow" style="margin-top:16px">Add another shop</div>
+      <div class="row" style="gap:8px;flex-wrap:nowrap"><input type="text" id="shopname" placeholder="Shop name" maxlength="30" style="flex:1"><input type="text" id="shopurl" placeholder="Search link with {q}" style="flex:2"><button class="btn small" data-act="addshop">Add</button></div>
+      ${(state.shops||[]).length?`<div class="chips" style="flex-wrap:wrap;margin-top:8px">${state.shops.map(x=>`<button class="chip s" data-act="delshop" data-v="${x.id}" aria-label="Remove ${esc(x.name)}">${esc(x.name)} ✕</button>`).join('')}</div>`:''}
+      <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="close">Close</button></div>`; }
+  } else if (s.type==='shoplook'){
+    const l = s.look, rows = Object.entries(l.slots).map(([slot,id]) => { const it = state.items.find(i=>i.id===id); return it && {slot,it,v:vOf(it,l.vars&&l.vars[slot])}; }).filter(Boolean).sort((x,y)=>(x.v.have?1:0)-(y.v.have?1:0));
+    inner = `<h2>Shop this look</h2>${rows.length?`<div class="list">${rows.map(r=>`<div class="task"><span class="shopthumb">${pic(r.it,r.v)}</span><div class="grow" style="min-width:0"><h3>${esc(r.it.name)}</h3><div class="status">${esc(colorName(r.v.color))} · ${r.v.have?'in my wardrobe':'to buy'}</div></div><button class="btn small ${r.v.have?'ghost':''}" data-act="shopv" data-v="${r.it.id}:${r.v.id}" aria-label="Shop ${esc(r.it.name)}">${CART}</button></div>`).join('')}</div>`:'<div class="empty-state">Pick some pieces first.</div>'}<div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="close">Close</button></div>`;
   } else if (s.type==='merge'){
     const nm = g => g.map(id => (state.items.find(i=>i.id===id)||{}).name).filter(Boolean).join(' · ');
     inner = `<h2>Smart merge</h2>${s.busy?'<p class="status">Looking for pieces that match…</p>':s.groups.length?`<p class="status" style="margin-bottom:12px">These look like the same piece in different colors.</p>${s.groups.map((g,gi)=>`<div class="card mgroup"><div class="mthumbs">${g.map(id=>{const it=state.items.find(i=>i.id===id);return it?`<span class="mth">${pic(it)}</span>`:''}).join('')}</div><div class="row between" style="flex-wrap:nowrap"><span class="status" style="min-width:0">${esc(nm(g))}</span><button class="btn small" data-act="mergegroup" data-v="${gi}">Merge ${g.length}</button></div></div>`).join('')}<button class="btn" style="margin-top:6px" data-act="mergeall">Merge all ${s.groups.length}</button>`:'<div class="empty-state">No matches found. Pieces that look alike will show up here.</div>'}<div class="row" style="margin-top:14px"><button class="btn ghost small" data-act="close">Close</button></div>`;
@@ -741,6 +785,14 @@ const actions = {
     const v=it.variants.splice(vi,1)[0]; s.vi=0;
     const orig=state.items.findIndex(x=>x.id===it.id); syncHave(it); if(orig>=0) state.items[orig]=it;
     state.items.unshift({id:uid(),cat:it.cat,name:it.name,style:it.style,color:v.color,have:v.have,photo:null,occasions:[...(it.occasions||[])],variants:[v]}); save(); setToast('Moved into its own piece.'); },
+  shop(v){ ui.sheet={type:'shop',id:v,vid:ui.vsel[v],lang:'en',q:null}; },
+  shopv(v){ const [id,vid]=v.split(':'); ui.sheet={type:'shop',id,vid,lang:'en',q:null}; },
+  shoplang(v){ ui.sheet.lang=v; ui.sheet.q=null; },
+  shoplook(v){ const l = v==='draft' ? ui.draft : state.looks.find(x=>x.id===v); ui.sheet={type:'shoplook',look:JSON.parse(JSON.stringify(l))}; },
+  addshop(){ const n=document.getElementById('shopname').value.trim(), u=document.getElementById('shopurl').value.trim();
+    if(!n||!/^https?:\/\//i.test(u)) return setToast('Add a shop name and a link that starts with https://');
+    (state.shops=state.shops||[]).push({id:uid(),name:n,url:u}); save(); },
+  delshop(v){ state.shops=(state.shops||[]).filter(x=>x.id!==v); save(); },
   pdp(v){ ui.sheet={type:'pdp',id:v}; },
   occ(v){ ui.occ=v; },
   occtoggle(v){ readItemForm(); const it=ui.sheet.item; it.occasions=it.occasions||[]; const i=it.occasions.indexOf(v); if(i>=0) it.occasions.splice(i,1); else it.occasions.push(v); },
@@ -943,6 +995,7 @@ async function addFiles(files, mode){
   if(n) setToast(n+(n===1?' picture added.':' pictures added.')+(inSheet?'':' Tap one to set its tag.'));
 }
 document.addEventListener('input', e => {
+  if(e.target.id==='shopq' && ui.sheet && ui.sheet.type==='shop'){ ui.sheet.q = e.target.value; document.querySelectorAll('.shoplink').forEach(a => { a.href = shopUrl(a.dataset.tpl, e.target.value); }); return; }
   if(ui.draft && !ui.sheet && (e.target.id==='lname'||e.target.id==='locc')) syncDraft();
   if(ui.adraft && ui.sheet && ui.sheet.type==='appt') syncAppt();
   if(ui.sheet && ui.sheet.type==='item' && (e.target.id==='iname'||e.target.id==='istyle')) readItemForm();
