@@ -138,20 +138,6 @@ function restoreDraft(d){
   lastDraft = JSON.stringify(d);
   return !!(ui.draft || ui.sheet);
 }
-async function repairBottoms(){
-  if(state.repair2) return 0; let moved = 0;
-  for(const it of [...state.items]){
-    if(it.cat!=='bottom' || it.variants.length<2) continue;
-    const want = bottomGroup(it)==='Skirts' ? 'skirt' : 'pants', out = [];
-    for(const v of it.variants){ if(!v.photo) continue; const g = strongKind(await ensureSig(v)); if(g && g!==want) out.push(v); }
-    if(!out.length || out.length===it.variants.length) continue;
-    out.forEach(v => { it.variants.splice(it.variants.indexOf(v),1);
-      state.items.unshift({id:uid(),cat:'bottom',name:autoName({cat:'bottom',kind:want==='skirt'?'pants':'skirt',hex:v.color}),style:want==='skirt'?'Pants':'Skirt',color:v.color,photo:null,have:v.have,occasions:[...(it.occasions||[])],variants:[v]}); moved++; });
-    syncHave(it);
-  }
-  state.repair2 = true; if(moved) save(); else { dirty = true; }
-  return moved;
-}
 async function boot(){
   let s = null, fromLocal = false;
   try { s = await idbGet(KEY); } catch(e){}
@@ -161,9 +147,7 @@ async function boot(){
   if(fromLocal){ try { const chk = await idbGet(KEY); if(chk && chk.items && chk.items.length===state.items.length) localStorage.removeItem(KEY); } catch(e){} }
   try { if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
   let restored = false; try { restored = restoreDraft(await idbGet(DRAFT_KEY)); } catch(e){}
-  let moved = 0; try { moved = await repairBottoms(); } catch(e){}
   booted = true; render();
-  if(moved) setToast(moved+' pair'+(moved===1?'':'s')+' of pants moved out of a skirt so you can see '+(moved===1?'it':'them')+'.');
   if(restored) setToast('Picked up where you left off.');
 }
 document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); } });
