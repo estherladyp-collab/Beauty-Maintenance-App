@@ -9,6 +9,7 @@ const CATS = [
   ['top','Tops'],['bottom','Bottoms'],['dress','Dresses'],['outer','Outerwear'],
   ['shoes','Shoes'],['bag','Bags'],['jewel','Jewelry']
 ];
+const WCATS = [['top','Tops'],['pants','Pants'],['skirts','Skirts'],['dress','Dresses'],['outer','Outerwear'],['shoes','Shoes'],['bag','Bags'],['jewel','Jewelry']];
 const SLOT_LABEL = {top:'Top',bottom:'Bottom',dress:'Dress',outer:'Outerwear',shoes:'Shoes',bag:'Bag',jewel:'Jewelry'};
 // pos = balances an inverted triangle, neg = adds width up top or narrows the hip
 const STYLES = {
@@ -56,6 +57,8 @@ const HAIR = ['Blowout','Braids','Silk press','Curls','Sleek bun','Ponytail','Ha
 const HCOLORS = [['Jet black','#141010'],['Soft black','#2a1d1a'],['Dark brown','#3d2618'],['Chestnut','#5b3a24'],['Auburn','#7a3b22'],['Honey blonde','#b88a4a'],['Blonde','#d8bc84'],['Burgundy','#5a1f2b'],['Silver grey','#9a9a9a']];
 const bottomGroup = it => /skirt/i.test(it.style) ? 'Skirts' : 'Pants';
 const NOUN = {top:'top',dress:'dress',outer:'jacket',shoes:'shoes',bag:'bag',jewel:'jewelry'};
+function catActive(f,c){ return c==='pants' ? f.cat==='bottom' && f.kind==='pants' : c==='skirts' ? f.cat==='bottom' && f.kind==='skirt' : f.cat===c; }
+function applyCat(f,c){ if(c==='pants'){ f.cat='bottom'; f.kind='pants'; } else if(c==='skirts'){ f.cat='bottom'; f.kind='skirt'; } else f.cat=c; }
 function autoName(f){ const kind = f.kind || 'pants'; const noun = f.cat==='bottom' ? (kind==='skirt'?'skirt':'pants') : (NOUN[f.cat]||'piece'); return colorName(f.hex)+' '+noun; }
 const hairName = hex => (HCOLORS.find(c => c[1]===hex)||['Hair color'])[0];
 
@@ -132,6 +135,20 @@ function restoreDraft(d){
   lastDraft = JSON.stringify(d);
   return !!(ui.draft || ui.sheet);
 }
+async function repairBottoms(){
+  if(state.repair2) return 0; let moved = 0;
+  for(const it of [...state.items]){
+    if(it.cat!=='bottom' || it.variants.length<2) continue;
+    const want = bottomGroup(it)==='Skirts' ? 'skirt' : 'pants', out = [];
+    for(const v of it.variants){ if(!v.photo) continue; const g = guessBottom(await ensureSig(v)); if(g!==want) out.push(v); }
+    if(!out.length || out.length===it.variants.length) continue;
+    out.forEach(v => { it.variants.splice(it.variants.indexOf(v),1);
+      state.items.unshift({id:uid(),cat:'bottom',name:autoName({cat:'bottom',kind:want==='skirt'?'pants':'skirt',hex:v.color}),style:want==='skirt'?'Pants':'Skirt',color:v.color,photo:null,have:v.have,occasions:[...(it.occasions||[])],variants:[v]}); moved++; });
+    syncHave(it);
+  }
+  state.repair2 = true; if(moved) save(); else { dirty = true; }
+  return moved;
+}
 async function boot(){
   let s = null, fromLocal = false;
   try { s = await idbGet(KEY); } catch(e){}
@@ -141,7 +158,9 @@ async function boot(){
   if(fromLocal){ try { const chk = await idbGet(KEY); if(chk && chk.items && chk.items.length===state.items.length) localStorage.removeItem(KEY); } catch(e){} }
   try { if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
   let restored = false; try { restored = restoreDraft(await idbGet(DRAFT_KEY)); } catch(e){}
+  let moved = 0; try { moved = await repairBottoms(); } catch(e){}
   booted = true; render();
+  if(moved) setToast(moved+' pair'+(moved===1?'':'s')+' of pants moved out of a skirt so you can see '+(moved===1?'it':'them')+'.');
   if(restored) setToast('Picked up where you left off.');
 }
 document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); } });
@@ -336,16 +355,15 @@ function pdp(s){
 }
 function wardrobe(){
   const have = state.items.filter(i=>i.have).length;
-  const inCat = state.items.filter(i => ui.cat==='all' || i.cat===ui.cat);
-  const inGrp = ui.cat==='bottom' && ui.bg!=='all' ? inCat.filter(i => bottomGroup(i)===ui.bg) : inCat;
+  const inCat = state.items.filter(i => ui.cat==='all' || (ui.cat==='pants' ? i.cat==='bottom' && bottomGroup(i)==='Pants' : ui.cat==='skirts' ? i.cat==='bottom' && bottomGroup(i)==='Skirts' : i.cat===ui.cat));
+  const inGrp = inCat;
   const styles = [...new Set(inGrp.map(i=>i.style))];
   const occs = [...new Set(state.items.flatMap(i => i.occasions||[]))];
   const list = inGrp.filter(i => ui.sty==='all' || i.style===ui.sty).filter(i => ui.occ==='all' || (i.occasions||[]).includes(ui.occ));
   return `<h1 class="page-title">Your <em>wardrobe</em></h1>
   <p class="lede">One card per piece. Tap a dot to switch colors. Tick what you own.</p>
   <div class="card" style="margin:20px 0 14px"><div class="row between"><b>${have} of ${state.items.length} pieces owned</b><div class="row" style="gap:8px"><label class="btn small ghost" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Upload photos<input type="file" id="wardup" accept="image/*" multiple hidden></label><button class="btn small" data-act="add">Add a piece</button></div></div><div class="row" style="gap:8px;margin-top:10px"><button class="btn small ghost" data-act="smart">Smart merge</button><button class="btn small ghost" data-act="selmode">${ui.selMode?'Cancel selecting':'Select to merge'}</button></div><div class="progress"><i style="width:${state.items.length?have/state.items.length*100:0}%"></i></div></div>
-  <div class="chips" role="group" aria-label="Category">${[['all','All'],...CATS].map(c=>`<button class="chip" aria-pressed="${ui.cat===c[0]}" data-act="cat" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
-  ${ui.cat==='bottom'?`<div class="chips" role="group" aria-label="Pants or skirts">${[['all','All bottoms'],['Pants','Pants'],['Skirts','Skirts']].map(c=>`<button class="chip" aria-pressed="${ui.bg===c[0]}" data-act="bg" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>`:''}
+  <div class="chips" role="group" aria-label="Category">${[['all','All'],...WCATS].map(c=>`<button class="chip" aria-pressed="${ui.cat===c[0]}" data-act="cat" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
   ${ui.cat!=='all'&&styles.length>1?`<div class="chips" role="group" aria-label="Style">${[['all','All styles'],...styles.map(s=>[s,s])].map(c=>`<button class="chip" aria-pressed="${ui.sty===c[0]}" data-act="sty" data-v="${esc(c[0])}">${esc(c[1])}</button>`).join('')}</div>`:''}
   ${occs.length?`<div class="chips" role="group" aria-label="Occasion">${[['all','Any occasion'],...occs.map(o=>[o,o])].map(c=>`<button class="chip s" aria-pressed="${ui.occ===c[0]}" data-act="occ" data-v="${esc(c[0])}">${esc(c[1])}</button>`).join('')}</div>`:''}
   ${list.length?`<div class="grid" style="margin-top:12px">${list.map(itemCard).join('')}</div>`:`<div class="empty-state" style="margin-top:12px">Nothing here yet. Upload photos of your clothes to start.</div>`}
@@ -517,14 +535,14 @@ function sheet(){
   } else if (s.type==='pdp'){
     inner = pdp(s);
   } else if (s.type==='sort'){
-    const cats = s.mode==='ward' ? CATS : TAGS.map(t=>[t,t]), todo = s.items.filter(f=>!f.cat).length;
+    const cats = s.mode==='ward' ? WCATS : TAGS.map(t=>[t,t]), todo = s.items.filter(f=>!f.cat).length;
     inner = `<h2>Sort your pictures</h2>
     <div class="chips" role="group" aria-label="Where do these go"><button class="chip" aria-pressed="${s.mode==='ward'}" data-act="sortmode" data-v="ward">My wardrobe</button><button class="chip" aria-pressed="${s.mode==='insp'}" data-act="sortmode" data-v="insp">Inspiration</button></div>
     ${s.mode==='ward'?`<div class="chk" style="margin-top:12px"><input type="checkbox" id="autog" data-act="autog" ${s.group?'checked':''}><label for="autog" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso)">Group similar photos as colors of one piece</label></div>`:''}
     <div class="eyebrow" style="margin:10px 0 6px">Put them all in</div>
     <div class="chips" style="flex-wrap:wrap">${cats.map(c=>`<button class="chip s" data-act="sortall" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
     ${s.mode==='insp'&&s.items.some(f=>f.cat==='Hair')?`<div class="eyebrow" style="margin:12px 0 6px">Hairstyle for all hair pictures</div><div class="chips" style="flex-wrap:wrap">${HAIR.map(h=>`<button class="chip s" data-act="hairall" data-v="${h}">${h}</button>`).join('')}</div>`:''}
-    <div class="sortgrid" style="margin-top:14px">${s.items.map((f,i)=>`<div class="sorti ${f.cat?'':'todo'}"><img src="${f.src}" alt=""><button class="x" data-act="sortdel" data-v="${i}" aria-label="Remove picture">✕</button><div class="chips" style="flex-wrap:wrap;gap:4px">${cats.map(c=>`<button class="chip s" aria-pressed="${f.cat===c[0]}" data-act="sortcat" data-v="${i}:${c[0]}">${c[1]}</button>`).join('')}</div>${s.mode==='ward'&&f.cat==='bottom'?`<div class="chips" style="gap:4px" role="group" aria-label="Pants or skirt"><button class="chip s" aria-pressed="${f.kind==='pants'}" data-act="sortkind" data-v="${i}:pants">Pants</button><button class="chip s" aria-pressed="${f.kind==='skirt'}" data-act="sortkind" data-v="${i}:skirt">Skirt</button></div>`:''}${s.mode==='ward'&&f.cat?`<input type="text" class="sname" data-i="${i}" value="${esc(f.name ?? autoName(f))}" maxlength="40" aria-label="Name" placeholder="Name">`:''}${s.mode==='insp'&&f.cat==='Hair'?`<div class="eyebrow">Hairstyle · ${esc(hairName(f.hair))}</div><div class="chips" style="flex-wrap:wrap;gap:4px">${HAIR.map(h=>`<button class="chip s" aria-pressed="${(f.hstyle||'Other')===h}" data-act="sorthair" data-v="${i}:${h}">${h}</button>`).join('')}</div>`:''}</div>`).join('')}</div>
+    <div class="sortgrid" style="margin-top:14px">${s.items.map((f,i)=>`<div class="sorti ${f.cat?'':'todo'}"><img src="${f.src}" alt=""><button class="x" data-act="sortdel" data-v="${i}" aria-label="Remove picture">✕</button><div class="chips" style="flex-wrap:wrap;gap:4px">${cats.map(c=>`<button class="chip s" aria-pressed="${catActive(f,c[0])}" data-act="sortcat" data-v="${i}:${c[0]}">${c[1]}</button>`).join('')}</div>${s.mode==='ward'&&f.cat?`<input type="text" class="sname" data-i="${i}" value="${esc(f.name ?? autoName(f))}" maxlength="40" aria-label="Name" placeholder="Name">`:''}${s.mode==='insp'&&f.cat==='Hair'?`<div class="eyebrow">Hairstyle · ${esc(hairName(f.hair))}</div><div class="chips" style="flex-wrap:wrap;gap:4px">${HAIR.map(h=>`<button class="chip s" aria-pressed="${(f.hstyle||'Other')===h}" data-act="sorthair" data-v="${i}:${h}">${h}</button>`).join('')}</div>`:''}</div>`).join('')}</div>
     <div class="row" style="margin-top:16px"><label class="btn ghost small" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Add more<input type="file" id="sortmore" accept="image/*" multiple hidden></label><button class="btn small" data-act="sortsave" ${todo?'aria-disabled="true"':''}>${todo?`Sort ${todo} more`:`Save ${s.items.length} picture${s.items.length===1?'':'s'}`}</button><button class="btn ghost small" data-act="close">Cancel</button></div>`;
   } else if (s.type==='appt'){
     const a = ui.adraft, ti = typeInfo(a.type), pics = (a.pics||[]).map(id=>(state.pics||[]).find(p=>p.id===id)).filter(Boolean);
@@ -706,8 +724,8 @@ const actions = {
     save(); ui.sheet=null; ui.adraft=null; },
   delappt(){ const id=ui.adraft.id; state.appts=state.appts.filter(a=>a.id!==id); save(); ui.sheet=null; ui.adraft=null; },
   sortmode(v){ ui.sheet.mode=v; ui.sheet.items.forEach(f=>f.cat=null); },
-  sortcat(v){ const [i,c]=v.split(':'); ui.sheet.items[+i].cat=c; },
-  sortall(v){ ui.sheet.items.forEach(f=>{ if(!f.cat) f.cat=v; }); },
+  sortcat(v){ const [i,c]=v.split(':'); applyCat(ui.sheet.items[+i],c); },
+  sortall(v){ ui.sheet.items.forEach(f=>{ if(!f.cat) applyCat(f,v); }); },
   sortdel(v){ ui.sheet.items.splice(+v,1); if(!ui.sheet.items.length) ui.sheet=null; },
   sortkind(v){ const [i,k]=v.split(':'); ui.sheet.items[+i].kind=k; },
   sorthair(v){ const [i,h]=v.split(':'); ui.sheet.items[+i].hstyle=h; },
@@ -835,9 +853,9 @@ async function ensureSig(v){ if(v.photo && v.sig===undefined){ v.sig = await sig
 async function pieceSim(it, sig){
   let best=0; for(const v of it.variants){ if(!v.photo) continue; const s=await ensureSig(v); best=Math.max(best,sim(s,sig)); } return best;
 }
-async function findMatch(cat, sig, list){
+async function findMatch(cat, sig, list, kind){
   if(!sig) return null; let top=null, ts=0;
-  for(const it of list){ if(it.cat!==cat) continue; const s=await pieceSim(it,sig); if(s>=THR && s>ts){ top=it; ts=s; } }
+  for(const it of list){ if(it.cat!==cat) continue; if(cat==='bottom' && kind && bottomGroup(it)!==(kind==='skirt'?'Skirts':'Pants')) continue; const s=await pieceSim(it,sig); if(s>=THR && s>ts){ top=it; ts=s; } }
   return top;
 }
 async function findGroups(){
@@ -846,6 +864,7 @@ async function findGroups(){
   const find = x => par[x]===x ? x : (par[x]=find(par[x]));
   for(let i=0; i<its.length; i++) for(let j=i+1; j<its.length; j++){
     if(its[i].cat!==its[j].cat) continue;
+    if(its[i].cat==='bottom' && bottomGroup(its[i])!==bottomGroup(its[j])) continue;
     let best=0; for(const v of its[i].variants){ if(!v.photo) continue; best=Math.max(best, await pieceSim(its[j], await ensureSig(v))); }
     if(best>=THR) par[find(its[i].id)] = find(its[j].id); }
   const groups = {}; its.forEach(i => (groups[find(i.id)] = groups[find(i.id)] || []).push(i.id));
@@ -885,7 +904,7 @@ async function finishSort(s){
     const created=[], notes=[]; let grouped=0;
     for(const f of s.items){
       const v={id:uid(),color:f.hex,photo:f.src,have:true,sig:f.sig};
-      const target = s.group ? await findMatch(f.cat, f.sig, [...created, ...state.items]) : null;
+      const target = s.group ? await findMatch(f.cat, f.sig, [...created, ...state.items], f.kind) : null;
       if(target){ target.variants.push(v); syncHave(target); grouped++; if(!notes.includes(target.name)) notes.push(target.name); }
       else created.push({id:uid(),cat:f.cat,name:((f.name||'').trim()||autoName(f)),style:f.cat==='bottom'?(f.kind==='skirt'?'Skirt':'Pants'):STYLES[f.cat][0][0],color:f.hex,have:true,photo:null,occasions:[],variants:[v]});
     }
