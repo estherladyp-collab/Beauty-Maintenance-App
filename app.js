@@ -84,7 +84,10 @@ let booted = false;
 function init(){
   state.appts = state.appts || [];
   if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
-  if(!state.seedVer2 && window.MUSE_SEED_ITEMS){
+  state.seedAdded = state.seedAdded || {};
+if(window.MUSE_SEED_ITEMS){ window.MUSE_SEED_ITEMS.forEach(s => { if(state.seedAdded[s.id]) return; state.seedAdded[s.id] = true;
+  if(!state.items.some(i => i.id===s.id)) state.items.unshift(JSON.parse(JSON.stringify(s))); }); }
+if(!state.seedVer2 && window.MUSE_SEED_ITEMS){
     window.MUSE_SEED_ITEMS.forEach(s => { const it = state.items.find(i => i.id===s.id); if(!it) return;
       s.variants.forEach(sv => { it.variants = it.variants || []; const v = it.variants.find(x => x.id===sv.id);
         if(!v) it.variants.push(JSON.parse(JSON.stringify(sv))); else if(!v.photo && sv.photo){ v.photo = sv.photo; v.have = sv.have; } }); });
@@ -140,7 +143,7 @@ async function repairBottoms(){
   for(const it of [...state.items]){
     if(it.cat!=='bottom' || it.variants.length<2) continue;
     const want = bottomGroup(it)==='Skirts' ? 'skirt' : 'pants', out = [];
-    for(const v of it.variants){ if(!v.photo) continue; const g = guessBottom(await ensureSig(v)); if(g!==want) out.push(v); }
+    for(const v of it.variants){ if(!v.photo) continue; const g = strongKind(await ensureSig(v)); if(g && g!==want) out.push(v); }
     if(!out.length || out.length===it.variants.length) continue;
     out.forEach(v => { it.variants.splice(it.variants.indexOf(v),1);
       state.items.unshift({id:uid(),cat:'bottom',name:autoName({cat:'bottom',kind:want==='skirt'?'pants':'skirt',hex:v.color}),style:want==='skirt'?'Pants':'Skirt',color:v.color,photo:null,have:v.have,occasions:[...(it.occasions||[])],variants:[v]}); moved++; });
@@ -802,7 +805,7 @@ function silhouette(x, w, h){
   const med = arr => arr.sort((p,q)=>p-q)[arr.length>>1], br=med(bx), bg=med(by), bb=med(bz);
   const m = new Uint8Array(w*h); let x0=w, x1=0, y0=h, y1=0;
   for(let py=0; py<h; py++) for(let px=0; px<w; px++){ const i=(py*w+px)*4;
-    if(Math.abs(d[i]-br)+Math.abs(d[i+1]-bg)+Math.abs(d[i+2]-bb) > 30){ m[py*w+px]=1; if(px<x0)x0=px; if(px>x1)x1=px; if(py<y0)y0=py; if(py>y1)y1=py; } }
+    if(Math.abs(d[i]-br)+Math.abs(d[i+1]-bg)+Math.abs(d[i+2]-bb) > 20){ m[py*w+px]=1; if(px<x0)x0=px; if(px>x1)x1=px; if(py<y0)y0=py; if(py>y1)y1=py; } }
   if(x1-x0<w*.2 || y1-y0<h*.2) return null;
   const bw=x1-x0+1, bh=y1-y0+1; let grid=new Uint8Array(GW*GH);
   for(let gy=0; gy<GH; gy++) for(let gx=0; gx<GW; gx++){
@@ -818,13 +821,27 @@ function silhouette(x, w, h){
   const out = new Uint8Array(GW*GH); best.forEach(c => out[c]=1);
   return (bw/bh).toFixed(2)+'|'+Array.from(out).join('');
 }
+function bottomStats(sig){
+  const [asp, bits] = sig.split('|'), w = y => { let n=0; for(let x=0;x<GW;x++) if(bits[y*GW+x]==='1') n++; return n; };
+  let mid = 0;
+  for(let y=GH-10; y<GH; y++){ const row = bits.slice(y*GW,(y+1)*GW);
+    if(row.slice(GW/2-1,GW/2+1)==='00' && row.slice(2,GW/2-1).includes('1') && row.slice(GW/2+1,GW-2).includes('1')) mid++; }
+  let top = 0, hem = 0; for(let y=2; y<7; y++) top += w(y); for(let y=GH-5; y<GH; y++) hem += w(y);
+  return {aspect:+asp, mid, ratio: top ? hem/top : 1};
+}
 function guessBottom(sig){
   if(!sig) return 'pants';
-  const bits = sig.split('|')[1]; let gap = 0;
-  for(let y=GH-10; y<GH; y++){
-    const row = bits.slice(y*GW, (y+1)*GW), mid = row.slice(GW/2-1, GW/2+1);
-    if(mid==='00' && row.slice(2, GW/2-1).includes('1') && row.slice(GW/2+1, GW-2).includes('1')) gap++; }
-  return gap>=6 ? 'pants' : 'skirt';
+  const s = bottomStats(sig);
+  if(s.mid>=6) return 'pants';
+  if(s.aspect<=0.62 && s.ratio<1.15) return 'pants';
+  return 'skirt';
+}
+function strongKind(sig){
+  if(!sig) return null;
+  const s = bottomStats(sig);
+  if(s.mid>=8) return 'pants';
+  if(s.aspect>=0.7 && s.ratio>=1.2) return 'skirt';
+  return null;
 }
 function sim(a, b){
   if(!a || !b) return 0;
@@ -986,7 +1003,7 @@ function render(){
   if (id){ const n=document.getElementById(id); if(n && n.focus) n.focus(); }
   saveDraftSoon();
 }
-window.MuseDebug = {sigOf, sim, findGroups, guessBottom, get state(){ return state; }, get ready(){ return booted; }, flush: async () => { await persist(); await flushDraft(); }};
+window.MuseDebug = {sigOf, sim, findGroups, guessBottom, strongKind, bottomStats, get state(){ return state; }, get ready(){ return booted; }, flush: async () => { await persist(); await flushDraft(); }};
 boot();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
