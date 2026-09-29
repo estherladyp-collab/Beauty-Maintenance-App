@@ -80,7 +80,7 @@ const typeInfo = t => APPT_TYPES.find(x => x[0]===t) || APPT_TYPES[6];
 const addDays = (iso,n) => { const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return isoDay(d); };
 const fmtDate = iso => new Date(iso+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
 const TAGS = ['Outfit','Hair','Nails','Makeup','Accessories'];
-const HAIR = ['Blowout','Braids','Silk press','Curls','Updo','Sleek bun','Ponytail','Half-up','Other'];
+const HAIR = ['Blowout','Braids','Silk press','Curls','Afro','Updo','Sleek bun','Ponytail','Half-up','Other'];
 const HCOLORS = [['Jet black','#141010'],['Soft black','#2a1d1a'],['Dark brown','#3d2618'],['Chestnut','#5b3a24'],['Auburn','#7a3b22'],['Honey blonde','#b88a4a'],['Blonde','#d8bc84'],['Burgundy','#5a1f2b'],['Silver grey','#9a9a9a']];
 const bottomGroup = it => /skirt/i.test(it.style) ? 'Skirts' : 'Pants';
 const NOUN = {top:'top',dress:'dress',outer:'jacket',shoes:'shoes',bag:'bag',jewel:'jewelry'};
