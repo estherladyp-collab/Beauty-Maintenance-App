@@ -87,13 +87,14 @@ function init(){
   state.seedAdded = state.seedAdded || {};
 if(window.MUSE_SEED_ITEMS){ window.MUSE_SEED_ITEMS.forEach(s => { if(state.seedAdded[s.id]) return; state.seedAdded[s.id] = true;
   if(!state.items.some(i => i.id===s.id)) state.items.unshift(JSON.parse(JSON.stringify(s))); }); }
-if(!state.seedVer2 && window.MUSE_SEED_ITEMS){
-    window.MUSE_SEED_ITEMS.forEach(s => { const it = state.items.find(i => i.id===s.id); if(!it) return;
-      s.variants.forEach(sv => { it.variants = it.variants || []; const v = it.variants.find(x => x.id===sv.id);
-        if(!v) it.variants.push(JSON.parse(JSON.stringify(sv))); else if(!v.photo && sv.photo){ v.photo = sv.photo; v.have = sv.have; } }); });
-    state.seedVer2 = true;
-  }
-  if(!state.cleanup1){
+state.seedVars = state.seedVars || {};
+if(window.MUSE_SEED_ITEMS){
+  window.MUSE_SEED_ITEMS.forEach(s => { const it = state.items.find(i => i.id===s.id); if(!it) return; it.variants = it.variants || [];
+    s.variants.forEach(sv => { if(state.seedVars[sv.id]) return; state.seedVars[sv.id] = true;
+      const v = it.variants.find(x => x.id===sv.id);
+      if(!v) it.variants.push(JSON.parse(JSON.stringify(sv))); else if(!v.photo && sv.photo){ v.photo = sv.photo; v.have = sv.have; } }); });
+}
+if(!state.cleanup1){
     state.items = state.items.filter(i => !/^s\d+$/.test(i.id));
     state.items.forEach(i => { if(['x1','x2','x3'].includes(i.id) && i.variants){ const keep = i.variants.filter(v => v.photo); if(keep.length) i.variants = keep; } });
     state.cleanup1 = true;
