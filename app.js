@@ -107,7 +107,11 @@ const daysSince = iso => Math.floor((new Date(isoDay())-new Date(iso))/864e5);
 
 const vOf = (it, vid) => it.variants.find(v => v.id===vid) || it.variants.find(v => v.have) || it.variants[0];
 const syncHave = it => { it.have = it.variants.some(v => v.have); };
-function migrate(it){ it.occasions = it.occasions || []; if(!it.variants) it.variants=[{id:uid(),color:it.color,photo:it.photo||null,have:!!it.have}]; syncHave(it); }
+const STAGES = [['wish','Wish list'],['cart','In cart'],['ordered','On its way'],['own','In my closet']];
+const SEGL = {wish:'Wish',cart:'Cart',ordered:'Order',own:'Own'};
+const money = n => n ? Number(n).toLocaleString('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}) : '–';
+function setSt(v, st){ v.status = st; v.have = st==='own'; }
+function migrate(it){ it.occasions = it.occasions || []; (it.variants||[]).forEach(v => { if(!v.status) v.status = v.have ? 'own' : 'wish'; v.have = v.status==='own'; }); if(!it.variants) it.variants=[{id:uid(),color:it.color,photo:it.photo||null,have:!!it.have}]; syncHave(it); }
 let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[]};
 let booted = false;
 function init(){
@@ -115,20 +119,20 @@ function init(){
   if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
   state.seedAdded = state.seedAdded || {};
 if(window.MUSE_SEED_ITEMS){ window.MUSE_SEED_ITEMS.forEach(s => { if(state.seedAdded[s.id]) return; state.seedAdded[s.id] = true;
-  if(!state.items.some(i => i.id===s.id)){ const c = JSON.parse(JSON.stringify(s)); c.have = false; c.variants.forEach(v => v.have = false); state.items.unshift(c); } }); }
+  if(!state.items.some(i => i.id===s.id)){ const c = JSON.parse(JSON.stringify(s)); c.have = false; c.variants.forEach(v => setSt(v,'wish')); state.items.unshift(c); } }); }
 state.seedVars = state.seedVars || {};
 if(window.MUSE_SEED_ITEMS){
   window.MUSE_SEED_ITEMS.forEach(s => { const it = state.items.find(i => i.id===s.id); if(!it) return; it.variants = it.variants || [];
     s.variants.forEach(sv => { if(state.seedVars[sv.id]) return; state.seedVars[sv.id] = true;
       const v = it.variants.find(x => x.id===sv.id);
-      if(!v){ const c = JSON.parse(JSON.stringify(sv)); c.have = false; it.variants.push(c); } else if(!v.photo && sv.photo){ v.photo = sv.photo; } }); });
+      if(!v){ const c = JSON.parse(JSON.stringify(sv)); setSt(c,'wish'); it.variants.push(c); } else if(!v.photo && sv.photo){ v.photo = sv.photo; } }); });
 }
 if(!state.cleanup1){
     state.items = state.items.filter(i => !/^s\d+$/.test(i.id));
     state.items.forEach(i => { if(['x1','x2','x3'].includes(i.id) && i.variants){ const keep = i.variants.filter(v => v.photo); if(keep.length) i.variants = keep; } });
     state.cleanup1 = true;
   }
-  if(!state.ownReset1){ state.items.forEach(i => { if(/^x\d+$/.test(i.id)) (i.variants||[]).forEach(v => v.have = false); }); state.ownReset1 = true; }
+  if(!state.ownReset1){ state.items.forEach(i => { if(/^x\d+$/.test(i.id)) (i.variants||[]).forEach(v => setSt(v,'wish')); }); state.ownReset1 = true; }
   state.items.forEach(migrate);
   if(!state.seedFix){ const sp=(state.pics||[]).find(p=>p.id==='seed4'&&p.tag==='Makeup'); if(sp) sp.tag='Hair'; state.seedFix=true; }
   state.seedPics = state.seedPics || {};
@@ -190,7 +194,7 @@ async function boot(){
 document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); } });
 window.addEventListener('pagehide', () => { persist(); flushDraft(); });
 
-let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, acc:{}, hc:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
+let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
 let toast = '';
 
 /* ---------- garments ---------- */
@@ -290,7 +294,7 @@ function today(){
   const checked = weekLog();
   const have = state.items.reduce((n,i)=>n+i.variants.filter(v=>v.have).length,0), all = state.items.reduce((n,i)=>n+i.variants.length,0);
   return `
-  <h1 class="page-title">Good day, <em>gorgeous.</em></h1>
+  <h1 class="page-title">Today</h1>
   <p class="lede">${checked} of the last 7 days checked in. ${checked>=5?'That is consistency.':'Small and steady wins.'}</p>
   <div class="hero ${look?'':'solo'}">
     <div>
@@ -298,14 +302,14 @@ function today(){
       <h2>${look?esc(look.name):'Nothing planned yet'}</h2>
       <p style="opacity:.75;margin-bottom:16px">${look?esc(look.occasion||''):'Pick a look for today so you are not deciding in front of the mirror.'}</p>
       <div class="row">
-        ${look?`<button class="btn gold" data-act="wore" data-v="${d}">I wore this</button>`:''}
-        <button class="btn ${look?'ghost':'gold'}" style="${look?'color:var(--milk);border-color:rgba(255,255,255,.4)':''}" data-act="assign" data-v="${d}">${look?'Change':'Plan today'}</button>
-        ${look&&!dayOutfit?`<button class="btn ghost" style="color:var(--milk);border-color:rgba(255,255,255,.4)" data-act="clearplan" data-v="${d}">Remove</button>`:''}
+        ${look?`<button class="btn" data-act="wore" data-v="${d}">I wore this</button>`:''}
+        <button class="btn ${look?'ghost':''}" data-act="assign" data-v="${d}">${look?'Change':'Plan today'}</button>
+        ${look&&!dayOutfit?`<button class="btn ghost" data-act="clearplan" data-v="${d}">Remove</button>`:''}
       </div>
     </div>
     ${look?`<div>${board(look,true)}</div>`:''}
   </div>
-  <section><div class="row between"><h2>This week</h2><span class="eyebrow">Tap a day</span></div><div class="week" style="margin-top:14px">${week}</div></section>
+  <section><div class="row between"><h2>This week</h2><span class="eyebrow">Tap a day</span></div><div class="week" style="margin-top:14px">${week}</div><div style="margin-top:14px"><button class="btn small ghost" data-act="autoweek">Plan my week from my closet</button></div></section>
   ${startRail()}
   ${prepToday()}
   ${freshNudge()}
@@ -374,54 +378,109 @@ function pdp(s){
     <p class="pdp-color">${esc(colorName(v.color))}${v.have?'':' · on my list'}</p>
     <div class="pdp-count">${it.variants.length} color${it.variants.length===1?'':'s'}</div>
     <div class="pdp-dots" role="group" aria-label="Colors">${it.variants.map(x=>`<button class="pdp-dot ${x.id===v.id?'on':''} ${x.have?'':'off'}" data-act="vpick" data-v="${it.id}:${x.id}" aria-pressed="${x.id===v.id}" aria-label="${esc(colorName(x.color))}${x.have?'':' (on list)'}"><i style="background:${x.color}"></i></button>`).join('')}</div>
-    <div class="eyebrow" style="margin-top:20px">I own these colors</div>
-    <div class="ownrow">${it.variants.map(x=>`<button class="ownchip ${x.have?'on':''}" data-act="ownv" data-v="${it.id}:${x.id}" aria-pressed="${x.have}"><i style="background:${x.color}"></i>${esc(colorName(x.color))}<span class="ck" aria-hidden="true">${x.have?'✓':'+'}</span></button>`).join('')}</div>
+    <div class="eyebrow" style="margin-top:22px">Where is each color?</div>
+    <div class="strows">${it.variants.map(x=>`<div class="strow"><span class="stname"><i style="background:${x.color}"></i>${esc(colorName(x.color))}</span><div class="seg" role="group" aria-label="${esc(colorName(x.color))}">${STAGES.map(s=>`<button class="segb ${x.status===s[0]?'on':''}" data-act="setstatus" data-v="${it.id}:${x.id}:${s[0]}" aria-pressed="${x.status===s[0]}">${SEGL[s[0]]}</button>`).join('')}</div></div>`).join('')}</div>
+    <label class="pricef">Price per piece, €<input type="number" inputmode="decimal" min="0" step="1" id="pprice" value="${it.price||''}" placeholder="0"></label>
+    ${v.have&&it.price?`<p class="status" style="margin-top:8px">${(state.wears||{})[v.id]?`Worn ${(state.wears[v.id]).n}× · ${money(it.price/state.wears[v.id].n)} per wear`:'Not worn yet. Cost per wear starts after your first outfit.'}</p>`:''}
     ${(it.occasions||[]).length?`<div class="pdp-occ">${it.occasions.map(o=>`<span>${esc(o)}</span>`).join('')}</div>`:''}
     <div class="row" style="margin-top:20px"><button class="btn" data-act="own" data-v="${it.id}">${v.have?'✓ In my closet':'Add to my closet'}</button><button class="btn ghost" data-act="pdplook" data-v="${it.id}">Add to a look</button><button class="btn ghost" data-act="shop" data-v="${it.id}" aria-label="Shop this piece">${CART} Shop</button><button class="btn ghost" data-act="edit" data-v="${it.id}">Edit</button></div></div>`;
 }
+function stageStats(){
+  const out = {}; STAGES.forEach(s => out[s[0]] = {n:0,sum:0,pics:[]});
+  state.items.forEach(it => it.variants.forEach(v => { const o = out[v.status||'wish']; o.n++; o.sum += Number(it.price)||0; if(o.pics.length<4) o.pics.push({it,v}); }));
+  return out;
+}
+function pipeline(){
+  const st = stageStats(), total = STAGES.reduce((n,s)=>n+st[s[0]].n,0), toSpend = st.cart.sum + st.ordered.sum;
+  return `<section class="pipe-wrap" aria-label="Wardrobe pipeline">
+    <div class="pipe-head"><span class="eyebrow">Pipeline</span><span class="pipe-sum">${toSpend?`${money(toSpend)} still to spend`:`${total} colors tracked`}</span></div>
+    <div class="pipe">${STAGES.map((s,i) => { const o = st[s[0]];
+      return `<button class="stage ${ui.stage===s[0]?'on':''} s-${s[0]}" data-act="stage" data-v="${s[0]}" aria-pressed="${ui.stage===s[0]}">
+        <span class="stbar" aria-hidden="true"></span>
+        <span class="stlabel">${s[1]}</span>
+        <span class="stnum">${o.n}</span>
+        <span class="stmoney">${o.sum?money(o.sum):'&nbsp;'}</span>
+        <span class="stthumbs" aria-hidden="true">${o.pics.map(p=>`<i>${pic(p.it,p.v)}</i>`).join('')}</span></button>`; }).join('')}</div>
+  </section>`;
+}
+function stageVariant(it){
+  if(ui.stage!=='all'){ const pick = it.variants.find(x => x.id===ui.vsel[it.id] && x.status===ui.stage) || it.variants.find(x => x.status===ui.stage); if(pick) return pick; }
+  return vOf(it, ui.vsel[it.id]);
+}
 function wardrobe(){
-  const have = state.items.reduce((n,i)=>n+i.variants.filter(v=>v.have).length,0), all = state.items.reduce((n,i)=>n+i.variants.length,0);
   const inCat = state.items.filter(i => ui.cat==='all' || (ui.cat==='pants' ? i.cat==='bottom' && bottomGroup(i)==='Pants' : ui.cat==='skirts' ? i.cat==='bottom' && bottomGroup(i)==='Skirts' : i.cat===ui.cat));
-  const inGrp = inCat;
-  const styles = [...new Set(inGrp.map(i=>i.style))];
+  const styles = [...new Set(inCat.map(i=>i.style))];
   const occs = [...new Set(state.items.flatMap(i => i.occasions||[]))];
-  const list = inGrp.filter(i => ui.sty==='all' || i.style===ui.sty).filter(i => ui.occ==='all' || (i.occasions||[]).includes(ui.occ));
-  return `<h1 class="page-title">Your <em>wardrobe</em></h1>
-  <p class="lede">Your wish list. Tap a piece, then tick the colors you own and they move to your Closet.</p>
-  <div class="card" style="margin:20px 0 14px"><div class="row between"><b>${have} of ${all} colors in my closet</b><div class="row" style="gap:8px"><label class="btn small ghost" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Upload photos<input type="file" id="wardup" accept="image/*" multiple hidden></label><button class="btn small" data-act="add">Add a piece</button></div></div><div class="row" style="gap:8px;margin-top:10px"><button class="btn small ghost" data-act="smart">Smart merge</button><button class="btn small ghost" data-act="selmode">${ui.selMode?'Cancel selecting':'Select to merge'}</button></div><div class="progress"><i style="width:${all?have/all*100:0}%"></i></div></div>
+  const list = inCat.filter(i => ui.sty==='all' || i.style===ui.sty).filter(i => ui.occ==='all' || (i.occasions||[]).includes(ui.occ)).filter(i => ui.stage==='all' || i.variants.some(v => v.status===ui.stage));
+  return `<h1 class="page-title">Wardrobe</h1>
+  <p class="lede">Every piece you want, track it from wish to closet.</p>
+  ${pipeline()}
+  <div class="toolbar"><label class="btn small" style="cursor:pointer">Upload photos<input type="file" id="wardup" accept="image/*" multiple hidden></label><button class="btn small ghost" data-act="add">Add a piece</button><button class="btn small ghost" data-act="smart">Smart merge</button><button class="btn small ghost" data-act="selmode">${ui.selMode?'Cancel':'Select'}</button></div>
   <div class="chips" role="group" aria-label="Category">${[['all','All'],...WCATS].map(c=>`<button class="chip" aria-pressed="${ui.cat===c[0]}" data-act="cat" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
-  ${ui.cat!=='all'&&styles.length>1?`<div class="chips" role="group" aria-label="Style">${[['all','All styles'],...styles.map(s=>[s,s])].map(c=>`<button class="chip" aria-pressed="${ui.sty===c[0]}" data-act="sty" data-v="${esc(c[0])}">${esc(c[1])}</button>`).join('')}</div>`:''}
+  ${ui.cat!=='all'&&styles.length>1?`<div class="chips" role="group" aria-label="Style">${[['all','All styles'],...styles.map(s=>[s,s])].map(c=>`<button class="chip s" aria-pressed="${ui.sty===c[0]}" data-act="sty" data-v="${esc(c[0])}">${esc(c[1])}</button>`).join('')}</div>`:''}
   ${occs.length?`<div class="chips" role="group" aria-label="Occasion">${[['all','Any occasion'],...occs.map(o=>[o,o])].map(c=>`<button class="chip s" aria-pressed="${ui.occ===c[0]}" data-act="occ" data-v="${esc(c[0])}">${esc(c[1])}</button>`).join('')}</div>`:''}
-  ${list.length?`<div class="grid" style="margin-top:12px">${list.map(itemCard).join('')}</div>`:`<div class="empty-state" style="margin-top:12px">Nothing here yet. Upload photos of your clothes to start.</div>`}
+  ${list.length?`<div class="grid" style="margin-top:18px">${list.map(itemCard).join('')}</div>`:`<div class="empty-state" style="margin-top:18px">${ui.stage==='all'?'Nothing here yet. Upload photos of your clothes to start.':'Nothing in this stage yet. Open a piece and move a color here.'}</div>`}
   ${ui.selMode?`<div class="selbar"><span>${ui.sel.length} selected</span><button class="btn small" data-act="mergesel">Merge as colors</button></div>`:''}`;
 }
 function itemCard(it){
-  const v = vOf(it, ui.vsel[it.id]), r = rating(it);
-  const on = ui.selMode && ui.sel.includes(it.id);
+  const v = stageVariant(it), r = rating(it), on = ui.selMode && ui.sel.includes(it.id);
+  const stl = (STAGES.find(s=>s[0]===v.status)||STAGES[0])[1];
   return `<div class="item ${v.have?'have':'need'} ${on?'sel':''}"><div class="pic" data-act="${ui.selMode?'selpick':'pdp'}" data-v="${it.id}" role="button" tabindex="0" aria-label="View ${esc(it.name)}">${pic(it,v)}</div>
     <button class="cart" ${ui.selMode?'hidden':''} data-act="shop" data-v="${it.id}" aria-label="Shop ${esc(it.name)} in ${esc(colorName(v.color))}">${CART}</button>
     <button class="tick" ${ui.selMode?'hidden':''} data-act="own" data-v="${it.id}" aria-pressed="${v.have}" aria-label="${v.have?'In my closet':'Not in my closet'}: ${esc(it.name)}, ${esc(colorName(v.color))}">${v.have?'✓':''}</button>
-    <h3>${esc(it.name)}</h3><p>${esc(it.style)} · ${esc(colorName(v.color))}</p>
+    <h3>${esc(it.name)}</h3><p>${esc(colorName(v.color))}${it.price?' · '+money(it.price):''}</p>
+    <span class="stag st-${v.status}">${stl}</span>
     ${dots(it,v.id,'vpick',it.id)}
     ${r==='pos'?'<span class="tag ok">Balances</span>':r==='neg'?'<span class="tag warn">Style with care</span>':''}</div>`;
 }
-
+function wearInfo(it, v){
+  const w = (state.wears||{})[v.id], n = w ? w.n : 0;
+  if(!n) return it.price ? ' · not worn yet' : '';
+  return ` · worn ${n}×${it.price ? ' · '+money(it.price/n)+'/wear' : ''}`;
+}
+function todayLook(){
+  const d = dow(), td = isoDay();
+  const ao = state.appts.find(x => x.type==='outfit' && x.date===td && !x.done && x.lookId && state.looks.some(l => l.id===x.lookId));
+  return ao ? state.looks.find(l => l.id===ao.lookId) : state.looks.find(l => l.id===state.plan[d]);
+}
+function autoWeek(){
+  const owned = c => { const out = []; state.items.filter(i => i.cat===c).forEach(it => it.variants.forEach(v => { if(v.have) out.push({it,v}); })); return out; };
+  const P = {top:owned('top'),bottom:owned('bottom'),dress:owned('dress'),outer:owned('outer'),shoes:owned('shoes'),bag:owned('bag'),jewel:owned('jewel')};
+  const worn = v => (state.wears && state.wears[v.id]) ? state.wears[v.id].n : 0, used = {};
+  const pick = list => { if(!list.length) return null; const ok = list.filter(x => rating(x.it)!=='neg'), pool = ok.length ? ok : list;
+    const score = x => (used[x.v.id]||0)*3 + worn(x.v)*0.1 + Math.random();
+    const x = [...pool].sort((p,q) => score(p)-score(q))[0]; used[x.v.id] = (used[x.v.id]||0)+1; return x; };
+  let made = 0;
+  for(let i=0; i<7; i++){
+    if(state.plan[i]) continue;
+    const slots = {}, vars = {};
+    const useDress = P.dress.length && (!P.top.length || !P.bottom.length || Math.random()<.3);
+    if(useDress){ const x = pick(P.dress); slots.dress = x.it.id; vars.dress = x.v.id; }
+    else if(P.top.length && P.bottom.length){ const t = pick(P.top), b = pick(P.bottom); slots.top = t.it.id; vars.top = t.v.id; slots.bottom = b.it.id; vars.bottom = b.v.id; }
+    else continue;
+    ['outer','shoes','bag','jewel'].forEach(c => { const x = (P[c].length && (c==='shoes' || Math.random()<.5)) ? pick(P[c]) : null; if(x){ slots[c] = x.it.id; vars[c] = x.v.id; } });
+    const look = {id:uid(),name:DAYFULL[i]+' look',occasion:'',slots,vars,pics:[],beauty:{nails:NAILS[0][0],lips:LIPS[0][0],hair:HAIR[0]},forDay:i};
+    state.looks.push(look); state.plan[i] = look.id; made++;
+  }
+  save();
+  setToast(made ? `Planned ${made} day${made===1?'':'s'} from your closet.` : (Object.keys(state.plan).length>=7 ? 'Your week is already planned.' : 'Tick colors you own first, then plan your week.'));
+}
 function closet(){
   const owned = []; state.items.forEach(it => it.variants.forEach(v => { if(v.have) owned.push({it,v}); }));
   const inGroup = (o,k) => k==='pants' ? o.it.cat==='bottom' && bottomGroup(o.it)==='Pants' : k==='skirts' ? o.it.cat==='bottom' && bottomGroup(o.it)==='Skirts' : o.it.cat===k;
   const groups = WCATS.map(([k,label]) => ({k,label,list:owned.filter(o => inGroup(o,k))}));
   const pieces = new Set(owned.map(o => o.it.id)).size;
-  return `<h1 class="page-title">My <em>closet</em></h1>
+  return `<h1 class="page-title">Closet</h1>
   <p class="lede">What you own, one card per color. Tap a category to open it.</p>
   <div class="card" style="margin:20px 0 14px">${owned.length?`<b>${owned.length} color${owned.length===1?'':'s'}</b> in ${pieces} piece${pieces===1?'':'s'}`:'Nothing here yet. Open a piece in Wardrobe and tick the colors you own.'}</div>
   <div class="acc">${groups.map(g => { const open = !!ui.acc[g.k] && g.list.length>0;
     return `<section class="accitem ${open?'open':''}"><button class="acchead" data-act="acc" data-v="${g.k}" aria-expanded="${open}" ${g.list.length?'':'disabled'}>
       <span class="acctitle">${g.label}</span>
       <span class="accmeta"><span class="accdots" aria-hidden="true">${g.list.slice(0,6).map(o=>`<i style="background:${o.v.color}"></i>`).join('')}</span><b>${g.list.length}</b> color${g.list.length===1?'':'s'}<span class="chev" aria-hidden="true">⌄</span></span></button>
-      ${open?`<div class="grid accbody">${g.list.map(o=>`<button class="item" data-act="closetopen" data-v="${o.it.id}:${o.v.id}" aria-label="${esc(o.it.name)}, ${esc(colorName(o.v.color))}"><div class="pic">${pic(o.it,o.v)}</div><h3>${esc(o.it.name)}</h3><p>${esc(colorName(o.v.color))}</p></button>`).join('')}</div>`:''}</section>`; }).join('')}</div>`;
+      ${open?`<div class="grid accbody">${g.list.map(o=>`<button class="item" data-act="closetopen" data-v="${o.it.id}:${o.v.id}" aria-label="${esc(o.it.name)}, ${esc(colorName(o.v.color))}"><div class="pic">${pic(o.it,o.v)}</div><h3>${esc(o.it.name)}</h3><p>${esc(colorName(o.v.color))}${wearInfo(o.it,o.v)}</p></button>`).join('')}</div>`:''}</section>`; }).join('')}</div>`;
 }
 function looks(){
-  return `<div class="row between"><h1 class="page-title">Your <em>looks</em></h1><button class="btn" data-act="newlook">Create a look</button></div>
+  return `<div class="row between"><h1 class="page-title">Looks</h1><button class="btn" data-act="newlook">Create a look</button></div>
   <p class="lede">Build outfits piece by piece, add nails, lips and hair, then drop them into your week.</p>
   ${state.looks.length?`<div class="grid wide" style="margin-top:22px">${state.looks.map(l=>`<div class="card"><button style="display:block;width:100%;text-align:left" data-act="editlook" data-v="${l.id}" aria-label="Edit ${esc(l.name)}">${board(l)}</button>
     <div class="row between" style="margin-top:12px"><div><h3 style="font-size:22px">${esc(l.name)}</h3><span class="status">${esc(l.occasion||'')}</span></div><div class="row" style="gap:6px"><button class="btn small ghost" data-act="shoplook" data-v="${l.id}" aria-label="Shop this look">${CART}</button><button class="btn small ghost" data-act="dellook" data-v="${l.id}">Delete</button></div></div></div>`).join('')}</div>`
@@ -483,7 +542,7 @@ function lastAdded(){ const d=(state.pics||[]).map(p=>p.at).filter(Boolean).sort
 function mood(){
   const all = state.pics||[];
   const list = all.filter(p => inTag(p, ui.ptag)).filter(p => !(ui.ptag==='Hair' && ui.hc!=='all') || (p.hcat||'Natural')===ui.hc);
-  return `<div class="row between"><h1 class="page-title">Your <em>mood</em></h1>
+  return `<div class="row between"><h1 class="page-title">Mood</h1>
     <label class="btn" style="display:inline-block;cursor:pointer;text-transform:none;letter-spacing:0;font-size:14px;color:var(--milk)">Upload pictures<input type="file" id="picup" accept="image/*" multiple hidden></label></div>
   <p class="lede">Hair, nails, makeup and outfit ideas you love. Pick from these when you build a look.</p>
   <div class="chips" style="margin-top:18px" role="group" aria-label="Filter">${PCHIPS.map(c=>`<button class="chip" aria-pressed="${ui.ptag===c[0]}" data-act="ptag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
@@ -527,11 +586,11 @@ function calendar(){
   const dayDue = due[sel] || [];
   const upcoming = state.appts.filter(a=>!a.done && a.date>=td && inFil(a)).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||''))).slice(0,5);
   const toBook = ROUTINE.filter(r => TYPE_OF_ROUTINE[r[0]] && state.routine[r[0]] && dueIn(r)<=7 && !state.appts.some(a=>!a.done&&a.date>=td&&a.type===TYPE_OF_ROUTINE[r[0]]));
-  return `<h1 class="page-title">Beauty <em>calendar</em></h1>
+  return `<h1 class="page-title">Calendar</h1>
   <p class="lede">Book hair and maintenance, and get a prep list for each visit so you show up ready.</p>
   <div class="chips" style="margin-top:18px" role="group" aria-label="Category">${CFIL.map(c=>`<button class="chip" aria-pressed="${ui.cfil===c[0]}" data-act="cfil" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
   ${toBook.length?`<section style="margin-top:22px"><h2>Time to book</h2><div class="list" style="margin-top:12px">${toBook.map(r=>`<div class="task"><i class="nail" style="background:#e6cfc5;width:22px;height:30px"></i><div class="grow"><h3>${esc(r[1])}</h3><div class="status ${dueIn(r)<0?'over':''}">${dueIn(r)<0?-dueIn(r)+' days overdue':dueIn(r)===0?'Due today':'Due in '+dueIn(r)+' days'}</div></div><button class="btn small" data-act="newappt" data-v="${TYPE_OF_ROUTINE[r[0]]}">Book</button></div>`).join('')}</div></section>`:''}
-  <section><div class="row between"><button class="btn small ghost" data-act="calprev" aria-label="Previous month">←</button><h2>${first.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h2><button class="btn small ghost" data-act="calnext" aria-label="Next month">→</button></div>
+  <section><div class="row between"><button class="btn small ghost" data-act="calprev" aria-label="Previous month">←</button><h2 class="monthname">${first.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h2><button class="btn small ghost" data-act="calnext" aria-label="Next month">→</button></div>
   <div class="cal" style="margin-top:14px"><div class="cal-h">${DAYS.map(d=>`<span>${d[0]}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
   <div class="legend">${APPT_TYPES.filter(t=>t[0]!=='other').map(t=>`<span><i style="background:${t[2]}"></i>${t[1]}</span>`).join('')}<span><i class="ring"></i>Due</span></div></section>
   <section><div class="row between"><h2>${fmtDate(sel)}</h2><button class="btn small" data-act="newappt" data-v="">Add appointment</button></div>
@@ -542,7 +601,7 @@ function calendar(){
 
 function beauty(){
   const warm = COLORS.filter(c => c[2]===1);
-  return `<h1 class="page-title">Beauty <em>upkeep</em></h1>
+  return `<h1 class="page-title">Beauty</h1>
   <p class="lede">Tap Done when you finish something. It resets the clock so nothing slips.</p>
   <section style="margin-top:22px"><div class="list">${ROUTINE.map(task).join('')}</div></section>
   <section><h2>Move to another device</h2><div class="card" style="margin-top:14px"><p class="lede" style="margin-bottom:14px">Your data lives on this device. Save a backup file, then load it on your other phone or laptop.</p><div class="row"><button class="btn small" data-act="export">Save backup</button><label class="btn small ghost" style="display:inline-block;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--espresso)">Load backup<input type="file" id="import" accept="application/json" hidden></label></div></div></section>
@@ -677,16 +736,16 @@ const actions = {
   bg(v){ ui.bg=v; ui.sty='all'; },
   sty(v){ ui.sty=v; },
   vpick(v){ const [id,vid]=v.split(':'); ui.vsel[id]=vid; },
-  own(v){ const it=state.items.find(i=>i.id===v), c=vOf(it,ui.vsel[v]); c.have=!c.have; ui.vsel[v]=c.id; syncHave(it); save(); },
+  own(v){ const it=state.items.find(i=>i.id===v), c=vOf(it,ui.vsel[v]); setSt(c, c.have?'wish':'own'); ui.vsel[v]=c.id; syncHave(it); save(); },
   add(){ ui.sheet={type:'item',isNew:true,item:{id:uid(),cat:'top',name:'',style:STYLES.top[0][0],have:true,occasions:[],variants:[{id:uid(),color:COLORS[2][1],photo:null,have:true}]},vi:0}; },
   edit(v){ ui.sheet={type:'item',item:JSON.parse(JSON.stringify(state.items.find(i=>i.id===v))),vi:Math.max(0,state.items.find(i=>i.id===v).variants.indexOf(vOf(state.items.find(i=>i.id===v),ui.vsel[v])))}; },
   icat(){ readItemForm(); const it=ui.sheet.item; it.cat=document.getElementById('icat').value; it.style=STYLES[it.cat][0][0]; },
   color(v){ readItemForm(); ui.sheet.item.variants[ui.sheet.vi||0].color=v; },
   vsel(v){ readItemForm(); ui.sheet.vi=+v; },
   vadd(){ readItemForm(); const it=ui.sheet.item, used=it.variants.map(x=>x.color), next=(COLORS.find(c=>c[2]===1&&!used.includes(c[1]))||COLORS[0])[1];
-    it.variants.push({id:uid(),color:next,photo:null,have:false}); ui.sheet.vi=it.variants.length-1; },
+    it.variants.push({id:uid(),color:next,photo:null,have:false,status:'wish'}); ui.sheet.vi=it.variants.length-1; },
   vdel(){ readItemForm(); const it=ui.sheet.item; it.variants.splice(ui.sheet.vi||0,1); ui.sheet.vi=0; },
-  vown(){ readItemForm(); const x=ui.sheet.item.variants[ui.sheet.vi||0]; x.have=!x.have; },
+  vown(){ readItemForm(); const x=ui.sheet.item.variants[ui.sheet.vi||0]; setSt(x, x.have?'wish':'own'); },
   vphotoclear(){ readItemForm(); ui.sheet.item.variants[ui.sheet.vi||0].photo=null; },
   saveitem(){ readItemForm(); const it=ui.sheet.item; if(!it.name){ it.name=it.style; }
     syncHave(it);
@@ -825,7 +884,10 @@ const actions = {
     if(!n||!/^https?:\/\//i.test(u)) return setToast('Add a shop name and a link that starts with https://');
     (state.shops=state.shops||[]).push({id:uid(),name:n,url:u}); save(); },
   delshop(v){ state.shops=(state.shops||[]).filter(x=>x.id!==v); save(); },
-  ownv(v){ const [id,vid]=v.split(':'), it=state.items.find(i=>i.id===id), x=it.variants.find(y=>y.id===vid); x.have=!x.have; ui.vsel[id]=vid; syncHave(it); save(); },
+  ownv(v){ const [id,vid]=v.split(':'), it=state.items.find(i=>i.id===id), x=it.variants.find(y=>y.id===vid); setSt(x, x.have?'wish':'own'); ui.vsel[id]=vid; syncHave(it); save(); },
+  setstatus(v){ const [id,vid,st]=v.split(':'), it=state.items.find(i=>i.id===id), x=it.variants.find(y=>y.id===vid); setSt(x,st); ui.vsel[id]=vid; syncHave(it); save(); },
+  stage(v){ ui.stage = ui.stage===v ? 'all' : v; },
+  autoweek(){ autoWeek(); },
   ownall(){ ui.sheet.own=!ui.sheet.own; },
   acc(v){ ui.acc[v] = !ui.acc[v]; },
   closetopen(v){ const [id,vid]=v.split(':'); ui.vsel[id]=vid; ui.sheet={type:'pdp',id}; },
@@ -836,7 +898,11 @@ const actions = {
   lbclose(){ ui.lightbox=null; },
   pdplook(v){ const it=state.items.find(i=>i.id===v), c=vOf(it,ui.vsel[v]); ui.sheet=null; actions.newlook();
     ui.draft.slots[it.cat]=v; ui.draft.vars={[it.cat]:c.id}; if(it.cat==='dress') ui.omode='dress'; ui.btab=['bag','jewel'].includes(it.cat)?'acc':'outfit'; },
-  wore(){ logToday(); save(); setToast('Logged. Nice work showing up.'); },
+  wore(){ const look = todayLook(); state.wears = state.wears || {};
+    if(look) Object.entries(look.slots).forEach(([slot,id]) => { const it = state.items.find(i => i.id===id); if(!it) return;
+      const vv = vOf(it, look.vars && look.vars[slot]), w = state.wears[vv.id] = state.wears[vv.id] || {n:0,last:null};
+      if(w.last!==isoDay()){ w.n++; w.last = isoDay(); } });
+    logToday(); save(); setToast('Logged. Wear counts are updated.'); },
   done(v){ state.routine[v]=isoDay(); logToday(); save(); }
 };
 function syncAppt(){
@@ -993,7 +1059,7 @@ async function finishSort(s){
   if(s.mode==='ward'){
     const created=[], notes=[]; let grouped=0;
     for(const f of s.items){
-      const v={id:uid(),color:f.hex,photo:f.src,have:!!s.own,sig:f.sig};
+      const v={id:uid(),color:f.hex,photo:f.src,have:!!s.own,status:s.own?'own':'wish',sig:f.sig};
       const target = s.group ? await findMatch(f.cat, f.sig, [...created, ...state.items], f.kind) : null;
       if(target){ target.variants.push(v); syncHave(target); grouped++; if(!notes.includes(target.name)) notes.push(target.name); }
       else created.push({id:uid(),cat:f.cat,name:((f.name||'').trim()||autoName(f)),style:f.cat==='bottom'?(f.kind==='skirt'?'Skirt':'Pants'):STYLES[f.cat][0][0],color:f.hex,have:!!s.own,photo:null,occasions:[],variants:[v]});
@@ -1031,6 +1097,7 @@ async function addFiles(files, mode){
   if(n) setToast(n+(n===1?' picture added.':' pictures added.')+(inSheet?'':' Tap one to set its tag.'));
 }
 document.addEventListener('input', e => {
+  if(e.target.id==='pprice' && ui.sheet && ui.sheet.type==='pdp'){ const it = state.items.find(i => i.id===ui.sheet.id); if(it){ it.price = Math.max(0, parseFloat(e.target.value)||0); save(); } return; }
   if(e.target.id==='shopq' && ui.sheet && ui.sheet.type==='shop'){ ui.sheet.q = e.target.value; document.querySelectorAll('.shoplink').forEach(a => { a.href = shopUrl(a.dataset.tpl, e.target.value); }); return; }
   if(ui.draft && !ui.sheet && (e.target.id==='lname'||e.target.id==='locc')) syncDraft();
   if(ui.adraft && ui.sheet && ui.sheet.type==='appt') syncAppt();
@@ -1077,7 +1144,7 @@ function render(){
   if (id){ const n=document.getElementById(id); if(n && n.focus) n.focus(); }
   saveDraftSoon();
 }
-window.MuseDebug = {sigOf, sim, findGroups, guessBottom, strongKind, bottomStats, get state(){ return state; }, get ready(){ return booted; }, flush: async () => { await persist(); await flushDraft(); }};
+window.MuseDebug = {save, sigOf, sim, findGroups, guessBottom, strongKind, bottomStats, get state(){ return state; }, get ready(){ return booted; }, flush: async () => { await persist(); await flushDraft(); }};
 boot();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
