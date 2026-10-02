@@ -189,7 +189,7 @@ async function boot(){
 document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); } });
 window.addEventListener('pagehide', () => { persist(); flushDraft(); });
 
-let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, hc:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
+let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, acc:{}, hc:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
 let toast = '';
 
 /* ---------- garments ---------- */
@@ -268,8 +268,8 @@ function lookNotes(look){
 
 /* ---------- views ---------- */
 function view(){
-  const tabs = [['today','Today'],['wardrobe','Wardrobe'],['looks','Looks'],['mood','Mood'],['calendar','Calendar'],['beauty','Beauty']];
-  const body = ui.draft ? builder() : {today,wardrobe,looks,mood,calendar,beauty}[ui.tab]();
+  const tabs = [['today','Today'],['wardrobe','Wardrobe'],['closet','Closet'],['looks','Looks'],['mood','Mood'],['calendar','Calendar'],['beauty','Beauty']];
+  const body = ui.draft ? builder() : {today,wardrobe,closet,looks,mood,calendar,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true">Muse</div>
   <main class="shell"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${tabs.map(t=>`<button data-act="tab" data-v="${t[0]}" ${ui.tab===t[0]&&!ui.draft?'aria-current="page"':''}>${t[1]}</button>`).join('')}</div></nav>
@@ -403,6 +403,20 @@ function itemCard(it){
     ${r==='pos'?'<span class="tag ok">Balances</span>':r==='neg'?'<span class="tag warn">Style with care</span>':''}</div>`;
 }
 
+function closet(){
+  const owned = []; state.items.forEach(it => it.variants.forEach(v => { if(v.have) owned.push({it,v}); }));
+  const inGroup = (o,k) => k==='pants' ? o.it.cat==='bottom' && bottomGroup(o.it)==='Pants' : k==='skirts' ? o.it.cat==='bottom' && bottomGroup(o.it)==='Skirts' : o.it.cat===k;
+  const groups = WCATS.map(([k,label]) => ({k,label,list:owned.filter(o => inGroup(o,k))}));
+  const pieces = new Set(owned.map(o => o.it.id)).size;
+  return `<h1 class="page-title">My <em>closet</em></h1>
+  <p class="lede">What you own, one card per color. Tap a category to open it.</p>
+  <div class="card" style="margin:20px 0 14px"><b>${owned.length} color${owned.length===1?'':'s'}</b> in ${pieces} piece${pieces===1?'':'s'}</div>
+  <div class="acc">${groups.map(g => { const open = !!ui.acc[g.k] && g.list.length>0;
+    return `<section class="accitem ${open?'open':''}"><button class="acchead" data-act="acc" data-v="${g.k}" aria-expanded="${open}" ${g.list.length?'':'disabled'}>
+      <span class="acctitle">${g.label}</span>
+      <span class="accmeta"><span class="accdots" aria-hidden="true">${g.list.slice(0,6).map(o=>`<i style="background:${o.v.color}"></i>`).join('')}</span><b>${g.list.length}</b> color${g.list.length===1?'':'s'}<span class="chev" aria-hidden="true">⌄</span></span></button>
+      ${open?`<div class="grid accbody">${g.list.map(o=>`<button class="item" data-act="closetopen" data-v="${o.it.id}:${o.v.id}" aria-label="${esc(o.it.name)}, ${esc(colorName(o.v.color))}"><div class="pic">${pic(o.it,o.v)}</div><h3>${esc(o.it.name)}</h3><p>${esc(colorName(o.v.color))}</p></button>`).join('')}</div>`:''}</section>`; }).join('')}</div>`;
+}
 function looks(){
   return `<div class="row between"><h1 class="page-title">Your <em>looks</em></h1><button class="btn" data-act="newlook">Create a look</button></div>
   <p class="lede">Build outfits piece by piece, add nails, lips and hair, then drop them into your week.</p>
@@ -807,6 +821,8 @@ const actions = {
     if(!n||!/^https?:\/\//i.test(u)) return setToast('Add a shop name and a link that starts with https://');
     (state.shops=state.shops||[]).push({id:uid(),name:n,url:u}); save(); },
   delshop(v){ state.shops=(state.shops||[]).filter(x=>x.id!==v); save(); },
+  acc(v){ ui.acc[v] = !ui.acc[v]; },
+  closetopen(v){ const [id,vid]=v.split(':'); ui.vsel[id]=vid; ui.sheet={type:'pdp',id}; },
   pdp(v){ ui.sheet={type:'pdp',id:v}; },
   occ(v){ ui.occ=v; },
   occtoggle(v){ readItemForm(); const it=ui.sheet.item; it.occasions=it.occasions||[]; const i=it.occasions.indexOf(v); if(i>=0) it.occasions.splice(i,1); else it.occasions.push(v); },
