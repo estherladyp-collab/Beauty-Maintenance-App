@@ -30,6 +30,23 @@ const COLORS = [
   ['White','#fbf8f3',2],['Denim','#4c6280',2],['Navy','#1f2a44',0],['Icy pink','#e9c4d6',0],
   ['Lavender','#b7a6d3',0],['Silver grey','#a9adb3',0],['Charcoal','#4a4845',2],['Champagne','#dccdb4',1],['Mocha brown','#5a3a22',1]
 ];
+const ICONS = {
+  lashes:'<path d="M2.5 14c3-5 6.5-7 9.500-7s6.500 2 9.500 7c-3 5-6.500 7-9.500 7s-6.500-2-9.500-7z"/><circle cx="12" cy="14" r="3"/><path d="M5 9 3.500 6.500M9 7 8.200 4M15 7l.8-3M19 9l1.500-2.500"/>',
+  brows:'<path d="M3 13c3-5 9-7 18-3"/><path d="M5 18c3-3 8-4 14-2" opacity=".55"/>',
+  lips:'<path d="M3 12c3-3 5-4 9-2 4-2 6-1 9 2-3 5-6 7-9 7s-6-2-9-7z" fill="currentColor" fill-opacity=".25"/><path d="M3 12c5 1.500 13 1.500 18 0"/>',
+  face:'<path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/>',
+  hair:'<path d="M6 3c3 4-3 6 0 10s-3 6 0 8M12 3c3 4-3 6 0 10s-3 6 0 8M18 3c3 4-3 6 0 10s-3 6 0 8"/>',
+  body:'<rect x="8" y="9" width="8" height="12" rx="2"/><path d="M10 9V6h4v3M11 6V3.500h2V6"/>',
+  polish:'<rect x="8" y="10" width="8" height="10" rx="2"/><path d="M10 10V6.500h4V10M11 6.500V3h2v3.500"/>',
+  outfit:'<path d="M12 8V6.500A2 2 0 1 0 10 5M12 8l9 7.500H3L12 8z"/>',
+  other:'<path d="M12 3l1.800 5.200L19 10l-5.200 1.800L12 17l-1.800-5.200L5 10l5.200-1.800z"/>'
+};
+const ROUTINE_ICON = {nails:'nails',lashes:'lashes',brows:'brows',hairwash:'hair',hairtrim:'hair',face:'face',body:'body',lips:'lips',pedi:'polish'};
+const TYPE_ICON = {hair:'hair',nails:'nails',lashes:'lashes',brows:'brows',skin:'face',pedi:'polish',outfit:'outfit',other:'other'};
+function ticon(name, ok){
+  if(name==='nails') return `<i class="nail" style="background:${ok?'#cdd6c1':'#e6cfc5'};width:22px;height:30px;flex:none"></i>`;
+  return `<span class="ticon ${ok?'ok':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]||ICONS.other}</svg></span>`;
+}
 const CART = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 4h2l2.4 10.2a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 8H6.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19" r="1.4" fill="currentColor"/><circle cx="17" cy="19" r="1.4" fill="currentColor"/></svg>';
 const SHOPS = [
   ['H&M','https://www2.hm.com/de_de/search-results.html?q={q}'],
@@ -294,7 +311,7 @@ function today(){
   const checked = weekLog();
   const have = state.items.reduce((n,i)=>n+i.variants.filter(v=>v.have).length,0), all = state.items.reduce((n,i)=>n+i.variants.length,0);
   return `
-  <h1 class="page-title">Today</h1>
+  <h1 class="page-title">Good day, <em>gorgeous.</em></h1>
   <p class="lede">${checked} of the last 7 days checked in. ${checked>=5?'That is consistency.':'Small and steady wins.'}</p>
   <div class="hero ${look?'':'solo'}">
     <div>
@@ -302,9 +319,9 @@ function today(){
       <h2>${look?esc(look.name):'Nothing planned yet'}</h2>
       <p style="opacity:.75;margin-bottom:16px">${look?esc(look.occasion||''):'Pick a look for today so you are not deciding in front of the mirror.'}</p>
       <div class="row">
-        ${look?`<button class="btn" data-act="wore" data-v="${d}">I wore this</button>`:''}
-        <button class="btn ${look?'ghost':''}" data-act="assign" data-v="${d}">${look?'Change':'Plan today'}</button>
-        ${look&&!dayOutfit?`<button class="btn ghost" data-act="clearplan" data-v="${d}">Remove</button>`:''}
+        ${look?`<button class="btn gold" data-act="wore" data-v="${d}">I wore this</button>`:''}
+        <button class="btn ${look?'ghost':'gold'}" style="${look?'color:var(--milk);border-color:rgba(255,255,255,.4)':''}" data-act="assign" data-v="${d}">${look?'Change':'Plan today'}</button>
+        ${look&&!dayOutfit?`<button class="btn ghost" style="color:var(--milk);border-color:rgba(255,255,255,.4)" data-act="clearplan" data-v="${d}">Remove</button>`:''}
       </div>
     </div>
     ${look?`<div>${board(look,true)}</div>`:''}
@@ -360,7 +377,7 @@ function dueIn(r){ const last = state.routine[r[0]]; return last ? r[2]-daysSinc
 function task(r){
   const left = dueIn(r), last = state.routine[r[0]];
   const txt = !last ? 'Not tracked yet' : left<0 ? `${-left} day${left===-1?'':'s'} overdue` : left===0 ? 'Due today' : `Due in ${left} day${left===1?'':'s'}`;
-  return `<div class="task"><i class="nail" style="background:${left<=0?'#e6cfc5':'#cdd6c1'};width:22px;height:30px"></i>
+  return `<div class="task">${ticon(ROUTINE_ICON[r[0]]||'other', left>0)}
     <div class="grow"><h3>${esc(r[1])}</h3><div class="status ${left<0?'over':''}">${txt} · every ${r[2]} days</div></div>
     <button class="btn small ${left<=0?'':'ghost'}" data-act="done" data-v="${r[0]}">Done</button></div>`;
 }
@@ -412,7 +429,7 @@ function wardrobe(){
   const styles = [...new Set(inCat.map(i=>i.style))];
   const occs = [...new Set(state.items.flatMap(i => i.occasions||[]))];
   const list = inCat.filter(i => ui.sty==='all' || i.style===ui.sty).filter(i => ui.occ==='all' || (i.occasions||[]).includes(ui.occ)).filter(i => ui.stage==='all' || i.variants.some(v => v.status===ui.stage));
-  return `<h1 class="page-title">Wardrobe</h1>
+  return `<h1 class="page-title">Your <em>wardrobe</em></h1>
   <p class="lede">Every piece you want, track it from wish to closet.</p>
   ${pipeline()}
   <div class="toolbar"><label class="btn small" style="cursor:pointer">Upload photos<input type="file" id="wardup" accept="image/*" multiple hidden></label><button class="btn small ghost" data-act="add">Add a piece</button><button class="btn small ghost" data-act="smart">Smart merge</button><button class="btn small ghost" data-act="selmode">${ui.selMode?'Cancel':'Select'}</button></div>
@@ -470,7 +487,7 @@ function closet(){
   const inGroup = (o,k) => k==='pants' ? o.it.cat==='bottom' && bottomGroup(o.it)==='Pants' : k==='skirts' ? o.it.cat==='bottom' && bottomGroup(o.it)==='Skirts' : o.it.cat===k;
   const groups = WCATS.map(([k,label]) => ({k,label,list:owned.filter(o => inGroup(o,k))}));
   const pieces = new Set(owned.map(o => o.it.id)).size;
-  return `<h1 class="page-title">Closet</h1>
+  return `<h1 class="page-title">My <em>closet</em></h1>
   <p class="lede">What you own, one card per color. Tap a category to open it.</p>
   <div class="card" style="margin:20px 0 14px">${owned.length?`<b>${owned.length} color${owned.length===1?'':'s'}</b> in ${pieces} piece${pieces===1?'':'s'}`:'Nothing here yet. Open a piece in Wardrobe and tick the colors you own.'}</div>
   <div class="acc">${groups.map(g => { const open = !!ui.acc[g.k] && g.list.length>0;
@@ -480,7 +497,7 @@ function closet(){
       ${open?`<div class="grid accbody">${g.list.map(o=>`<button class="item" data-act="closetopen" data-v="${o.it.id}:${o.v.id}" aria-label="${esc(o.it.name)}, ${esc(colorName(o.v.color))}"><div class="pic">${pic(o.it,o.v)}</div><h3>${esc(o.it.name)}</h3><p>${esc(colorName(o.v.color))}${wearInfo(o.it,o.v)}</p></button>`).join('')}</div>`:''}</section>`; }).join('')}</div>`;
 }
 function looks(){
-  return `<div class="row between"><h1 class="page-title">Looks</h1><button class="btn" data-act="newlook">Create a look</button></div>
+  return `<div class="row between"><h1 class="page-title">Your <em>looks</em></h1><button class="btn" data-act="newlook">Create a look</button></div>
   <p class="lede">Build outfits piece by piece, add nails, lips and hair, then drop them into your week.</p>
   ${state.looks.length?`<div class="grid wide" style="margin-top:22px">${state.looks.map(l=>`<div class="card"><button style="display:block;width:100%;text-align:left" data-act="editlook" data-v="${l.id}" aria-label="Edit ${esc(l.name)}">${board(l)}</button>
     <div class="row between" style="margin-top:12px"><div><h3 style="font-size:22px">${esc(l.name)}</h3><span class="status">${esc(l.occasion||'')}</span></div><div class="row" style="gap:6px"><button class="btn small ghost" data-act="shoplook" data-v="${l.id}" aria-label="Shop this look">${CART}</button><button class="btn small ghost" data-act="dellook" data-v="${l.id}">Delete</button></div></div></div>`).join('')}</div>`
@@ -542,7 +559,7 @@ function lastAdded(){ const d=(state.pics||[]).map(p=>p.at).filter(Boolean).sort
 function mood(){
   const all = state.pics||[];
   const list = all.filter(p => inTag(p, ui.ptag)).filter(p => !(ui.ptag==='Hair' && ui.hc!=='all') || (p.hcat||'Natural')===ui.hc);
-  return `<div class="row between"><h1 class="page-title">Mood</h1>
+  return `<div class="row between"><h1 class="page-title">Your <em>mood</em></h1>
     <label class="btn" style="display:inline-block;cursor:pointer;text-transform:none;letter-spacing:0;font-size:14px;color:var(--milk)">Upload pictures<input type="file" id="picup" accept="image/*" multiple hidden></label></div>
   <p class="lede">Hair, nails, makeup and outfit ideas you love. Pick from these when you build a look.</p>
   <div class="chips" style="margin-top:18px" role="group" aria-label="Filter">${PCHIPS.map(c=>`<button class="chip" aria-pressed="${ui.ptag===c[0]}" data-act="ptag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
@@ -563,7 +580,7 @@ function apptLead(a){
   const l = a.lookId && state.looks.find(x => x.id===a.lookId), p = (a.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
   if (l) return `<span class="lead thumbboard">${boardParts(l).core}</span>`;
   if (p) return `<img class="lead" src="${p.src}" alt="">`;
-  return `<i class="dotc" style="background:${typeInfo(a.type)[2]}"></i>`;
+  return ticon(TYPE_ICON[a.type]||'other', false);
 }
 const inFil = a => ui.cfil==='all' || (ui.cfil==='other' ? !['hair','nails','outfit'].includes(a.type) : a.type===ui.cfil);
 function apptCard(a){
@@ -586,22 +603,22 @@ function calendar(){
   const dayDue = due[sel] || [];
   const upcoming = state.appts.filter(a=>!a.done && a.date>=td && inFil(a)).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||''))).slice(0,5);
   const toBook = ROUTINE.filter(r => TYPE_OF_ROUTINE[r[0]] && state.routine[r[0]] && dueIn(r)<=7 && !state.appts.some(a=>!a.done&&a.date>=td&&a.type===TYPE_OF_ROUTINE[r[0]]));
-  return `<h1 class="page-title">Calendar</h1>
+  return `<h1 class="page-title">Beauty <em>calendar</em></h1>
   <p class="lede">Book hair and maintenance, and get a prep list for each visit so you show up ready.</p>
   <div class="chips" style="margin-top:18px" role="group" aria-label="Category">${CFIL.map(c=>`<button class="chip" aria-pressed="${ui.cfil===c[0]}" data-act="cfil" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
-  ${toBook.length?`<section style="margin-top:22px"><h2>Time to book</h2><div class="list" style="margin-top:12px">${toBook.map(r=>`<div class="task"><i class="nail" style="background:#e6cfc5;width:22px;height:30px"></i><div class="grow"><h3>${esc(r[1])}</h3><div class="status ${dueIn(r)<0?'over':''}">${dueIn(r)<0?-dueIn(r)+' days overdue':dueIn(r)===0?'Due today':'Due in '+dueIn(r)+' days'}</div></div><button class="btn small" data-act="newappt" data-v="${TYPE_OF_ROUTINE[r[0]]}">Book</button></div>`).join('')}</div></section>`:''}
+  ${toBook.length?`<section style="margin-top:22px"><h2>Time to book</h2><div class="list" style="margin-top:12px">${toBook.map(r=>`<div class="task">${ticon(ROUTINE_ICON[r[0]]||'other', false)}<div class="grow"><h3>${esc(r[1])}</h3><div class="status ${dueIn(r)<0?'over':''}">${dueIn(r)<0?-dueIn(r)+' days overdue':dueIn(r)===0?'Due today':'Due in '+dueIn(r)+' days'}</div></div><button class="btn small" data-act="newappt" data-v="${TYPE_OF_ROUTINE[r[0]]}">Book</button></div>`).join('')}</div></section>`:''}
   <section><div class="row between"><button class="btn small ghost" data-act="calprev" aria-label="Previous month">←</button><h2 class="monthname">${first.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h2><button class="btn small ghost" data-act="calnext" aria-label="Next month">→</button></div>
   <div class="cal" style="margin-top:14px"><div class="cal-h">${DAYS.map(d=>`<span>${d[0]}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
   <div class="legend">${APPT_TYPES.filter(t=>t[0]!=='other').map(t=>`<span><i style="background:${t[2]}"></i>${t[1]}</span>`).join('')}<span><i class="ring"></i>Due</span></div></section>
   <section><div class="row between"><h2>${fmtDate(sel)}</h2><button class="btn small" data-act="newappt" data-v="">Add appointment</button></div>
-  <div class="list" style="margin-top:12px">${dayAppts.map(apptCard).join('')}${dayDue.map(x=>`<div class="task"><i class="nail" style="background:#cdd6c1;width:22px;height:30px"></i><div class="grow"><h3>${esc(x.r[1])}</h3><div class="status">Due on this day</div></div><button class="btn small ghost" data-act="newappt" data-v="${x.t}">Book</button></div>`).join('')}
+  <div class="list" style="margin-top:12px">${dayAppts.map(apptCard).join('')}${dayDue.map(x=>`<div class="task">${ticon(TYPE_ICON[x.t]||'other', true)}<div class="grow"><h3>${esc(x.r[1])}</h3><div class="status">Due on this day</div></div><button class="btn small ghost" data-act="newappt" data-v="${x.t}">Book</button></div>`).join('')}
   ${!dayAppts.length&&!dayDue.length?'<div class="empty-state">Nothing booked. Add an appointment to get your prep list.</div>':''}</div></section>
   <section><h2>Coming up</h2><div class="list" style="margin-top:12px">${upcoming.length?upcoming.map(apptCard).join(''):'<div class="empty-state">No upcoming appointments.</div>'}</div></section>`;
 }
 
 function beauty(){
   const warm = COLORS.filter(c => c[2]===1);
-  return `<h1 class="page-title">Beauty</h1>
+  return `<h1 class="page-title">Beauty <em>upkeep</em></h1>
   <p class="lede">Tap Done when you finish something. It resets the clock so nothing slips.</p>
   <section style="margin-top:22px"><div class="list">${ROUTINE.map(task).join('')}</div></section>
   <section><h2>Move to another device</h2><div class="card" style="margin-top:14px"><p class="lede" style="margin-bottom:14px">Your data lives on this device. Save a backup file, then load it on your other phone or laptop.</p><div class="row"><button class="btn small" data-act="export">Save backup</button><label class="btn small ghost" style="display:inline-block;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--espresso)">Load backup<input type="file" id="import" accept="application/json" hidden></label></div></div></section>
