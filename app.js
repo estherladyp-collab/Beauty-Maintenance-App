@@ -115,19 +115,20 @@ function init(){
   if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
   state.seedAdded = state.seedAdded || {};
 if(window.MUSE_SEED_ITEMS){ window.MUSE_SEED_ITEMS.forEach(s => { if(state.seedAdded[s.id]) return; state.seedAdded[s.id] = true;
-  if(!state.items.some(i => i.id===s.id)) state.items.unshift(JSON.parse(JSON.stringify(s))); }); }
+  if(!state.items.some(i => i.id===s.id)){ const c = JSON.parse(JSON.stringify(s)); c.have = false; c.variants.forEach(v => v.have = false); state.items.unshift(c); } }); }
 state.seedVars = state.seedVars || {};
 if(window.MUSE_SEED_ITEMS){
   window.MUSE_SEED_ITEMS.forEach(s => { const it = state.items.find(i => i.id===s.id); if(!it) return; it.variants = it.variants || [];
     s.variants.forEach(sv => { if(state.seedVars[sv.id]) return; state.seedVars[sv.id] = true;
       const v = it.variants.find(x => x.id===sv.id);
-      if(!v) it.variants.push(JSON.parse(JSON.stringify(sv))); else if(!v.photo && sv.photo){ v.photo = sv.photo; v.have = sv.have; } }); });
+      if(!v){ const c = JSON.parse(JSON.stringify(sv)); c.have = false; it.variants.push(c); } else if(!v.photo && sv.photo){ v.photo = sv.photo; } }); });
 }
 if(!state.cleanup1){
     state.items = state.items.filter(i => !/^s\d+$/.test(i.id));
     state.items.forEach(i => { if(['x1','x2','x3'].includes(i.id) && i.variants){ const keep = i.variants.filter(v => v.photo); if(keep.length) i.variants = keep; } });
     state.cleanup1 = true;
   }
+  if(!state.ownReset1){ state.items.forEach(i => { if(/^x\d+$/.test(i.id)) (i.variants||[]).forEach(v => v.have = false); }); state.ownReset1 = true; }
   state.items.forEach(migrate);
   if(!state.seedFix){ const sp=(state.pics||[]).find(p=>p.id==='seed4'&&p.tag==='Makeup'); if(sp) sp.tag='Hair'; state.seedFix=true; }
   state.seedPics = state.seedPics || {};
@@ -287,7 +288,7 @@ function today(){
   }).join('');
   const due = ROUTINE.map(r => ({r, left: dueIn(r)})).sort((a,b)=>a.left-b.left).slice(0,3);
   const checked = weekLog();
-  const have = state.items.filter(i=>i.have).length;
+  const have = state.items.reduce((n,i)=>n+i.variants.filter(v=>v.have).length,0), all = state.items.reduce((n,i)=>n+i.variants.length,0);
   return `
   <h1 class="page-title">Good day, <em>gorgeous.</em></h1>
   <p class="lede">${checked} of the last 7 days checked in. ${checked>=5?'That is consistency.':'Small and steady wins.'}</p>
@@ -309,8 +310,8 @@ function today(){
   ${prepToday()}
   ${freshNudge()}
   <section><h2>Due next</h2><div class="list" style="margin-top:14px">${due.map(x=>task(x.r)).join('')}</div></section>
-  <section><div class="card"><div class="eyebrow">Wardrobe</div><h3 style="font-size:26px;margin:6px 0">${have} of ${state.items.length} pieces owned</h3>
-    <div class="progress"><i style="width:${state.items.length?have/state.items.length*100:0}%"></i></div></div></section>`;
+  <section><div class="card"><div class="eyebrow">My closet</div><h3 style="font-size:26px;margin:6px 0">${have} of ${all} wardrobe colors owned</h3>
+    <div class="progress"><i style="width:${all?have/all*100:0}%"></i></div></div></section>`;
 }
 function prepToday(){
   const td = isoDay(), lim = addDays(td,7);
@@ -373,19 +374,21 @@ function pdp(s){
     <p class="pdp-color">${esc(colorName(v.color))}${v.have?'':' · on my list'}</p>
     <div class="pdp-count">${it.variants.length} color${it.variants.length===1?'':'s'}</div>
     <div class="pdp-dots" role="group" aria-label="Colors">${it.variants.map(x=>`<button class="pdp-dot ${x.id===v.id?'on':''} ${x.have?'':'off'}" data-act="vpick" data-v="${it.id}:${x.id}" aria-pressed="${x.id===v.id}" aria-label="${esc(colorName(x.color))}${x.have?'':' (on list)'}"><i style="background:${x.color}"></i></button>`).join('')}</div>
+    <div class="eyebrow" style="margin-top:20px">I own these colors</div>
+    <div class="ownrow">${it.variants.map(x=>`<button class="ownchip ${x.have?'on':''}" data-act="ownv" data-v="${it.id}:${x.id}" aria-pressed="${x.have}"><i style="background:${x.color}"></i>${esc(colorName(x.color))}<span class="ck" aria-hidden="true">${x.have?'✓':'+'}</span></button>`).join('')}</div>
     ${(it.occasions||[]).length?`<div class="pdp-occ">${it.occasions.map(o=>`<span>${esc(o)}</span>`).join('')}</div>`:''}
-    <div class="row" style="margin-top:20px"><button class="btn" data-act="own" data-v="${it.id}">${v.have?'✓ In my wardrobe':'Add to my wardrobe'}</button><button class="btn ghost" data-act="pdplook" data-v="${it.id}">Add to a look</button><button class="btn ghost" data-act="shop" data-v="${it.id}" aria-label="Shop this piece">${CART} Shop</button><button class="btn ghost" data-act="edit" data-v="${it.id}">Edit</button></div></div>`;
+    <div class="row" style="margin-top:20px"><button class="btn" data-act="own" data-v="${it.id}">${v.have?'✓ In my closet':'Add to my closet'}</button><button class="btn ghost" data-act="pdplook" data-v="${it.id}">Add to a look</button><button class="btn ghost" data-act="shop" data-v="${it.id}" aria-label="Shop this piece">${CART} Shop</button><button class="btn ghost" data-act="edit" data-v="${it.id}">Edit</button></div></div>`;
 }
 function wardrobe(){
-  const have = state.items.filter(i=>i.have).length;
+  const have = state.items.reduce((n,i)=>n+i.variants.filter(v=>v.have).length,0), all = state.items.reduce((n,i)=>n+i.variants.length,0);
   const inCat = state.items.filter(i => ui.cat==='all' || (ui.cat==='pants' ? i.cat==='bottom' && bottomGroup(i)==='Pants' : ui.cat==='skirts' ? i.cat==='bottom' && bottomGroup(i)==='Skirts' : i.cat===ui.cat));
   const inGrp = inCat;
   const styles = [...new Set(inGrp.map(i=>i.style))];
   const occs = [...new Set(state.items.flatMap(i => i.occasions||[]))];
   const list = inGrp.filter(i => ui.sty==='all' || i.style===ui.sty).filter(i => ui.occ==='all' || (i.occasions||[]).includes(ui.occ));
   return `<h1 class="page-title">Your <em>wardrobe</em></h1>
-  <p class="lede">One card per piece. Tap a dot to switch colors. Tick what you own.</p>
-  <div class="card" style="margin:20px 0 14px"><div class="row between"><b>${have} of ${state.items.length} pieces owned</b><div class="row" style="gap:8px"><label class="btn small ghost" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Upload photos<input type="file" id="wardup" accept="image/*" multiple hidden></label><button class="btn small" data-act="add">Add a piece</button></div></div><div class="row" style="gap:8px;margin-top:10px"><button class="btn small ghost" data-act="smart">Smart merge</button><button class="btn small ghost" data-act="selmode">${ui.selMode?'Cancel selecting':'Select to merge'}</button></div><div class="progress"><i style="width:${state.items.length?have/state.items.length*100:0}%"></i></div></div>
+  <p class="lede">Your wish list. Tap a piece, then tick the colors you own and they move to your Closet.</p>
+  <div class="card" style="margin:20px 0 14px"><div class="row between"><b>${have} of ${all} colors in my closet</b><div class="row" style="gap:8px"><label class="btn small ghost" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Upload photos<input type="file" id="wardup" accept="image/*" multiple hidden></label><button class="btn small" data-act="add">Add a piece</button></div></div><div class="row" style="gap:8px;margin-top:10px"><button class="btn small ghost" data-act="smart">Smart merge</button><button class="btn small ghost" data-act="selmode">${ui.selMode?'Cancel selecting':'Select to merge'}</button></div><div class="progress"><i style="width:${all?have/all*100:0}%"></i></div></div>
   <div class="chips" role="group" aria-label="Category">${[['all','All'],...WCATS].map(c=>`<button class="chip" aria-pressed="${ui.cat===c[0]}" data-act="cat" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
   ${ui.cat!=='all'&&styles.length>1?`<div class="chips" role="group" aria-label="Style">${[['all','All styles'],...styles.map(s=>[s,s])].map(c=>`<button class="chip" aria-pressed="${ui.sty===c[0]}" data-act="sty" data-v="${esc(c[0])}">${esc(c[1])}</button>`).join('')}</div>`:''}
   ${occs.length?`<div class="chips" role="group" aria-label="Occasion">${[['all','Any occasion'],...occs.map(o=>[o,o])].map(c=>`<button class="chip s" aria-pressed="${ui.occ===c[0]}" data-act="occ" data-v="${esc(c[0])}">${esc(c[1])}</button>`).join('')}</div>`:''}
@@ -397,7 +400,7 @@ function itemCard(it){
   const on = ui.selMode && ui.sel.includes(it.id);
   return `<div class="item ${v.have?'have':'need'} ${on?'sel':''}"><div class="pic" data-act="${ui.selMode?'selpick':'pdp'}" data-v="${it.id}" role="button" tabindex="0" aria-label="View ${esc(it.name)}">${pic(it,v)}</div>
     <button class="cart" ${ui.selMode?'hidden':''} data-act="shop" data-v="${it.id}" aria-label="Shop ${esc(it.name)} in ${esc(colorName(v.color))}">${CART}</button>
-    <button class="tick" ${ui.selMode?'hidden':''} data-act="own" data-v="${it.id}" aria-pressed="${v.have}" aria-label="${v.have?'Owned':'Not owned'}: ${esc(it.name)}, ${esc(colorName(v.color))}">${v.have?'✓':''}</button>
+    <button class="tick" ${ui.selMode?'hidden':''} data-act="own" data-v="${it.id}" aria-pressed="${v.have}" aria-label="${v.have?'In my closet':'Not in my closet'}: ${esc(it.name)}, ${esc(colorName(v.color))}">${v.have?'✓':''}</button>
     <h3>${esc(it.name)}</h3><p>${esc(it.style)} · ${esc(colorName(v.color))}</p>
     ${dots(it,v.id,'vpick',it.id)}
     ${r==='pos'?'<span class="tag ok">Balances</span>':r==='neg'?'<span class="tag warn">Style with care</span>':''}</div>`;
@@ -410,7 +413,7 @@ function closet(){
   const pieces = new Set(owned.map(o => o.it.id)).size;
   return `<h1 class="page-title">My <em>closet</em></h1>
   <p class="lede">What you own, one card per color. Tap a category to open it.</p>
-  <div class="card" style="margin:20px 0 14px"><b>${owned.length} color${owned.length===1?'':'s'}</b> in ${pieces} piece${pieces===1?'':'s'}</div>
+  <div class="card" style="margin:20px 0 14px">${owned.length?`<b>${owned.length} color${owned.length===1?'':'s'}</b> in ${pieces} piece${pieces===1?'':'s'}`:'Nothing here yet. Open a piece in Wardrobe and tick the colors you own.'}</div>
   <div class="acc">${groups.map(g => { const open = !!ui.acc[g.k] && g.list.length>0;
     return `<section class="accitem ${open?'open':''}"><button class="acchead" data-act="acc" data-v="${g.k}" aria-expanded="${open}" ${g.list.length?'':'disabled'}>
       <span class="acctitle">${g.label}</span>
@@ -594,7 +597,8 @@ function sheet(){
     const cats = s.mode==='ward' ? WCATS : TAGS.map(t=>[t,t]), todo = s.items.filter(f=>!f.cat).length;
     inner = `<h2>Sort your pictures</h2>
     <div class="chips" role="group" aria-label="Where do these go"><button class="chip" aria-pressed="${s.mode==='ward'}" data-act="sortmode" data-v="ward">My wardrobe</button><button class="chip" aria-pressed="${s.mode==='insp'}" data-act="sortmode" data-v="insp">Inspiration</button></div>
-    ${s.mode==='ward'?`<div class="chk" style="margin-top:12px"><input type="checkbox" id="autog" data-act="autog" ${s.group?'checked':''}><label for="autog" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso)">Group similar photos as colors of one piece</label></div>`:''}
+    ${s.mode==='ward'?`<div class="chk" style="margin-top:12px"><input type="checkbox" id="ownall" data-act="ownall" ${s.own?'checked':''}><label for="ownall" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso)">These are mine. Put them in my closet.</label></div>`:''}
+    ${s.mode==='ward'?`<div class="chk" style="margin-top:4px"><input type="checkbox" id="autog" data-act="autog" ${s.group?'checked':''}><label for="autog" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso)">Group similar photos as colors of one piece</label></div>`:''}
     <div class="eyebrow" style="margin:10px 0 6px">Put them all in</div>
     <div class="chips" style="flex-wrap:wrap">${cats.map(c=>`<button class="chip s" data-act="sortall" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
     ${s.mode==='insp'&&s.items.some(f=>f.cat==='Hair')?`<div class="eyebrow" style="margin:12px 0 6px">Hair type for all hair pictures</div><div class="chips" style="flex-wrap:wrap">${HCATS.map(c=>`<button class="chip s" data-act="hcatall" data-v="${c[0]}">${c[1]}</button>`).join('')}</div><div class="eyebrow" style="margin:12px 0 6px">Hairstyle for all hair pictures</div><div class="chips" style="flex-wrap:wrap">${HAIR.map(h=>`<button class="chip s" data-act="hairall" data-v="${h}">${h}</button>`).join('')}</div>`:''}
@@ -821,6 +825,8 @@ const actions = {
     if(!n||!/^https?:\/\//i.test(u)) return setToast('Add a shop name and a link that starts with https://');
     (state.shops=state.shops||[]).push({id:uid(),name:n,url:u}); save(); },
   delshop(v){ state.shops=(state.shops||[]).filter(x=>x.id!==v); save(); },
+  ownv(v){ const [id,vid]=v.split(':'), it=state.items.find(i=>i.id===id), x=it.variants.find(y=>y.id===vid); x.have=!x.have; ui.vsel[id]=vid; syncHave(it); save(); },
+  ownall(){ ui.sheet.own=!ui.sheet.own; },
   acc(v){ ui.acc[v] = !ui.acc[v]; },
   closetopen(v){ const [id,vid]=v.split(':'); ui.vsel[id]=vid; ui.sheet={type:'pdp',id}; },
   pdp(v){ ui.sheet={type:'pdp',id:v}; },
@@ -987,15 +993,15 @@ async function finishSort(s){
   if(s.mode==='ward'){
     const created=[], notes=[]; let grouped=0;
     for(const f of s.items){
-      const v={id:uid(),color:f.hex,photo:f.src,have:true,sig:f.sig};
+      const v={id:uid(),color:f.hex,photo:f.src,have:!!s.own,sig:f.sig};
       const target = s.group ? await findMatch(f.cat, f.sig, [...created, ...state.items], f.kind) : null;
       if(target){ target.variants.push(v); syncHave(target); grouped++; if(!notes.includes(target.name)) notes.push(target.name); }
-      else created.push({id:uid(),cat:f.cat,name:((f.name||'').trim()||autoName(f)),style:f.cat==='bottom'?(f.kind==='skirt'?'Skirt':'Pants'):STYLES[f.cat][0][0],color:f.hex,have:true,photo:null,occasions:[],variants:[v]});
+      else created.push({id:uid(),cat:f.cat,name:((f.name||'').trim()||autoName(f)),style:f.cat==='bottom'?(f.kind==='skirt'?'Skirt':'Pants'):STYLES[f.cat][0][0],color:f.hex,have:!!s.own,photo:null,occasions:[],variants:[v]});
     }
     [...created].reverse().forEach(it => state.items.unshift(it));
     ui.tab='wardrobe'; ui.cat=one; ui.sty='all'; ui.occ='all';
     save(); ui.sheet=null; window.scrollTo(0,0); render();
-    setToast(grouped ? `${n} photo${n===1?'':'s'} saved. ${grouped} added as extra colors of a piece you already have.` : `${n} picture${n===1?'':'s'} saved. Tap one to rename it or add colors.`);
+    setToast(grouped ? `${n} photo${n===1?'':'s'} saved. ${grouped} added as extra colors of a piece you already have.` : `${n} picture${n===1?'':'s'} saved to your wardrobe${s.own?' and your closet':''}. Tap one to rename it or add colors.`);
   } else {
     [...s.items].reverse().forEach(f => (state.pics=state.pics||[]).unshift(Object.assign({id:uid(),src:f.src,tag:f.cat,at:isoDay(),fav:false}, f.cat==='Hair' ? {style:f.hstyle||'Other',hcolor:f.hair,hcat:f.hcat||(f.hstyle==='Braids'?'Braids':'Natural')} : {})));
     ui.tab='mood'; ui.ptag=one; save(); ui.sheet=null; window.scrollTo(0,0); render();
