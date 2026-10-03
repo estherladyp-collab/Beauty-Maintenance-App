@@ -129,6 +129,23 @@ const SEGL = {wish:'Wish',cart:'Cart',ordered:'Order',own:'Own'};
 const money = n => n ? Number(n).toLocaleString('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0}) : '–';
 function setSt(v, st){ v.status = st; v.have = st==='own'; }
 function migrate(it){ it.occasions = it.occasions || []; (it.variants||[]).forEach(v => { if(!v.status) v.status = v.have ? 'own' : 'wish'; v.have = v.status==='own'; }); if(!it.variants) it.variants=[{id:uid(),color:it.color,photo:it.photo||null,have:!!it.have}]; syncHave(it); }
+/* ---------- colors / themes ---------- */
+const THEMES = [['coffee','Coffee & gold','#2a1b16','#b48a4c'],['cream','Cream','#f1e6de','#b48a4c'],['rose','Rosé','#f3dfdb','#b4675c'],['sage','Sage','#1f2a24','#c8a96a'],['midnight','Midnight','#1b2233','#c9a45c'],['plum','Plum','#2e1a2a','#d8a28f']];
+const hx = h => [1,3,5].map(i => parseInt(h.slice(i,i+2),16));
+const mixc = (a,b,t) => '#'+hx(a).map((v,i)=>Math.round(v+(hx(b)[i]-v)*t).toString(16).padStart(2,'0')).join('');
+function themeNow(){ const t = (state && state.theme) || {}; const p = THEMES.find(x => x[0]===t.id) || THEMES[0];
+  return {id: t.id==='custom' ? 'custom' : p[0], bg: t.bg || p[2], accent: t.accent || p[3]}; }
+function applyTheme(t){
+  t = t || themeNow(); const bg = /^#[0-9a-f]{6}$/i.test(t.bg) ? t.bg : '#2a1b16', ac = /^#[0-9a-f]{6}$/i.test(t.accent) ? t.accent : '#b48a4c';
+  const [r,g,b] = hx(bg), dark = (0.299*r+0.587*g+0.114*b) < 120, ink = dark ? '#f3e8df' : '#241713', R = document.documentElement.style;
+  const set = (k,v) => R.setProperty(k,v), rgb = h => hx(h).join(',');
+  set('--milk',bg); set('--espresso',ink); set('--gold',ac);
+  if(dark){ set('--card',mixc(bg,'#ffffff',.06)); set('--blush',mixc(bg,'#ffffff',.14)); set('--mocha',mixc(ink,bg,.18)); set('--cocoa',mixc(ink,bg,.35)); set('--hero',mixc(bg,'#ffffff',.07)); }
+  else { set('--card',mixc(bg,'#ffffff',.5)); set('--blush',mixc(bg,'#7a5240',.14)); set('--mocha','#4a3128'); set('--cocoa','#7a5240'); set('--hero','#241713'); }
+  set('--line',`rgba(${rgb(ink)},.16)`); set('--muted',`rgba(${rgb(ink)},.62)`); set('--navbg',`rgba(${rgb(bg)},.93)`);
+  document.documentElement.dataset.mode = dark ? 'dark' : 'light';
+  const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = bg;
+}
 let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[]};
 let booted = false;
 function init(){
@@ -206,7 +223,7 @@ async function boot(){
   if(fromLocal){ try { const chk = await idbGet(KEY); if(chk && chk.items && chk.items.length===state.items.length) localStorage.removeItem(KEY); } catch(e){} }
   try { if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
   let restored = false; try { restored = restoreDraft(await idbGet(DRAFT_KEY)); } catch(e){}
-  booted = true; render();
+  applyTheme(); booted = true; render();
   if(restored) setToast('Picked up where you left off.');
 }
 document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); } });
@@ -294,7 +311,7 @@ function view(){
   const tabs = [['today','Today'],['wardrobe','Wardrobe'],['closet','Closet'],['looks','Looks'],['mood','Mood'],['calendar','Calendar'],['beauty','Beauty']];
   const body = ui.draft ? builder() : {today,wardrobe,closet,looks,mood,calendar,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true">Muse</div>
-  <main class="shell"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span></header>${body}</main>
+  <main class="shell"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${tabs.map(t=>`<button data-act="tab" data-v="${t[0]}" ${ui.tab===t[0]&&!ui.draft?'aria-current="page"':''}>${t[1]}</button>`).join('')}</div></nav>
   ${ui.sheet || ui.draft || ui.tab==='calendar' ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${ui.lightbox?`<div class="lightbox" data-act="lbclose" role="dialog" aria-label="Photo"><img src="${ui.lightbox}" alt=""></div>`:''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
 }
@@ -321,8 +338,8 @@ function today(){
       <p style="opacity:.75;margin-bottom:16px">${look?esc(look.occasion||''):'Pick a look for today so you are not deciding in front of the mirror.'}</p>
       <div class="row">
         ${look?`<button class="btn gold" data-act="wore" data-v="${d}">I wore this</button>`:''}
-        <button class="btn ${look?'ghost':'gold'}" style="${look?'color:var(--milk);border-color:rgba(255,255,255,.4)':''}" data-act="assign" data-v="${d}">${look?'Change':'Plan today'}</button>
-        ${look&&!dayOutfit?`<button class="btn ghost" style="color:var(--milk);border-color:rgba(255,255,255,.4)" data-act="clearplan" data-v="${d}">Remove</button>`:''}
+        <button class="btn ${look?'ghost':'gold'}" style="${look?'color:var(--heroink);border-color:rgba(255,255,255,.4)':''}" data-act="assign" data-v="${d}">${look?'Change':'Plan today'}</button>
+        ${look&&!dayOutfit?`<button class="btn ghost" style="color:var(--heroink);border-color:rgba(255,255,255,.4)" data-act="clearplan" data-v="${d}">Remove</button>`:''}
       </div>
     </div>
     ${look?`<div>${board(look,true)}</div>`:''}
@@ -561,7 +578,7 @@ function mood(){
   const all = state.pics||[];
   const list = all.filter(p => inTag(p, ui.ptag)).filter(p => !(ui.ptag==='Hair' && ui.hc!=='all') || (p.hcat||'Natural')===ui.hc);
   return `<div class="row between"><h1 class="page-title">Your <em>mood</em></h1>
-    <label class="btn" style="display:inline-block;cursor:pointer;text-transform:none;letter-spacing:0;font-size:14px;color:var(--milk)">Upload pictures<input type="file" id="picup" accept="image/*" multiple hidden></label></div>
+    <label class="btn" style="display:inline-block;cursor:pointer;text-transform:none;letter-spacing:0;font-size:14px">Upload pictures<input type="file" id="picup" accept="image/*" multiple hidden></label></div>
   <p class="lede">Hair, nails, makeup and outfit ideas you love. Pick from these when you build a look.</p>
   <div class="chips" style="margin-top:18px" role="group" aria-label="Filter">${PCHIPS.map(c=>`<button class="chip" aria-pressed="${ui.ptag===c[0]}" data-act="ptag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
   ${ui.ptag==='Hair'?`<div class="chips" style="margin-top:6px" role="group" aria-label="Hair type">${[['all','All hair'],...HCATS].map(c=>`<button class="chip" aria-pressed="${ui.hc===c[0]}" data-act="hc" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>`:''}
@@ -655,6 +672,13 @@ function sheet(){
   } else if (s.type==='shoplook'){
     const l = s.look, rows = Object.entries(l.slots).map(([slot,id]) => { const it = state.items.find(i=>i.id===id); return it && {slot,it,v:vOf(it,l.vars&&l.vars[slot])}; }).filter(Boolean).sort((x,y)=>(x.v.have?1:0)-(y.v.have?1:0));
     inner = `<h2>Shop this look</h2>${rows.length?`<div class="list">${rows.map(r=>`<div class="task"><span class="shopthumb">${pic(r.it,r.v)}</span><div class="grow" style="min-width:0"><h3>${esc(r.it.name)}</h3><div class="status">${esc(colorName(r.v.color))} · ${r.v.have?'in my wardrobe':'to buy'}</div></div><button class="btn small ${r.v.have?'ghost':''}" data-act="shopv" data-v="${r.it.id}:${r.v.id}" aria-label="Shop ${esc(r.it.name)}">${CART}</button></div>`).join('')}</div>`:'<div class="empty-state">Pick some pieces first.</div>'}<div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="close">Close</button></div>`;
+  } else if (s.type==='theme'){
+    const t = themeNow();
+    inner = `<h2>App colors</h2><p class="status" style="margin-bottom:12px">Pick a look for the whole app.</p>
+    <div class="themes">${THEMES.map(p=>`<button class="themeopt" data-act="settheme" data-v="${p[0]}" aria-pressed="${t.id===p[0]}" aria-label="${esc(p[1])}"><span class="swatch" style="background:${p[2]}"><i style="background:${p[3]}"></i></span><small>${esc(p[1])}</small></button>`).join('')}</div>
+    <div class="eyebrow" style="margin:18px 0 8px">Your own colors</div>
+    <div class="row" style="gap:18px"><label class="colorpick">Background<input type="color" id="thbg" value="${t.bg}"></label><label class="colorpick">Accent<input type="color" id="thac" value="${t.accent}"></label></div>
+    <div class="row" style="margin-top:18px"><button class="btn ghost small" data-act="close">Close</button></div>`;
   } else if (s.type==='merge'){
     const nm = g => g.map(id => (state.items.find(i=>i.id===id)||{}).name).filter(Boolean).join(' · ');
     inner = `<h2>Smart merge</h2>${s.busy?'<p class="status">Looking for pieces that match…</p>':s.groups.length?`<p class="status" style="margin-bottom:12px">These look like the same piece in different colors.</p>${s.groups.map((g,gi)=>`<div class="card mgroup"><div class="mthumbs">${g.map(id=>{const it=state.items.find(i=>i.id===id);return it?`<span class="mth">${pic(it)}</span>`:''}).join('')}</div><div class="row between" style="flex-wrap:nowrap"><span class="status" style="min-width:0">${esc(nm(g))}</span><button class="btn small" data-act="mergegroup" data-v="${gi}">Merge ${g.length}</button></div></div>`).join('')}<button class="btn" style="margin-top:6px" data-act="mergeall">Merge all ${s.groups.length}</button>`:'<div class="empty-state">No matches found. Pieces that look alike will show up here.</div>'}<div class="row" style="margin-top:14px"><button class="btn ghost small" data-act="close">Close</button></div>`;
@@ -906,6 +930,8 @@ const actions = {
   setstatus(v){ const [id,vid,st]=v.split(':'), it=state.items.find(i=>i.id===id), x=it.variants.find(y=>y.id===vid); setSt(x,st); ui.vsel[id]=vid; syncHave(it); save(); },
   stage(v){ ui.stage = ui.stage===v ? 'all' : v; },
   autoweek(){ autoWeek(); },
+  themes(){ ui.sheet={type:'theme'}; },
+  settheme(v){ state.theme={id:v}; applyTheme(); save(); },
   ownall(){ ui.sheet.own=!ui.sheet.own; },
   acc(v){ ui.acc[v] = !ui.acc[v]; },
   closetopen(v){ const [id,vid]=v.split(':'); ui.vsel[id]=vid; ui.sheet={type:'pdp',id}; },
@@ -1115,6 +1141,7 @@ async function addFiles(files, mode){
   if(n) setToast(n+(n===1?' picture added.':' pictures added.')+(inSheet?'':' Tap one to set its tag.'));
 }
 document.addEventListener('input', e => {
+  if(e.target.id==='thbg'||e.target.id==='thac'){ const t = themeNow(); const n = {id:'custom', bg:t.bg, accent:t.accent}; if(e.target.id==='thbg') n.bg=e.target.value; else n.accent=e.target.value; state.theme=n; applyTheme(); save(); return; }
   if(e.target.id==='pprice' && ui.sheet && ui.sheet.type==='pdp'){ const it = state.items.find(i => i.id===ui.sheet.id); if(it){ it.price = Math.max(0, parseFloat(e.target.value)||0); save(); } return; }
   if(e.target.id==='shopq' && ui.sheet && ui.sheet.type==='shop'){ ui.sheet.q = e.target.value; document.querySelectorAll('.shoplink').forEach(a => { a.href = shopUrl(a.dataset.tpl, e.target.value); }); return; }
   if(ui.draft && !ui.sheet && (e.target.id==='lname'||e.target.id==='locc')) syncDraft();
