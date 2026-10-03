@@ -140,7 +140,8 @@ if(window.MUSE_SEED_ITEMS){ window.MUSE_SEED_ITEMS.forEach(s => { if(state.seedA
 state.seedVars = state.seedVars || {};
 if(window.MUSE_SEED_ITEMS){
   window.MUSE_SEED_ITEMS.forEach(s => { const it = state.items.find(i => i.id===s.id); if(!it) return; it.variants = it.variants || [];
-    s.variants.forEach(sv => { if(state.seedVars[sv.id]) return; state.seedVars[sv.id] = true;
+    s.variants.forEach(sv => { const v0 = it.variants.find(x => x.id===sv.id); if(v0 && sv.rev && (v0.rev||0) < sv.rev){ v0.photo = sv.photo; v0.rev = sv.rev; }
+      if(state.seedVars[sv.id]) return; state.seedVars[sv.id] = true;
       const v = it.variants.find(x => x.id===sv.id);
       if(!v){ const c = JSON.parse(JSON.stringify(sv)); setSt(c,'wish'); it.variants.push(c); } else if(!v.photo && sv.photo){ v.photo = sv.photo; } }); });
 }
