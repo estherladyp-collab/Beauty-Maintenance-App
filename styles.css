@@ -420,3 +420,4 @@ input[type=number]{width:100%;padding:11px 14px;border-radius:12px;border:1px so
 .ticon{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--blush);color:var(--cocoa)}
 .ticon.ok{background:#dfe5d6;color:var(--sage)}
 .ticon svg{width:20px;height:20px}
+.item.need .pic{opacity:1}
