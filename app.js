@@ -90,7 +90,19 @@ const PREP = {
   outfit:[['Steam or iron every piece','Day before'],['Check shoes and bag are clean','Day before'],['Lay the full outfit out together','Day before'],['Charge your phone and pack the essentials','Morning of'],['Bring a layer or spare shoes','Bring']],
   other:[['Write down what you want done','Day before'],['Bring reference pictures','Bring']]
 };
-const defTitle = t => t==='outfit' ? 'Outfit' : (APPT_TYPES.find(x=>x[0]===t)||APPT_TYPES[7])[1]+' appointment';
+const PREP_HOME = {
+  hair:[['Gather products, comb, clips and a towel','Day before'],['Wash and detangle first, or set up your braiding spot','Day before'],['Pick reference pictures from your Mood tab','Day before'],['Put on a show or podcast for the long sit','Morning of']],
+  nails:[['Gather polish or gel, base and top coat, files, cuticle oil','Day before'],['Remove old polish and push cuticles back gently','Day before'],['Pick 2 or 3 reference pictures from your Mood tab','Day before'],['Lay out a towel and good light, phone on silent','Morning of']],
+  lashes:[['Gather lashes or clusters, glue, tweezers and mirror','Day before'],['Wash your face and lids clean','Morning of'],['Check you have good light and a steady spot','Morning of']],
+  brows:[['Gather tweezers, brow razor, spoolie and pencil','Day before'],['Skip retinol and exfoliating acids for 3 days','Day before'],['Wash your face and set up good light','Morning of']],
+  skin:[['Gather your mask, scrub or oil and a clean towel','Day before'],['Tie your hair back and clear your sink','Morning of'],['Drink plenty of water','Day before']],
+  pedi:[['Gather polish, foot soak, file and towel','Day before'],['Remove old polish and soak your feet','Morning of'],['Pick a shade from your Mood tab','Day before']],
+  outfit:PREP.outfit,
+  other:[['Write down what you want done','Day before'],['Gather what you need','Day before']]
+};
+const prepFor = (t,w) => ((w==='home' ? PREP_HOME : PREP)[t]||PREP.other).map(p=>({t:p[0],when:p[1],done:false}));
+const defTitle = (t,w) => t==='outfit' ? 'Outfit' : (APPT_TYPES.find(x=>x[0]===t)||APPT_TYPES[7])[1]+(w==='home'?' at home':' appointment');
+const isDefTitle = a => !a.title.trim() || a.title===defTitle(a.type,'salon') || a.title===defTitle(a.type,'home');
 const DEFTAG = {hair:'Hair',nails:'Nails',pedi:'Nails',lashes:'Makeup',brows:'Makeup',skin:'Makeup',outfit:'Outfit'};
 const CFIL = [['all','All'],['hair','Hair'],['nails','Nails'],['outfit','Outfit'],['other','More']];
 const typeInfo = t => APPT_TYPES.find(x => x[0]===t) || APPT_TYPES[6];
@@ -359,9 +371,9 @@ function prepToday(){
     const l = a.lookId && state.looks.find(x => x.id===a.lookId), p = (a.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
     const art = l ? `<div class="gboard thumbboard">${boardParts(l).core}</div>` : p ? `<img src="${p.src}" alt="">` : `<div class="gico">${ticon(TYPE_ICON[a.type]||'other', false)}</div>`;
     const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
-    return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart">${art}<span class="gday">${a.date===td?'Today':fmtDate(a.date)}</span></span><b>${esc(a.title)}</b><span class="status">${a.time?esc(a.time)+' · ':''}${tot?(open?`${open} to prep`:'All prepped'):'No prep needed'}</span></button>`;
+    return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart">${art}<span class="gday">${a.date===td?'Today':fmtDate(a.date)}</span></span><b>${esc(a.title)}</b><span class="status">${a.where==='home'?'At home · ':''}${a.time?esc(a.time)+' · ':''}${tot?(open?`${open} to prep`:'All prepped'):'No prep needed'}</span></button>`;
   }).join('');
-  return `<section><div class="row between"><h2>Coming up</h2><button class="btn small ghost" data-act="newappt" data-v="">＋ Add</button></div><div class="gallery" style="margin-top:14px">${cards}<button class="gcard gadd" data-act="newappt" data-v=""><span class="gart"><span style="font-size:34px;color:var(--gold)">＋</span></span><b>Book something</b><span class="status">Hair, nails, lashes…</span></button></div></section>`;
+  return `<section><div class="row between"><h2>Coming up</h2><button class="btn small ghost" data-act="newappt" data-v="">＋ Add</button></div><div class="gallery" style="margin-top:14px">${cards}<button class="gcard gadd" data-act="newappt" data-v=""><span class="gart"><span style="font-size:34px;color:var(--gold)">＋</span></span><b>Plan something</b><span class="status">Salon or at home</span></button></div></section>`;
 }
 function startRail(){
   const src = ui.tsrc;
@@ -606,7 +618,7 @@ const inFil = a => ui.cfil==='all' || (ui.cfil==='other' ? !['hair','nails','out
 function apptCard(a){
   const ti = typeInfo(a.type), n = a.prep.length;
   return `<button class="appt ${a.done?'done':''}" data-act="editappt" data-v="${a.id}">${apptLead(a)}
-    <span class="grow"><b>${esc(a.title)}</b><span class="status">${fmtDate(a.date)}${a.time?' · '+esc(a.time):''}${a.done?' · Done':''}</span></span>
+    <span class="grow"><b>${esc(a.title)}</b><span class="status">${fmtDate(a.date)}${a.time?' · '+esc(a.time):''}${a.where==='home'?' · At home':''}${a.done?' · Done':''}</span></span>
     <span class="status">${n?`${prepDone(a)} of ${n} prepped`:''}</span></button>`;
 }
 function calendar(){
@@ -617,23 +629,23 @@ function calendar(){
   for(let d=1; d<=dim; d++){
     const iso = isoDay(new Date(y,m,d)), as = state.appts.filter(a=>a.date===iso && inFil(a));
     const dots = as.filter(inFil).slice(0,3).map(a=>`<i style="background:${typeInfo(a.type)[2]}"></i>`).join('');
-    cells += `<button class="cd ${iso===td?'today':''} ${iso===ui.calSel?'sel':''} ${due[iso]?'due':''}" data-act="calsel" data-v="${iso}" aria-label="${fmtDate(iso)}${as.length?', '+as.length+' appointment'+(as.length>1?'s':''):''}"><span>${d}</span><span class="dots">${dots}</span></button>`;
+    cells += `<button class="cd ${iso===td?'today':''} ${iso===ui.calSel?'sel':''} ${due[iso]?'due':''}" data-act="calsel" data-v="${iso}" aria-label="${fmtDate(iso)}${as.length?', '+as.length+' plan'+(as.length>1?'s':''):''}"><span>${d}</span><span class="dots">${dots}</span></button>`;
   }
   const sel = ui.calSel, dayAppts = state.appts.filter(a=>a.date===sel && inFil(a)).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
   const dayDue = due[sel] || [];
   const upcoming = state.appts.filter(a=>!a.done && a.date>=td && inFil(a)).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||''))).slice(0,5);
   const toBook = ROUTINE.filter(r => TYPE_OF_ROUTINE[r[0]] && state.routine[r[0]] && dueIn(r)<=7 && !state.appts.some(a=>!a.done&&a.date>=td&&a.type===TYPE_OF_ROUTINE[r[0]]));
   return `<h1 class="page-title">Beauty <em>calendar</em></h1>
-  <p class="lede">Book hair and maintenance, and get a prep list for each visit so you show up ready.</p>
+  <p class="lede">Plan your hair and beauty upkeep, at the salon or at home, and get a prep list for each one so you are ready.</p>
   <div class="chips" style="margin-top:18px" role="group" aria-label="Category">${CFIL.map(c=>`<button class="chip" aria-pressed="${ui.cfil===c[0]}" data-act="cfil" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
-  ${toBook.length?`<section style="margin-top:22px"><h2>Time to book</h2><div class="list" style="margin-top:12px">${toBook.map(r=>`<div class="task">${ticon(ROUTINE_ICON[r[0]]||'other', false)}<div class="grow"><h3>${esc(r[1])}</h3><div class="status ${dueIn(r)<0?'over':''}">${dueIn(r)<0?-dueIn(r)+' days overdue':dueIn(r)===0?'Due today':'Due in '+dueIn(r)+' days'}</div></div><button class="btn small" data-act="newappt" data-v="${TYPE_OF_ROUTINE[r[0]]}">Book</button></div>`).join('')}</div></section>`:''}
+  ${toBook.length?`<section style="margin-top:22px"><h2>Time to plan</h2><div class="list" style="margin-top:12px">${toBook.map(r=>`<div class="task">${ticon(ROUTINE_ICON[r[0]]||'other', false)}<div class="grow"><h3>${esc(r[1])}</h3><div class="status ${dueIn(r)<0?'over':''}">${dueIn(r)<0?-dueIn(r)+' days overdue':dueIn(r)===0?'Due today':'Due in '+dueIn(r)+' days'}</div></div><button class="btn small" data-act="newappt" data-v="${TYPE_OF_ROUTINE[r[0]]}">Plan</button></div>`).join('')}</div></section>`:''}
   <section><div class="row between"><button class="btn small ghost" data-act="calprev" aria-label="Previous month">←</button><h2 class="monthname">${first.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h2><button class="btn small ghost" data-act="calnext" aria-label="Next month">→</button></div>
   <div class="cal" style="margin-top:14px"><div class="cal-h">${DAYS.map(d=>`<span>${d[0]}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
   <div class="legend">${APPT_TYPES.filter(t=>t[0]!=='other').map(t=>`<span><i style="background:${t[2]}"></i>${t[1]}</span>`).join('')}<span><i class="ring"></i>Due</span></div></section>
-  <section><div class="row between"><h2>${fmtDate(sel)}</h2><button class="btn small" data-act="newappt" data-v="">Add appointment</button></div>
+  <section><div class="row between"><h2>${fmtDate(sel)}</h2><button class="btn small" data-act="newappt" data-v="">Add plan</button></div>
   <div class="list" style="margin-top:12px">${dayAppts.map(apptCard).join('')}${dayDue.map(x=>`<div class="task">${ticon(TYPE_ICON[x.t]||'other', true)}<div class="grow"><h3>${esc(x.r[1])}</h3><div class="status">Due on this day</div></div><button class="btn small ghost" data-act="newappt" data-v="${x.t}">Book</button></div>`).join('')}
-  ${!dayAppts.length&&!dayDue.length?'<div class="empty-state">Nothing booked. Add an appointment to get your prep list.</div>':''}</div></section>
-  <section><h2>Coming up</h2><div class="list" style="margin-top:12px">${upcoming.length?upcoming.map(apptCard).join(''):'<div class="empty-state">No upcoming appointments.</div>'}</div></section>`;
+  ${!dayAppts.length&&!dayDue.length?'<div class="empty-state">Nothing planned. Add a plan to get your prep list.</div>':''}</div></section>
+  <section><h2>Coming up</h2><div class="list" style="margin-top:12px">${upcoming.length?upcoming.map(apptCard).join(''):'<div class="empty-state">No upcoming plans.</div>'}</div></section>`;
 }
 
 function beauty(){
@@ -709,13 +721,14 @@ function sheet(){
     <div class="row" style="margin-top:16px"><label class="btn ghost small" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Add more<input type="file" id="sortmore" accept="image/*" multiple hidden></label><button class="btn small" data-act="sortsave" ${todo?'aria-disabled="true"':''}>${todo?`Sort ${todo} more`:`Save ${s.items.length} picture${s.items.length===1?'':'s'}`}</button><button class="btn ghost small" data-act="close">Cancel</button></div>`;
   } else if (s.type==='appt'){
     const a = ui.adraft, ti = typeInfo(a.type), pics = (a.pics||[]).map(id=>(state.pics||[]).find(p=>p.id===id)).filter(Boolean);
-    inner = `<h2>${s.isNew?'Add appointment':'Appointment'}</h2><div class="slots">
+    inner = `<h2>${s.isNew?'Add a plan':'Your plan'}</h2><div class="slots">
       <div class="chips" style="flex-wrap:wrap" role="group" aria-label="Type">${APPT_TYPES.map(t=>`<button class="chip" aria-pressed="${a.type===t[0]}" data-act="settype" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
+      ${a.type==='outfit'?'':`<div class="chips" role="group" aria-label="Where"><button class="chip" aria-pressed="${a.where!=='home'}" data-act="setwhere" data-v="salon">At a salon</button><button class="chip" aria-pressed="${a.where==='home'}" data-act="setwhere" data-v="home">At home, DIY</button></div>`}
       <label>Title<input type="text" id="aname" value="${esc(a.title)}" maxlength="50"></label>
       <div class="row" style="gap:10px"><label style="flex:1;min-width:140px">Date<input type="date" id="adate" value="${a.date}"></label><label style="flex:1;min-width:120px">Time<input type="time" id="atime" value="${esc(a.time)}"></label></div>
-      <label>Notes<input type="text" id="anotes" value="${esc(a.notes)}" placeholder="Stylist, place, style you want" maxlength="120"></label>
+      <label>Notes<input type="text" id="anotes" value="${esc(a.notes)}" placeholder="${a.where==='home'?'Products, style, how long it takes':'Stylist, place, style you want'}" maxlength="120"></label>
       ${a.type==='outfit'?`<div class="eyebrow" style="margin-top:8px">Look for this day</div>${state.looks.length?`<div class="hscroll">${state.looks.map(l=>`<button class="tile ${a.lookId===l.id?'on':''}" data-act="applook" data-v="${l.id}" aria-pressed="${a.lookId===l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div>`:'<p class="status">No saved looks yet. Build one on the Looks tab first.</p>'}`:''}
-      <div class="eyebrow" style="margin-top:8px">Prep list · ${prepDone(a)} of ${a.prep.length} done</div>
+      <div class="eyebrow" style="margin-top:8px">${a.where==='home'?'Get ready':'Prep list'} · ${prepDone(a)} of ${a.prep.length} done</div>
       <div class="prep">${a.prep.map((p,i)=>`<div class="chk"><input type="checkbox" id="pc${i}" data-act="preptoggle" data-v="${i}" ${p.done?'checked':''}><label for="pc${i}" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso);flex:1"><span>${esc(p.t)}<small>${esc(p.when)}</small></span></label><button class="btn small ghost" data-act="prepdel" data-v="${i}" aria-label="Remove ${esc(p.t)}">✕</button></div>`).join('')}</div>
       <div class="row" style="gap:8px;flex-wrap:nowrap"><input type="text" id="prepnew" placeholder="Add something to prep" maxlength="80" style="flex:1"><select id="prepwhen" style="width:auto"><option>Day before</option><option>Morning of</option><option>Bring</option></select><button class="btn small" data-act="prepadd">Add</button></div>
       <div class="eyebrow" style="margin-top:8px">Reference pictures</div>
@@ -865,13 +878,17 @@ const actions = {
   calprev(){ const c=ui.cal; c.m--; if(c.m<0){c.m=11;c.y--;} },
   calnext(){ const c=ui.cal; c.m++; if(c.m>11){c.m=0;c.y++;} },
   calsel(v){ ui.calSel=v; },
-  newappt(v){ const t=v||'hair'; ui.adraft={id:uid(),type:t,title:defTitle(t),date:ui.calSel||isoDay(),time:'',notes:'',prep:PREP[t].map(p=>({t:p[0],when:p[1],done:false})),pics:[],edited:false,done:false};
+  newappt(v){ const t=v||'hair'; ui.adraft={id:uid(),type:t,title:defTitle(t,'salon'),where:'salon',date:ui.calSel||isoDay(),time:'',notes:'',prep:prepFor(t,'salon'),pics:[],edited:false,done:false};
     ui.sheet={type:'appt',isNew:true}; },
   editappt(v){ ui.adraft=JSON.parse(JSON.stringify(state.appts.find(a=>a.id===v))); ui.sheet={type:'appt'}; },
-  settype(v){ const a=ui.adraft, old=typeInfo(a.type);
-    if(a.title===defTitle(a.type) || !a.title.trim()) a.title=defTitle(v);
-    if(!a.edited) a.prep=PREP[v].map(p=>({t:p[0],when:p[1],done:false}));
+  settype(v){ const a=ui.adraft;
+    if(isDefTitle(a)) a.title=defTitle(v,a.where);
+    if(!a.edited) a.prep=prepFor(v,a.where);
     a.type=v; },
+  setwhere(v){ const a=ui.adraft;
+    if(isDefTitle(a)) a.title=defTitle(a.type,v);
+    if(!a.edited) a.prep=prepFor(a.type,v);
+    a.where=v; },
   preptoggle(v){ ui.adraft.prep[+v].done=!ui.adraft.prep[+v].done; ui.adraft.edited=true; },
   prepdel(v){ ui.adraft.prep.splice(+v,1); ui.adraft.edited=true; },
   prepadd(){ const t=document.getElementById('prepnew').value.trim(); if(!t) return;
@@ -880,8 +897,8 @@ const actions = {
   apppics(){ ui.sheet={type:'apppics',tag:DEFTAG[ui.adraft.type]||'all',isNew:ui.sheet.isNew}; },
   backappt(){ ui.sheet={type:'appt',isNew:ui.sheet.isNew}; },
   toggleapppic(v){ const d=ui.adraft; d.pics=d.pics||[]; const i=d.pics.indexOf(v); if(i>=0) d.pics.splice(i,1); else d.pics.push(v); },
-  saveappt(){ const a=ui.adraft; if(!a.date){ return setToast('Pick a date for this appointment.'); }
-    if(!a.title.trim()) a.title=defTitle(a.type);
+  saveappt(){ const a=ui.adraft; if(!a.date){ return setToast('Pick a date for this plan.'); }
+    if(!a.title.trim()) a.title=defTitle(a.type,a.where);
     const i=state.appts.findIndex(x=>x.id===a.id); if(i>=0) state.appts[i]=a; else state.appts.push(a);
     const p=a.date.split('-'); ui.cal={y:+p[0],m:+p[1]-1}; ui.calSel=a.date; save(); ui.sheet=null; ui.adraft=null; },
   doneappt(){ syncAppt(); const a=ui.adraft; a.done=!a.done;
