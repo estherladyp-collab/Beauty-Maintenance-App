@@ -337,24 +337,29 @@ function today(){
     return `<div class="day" ${i===d?'aria-current="date"':''}><button class="dayb" data-act="assign" data-v="${i}" aria-label="${n}: ${l?esc(l.name):'no look planned'}">
       <small>${n}</small>${l?`<div class="mini thumbboard">${boardParts(l).core}</div>`:`<span class="plus">+</span>`}</button>${l?`<button class="dayx" data-act="clearplan" data-v="${i}" aria-label="Remove ${DAYFULL[i]}'s look">✕</button>`:''}</div>`;
   }).join('');
+  const todayPlans = state.appts.filter(a => !a.done && a.date===td && !(dayOutfit && a.id===dayOutfit.id));
+  const lookCard = look ? `<button class="gcard" data-act="assign" data-v="${d}"><span class="gart"><span class="gday">Outfit</span><div class="gboard thumbboard">${boardParts(look).core}</div></span><b>${esc(look.name)}</b><span class="status">${esc(look.occasion||'Tap to change')}</span></button>` : '';
+  const anyToday = !!look || todayPlans.length;
+  const summary = [look?'Outfit':'', ...todayPlans.map(a=>a.title)].filter(Boolean).join(' · ');
   const due = ROUTINE.map(r => ({r, left: dueIn(r)})).sort((a,b)=>a.left-b.left).slice(0,3);
   const checked = weekLog();
   const have = state.items.reduce((n,i)=>n+i.variants.filter(v=>v.have).length,0), all = state.items.reduce((n,i)=>n+i.variants.length,0);
   return `
   <h1 class="page-title">Good day, <em>gorgeous.</em></h1>
   <p class="lede">${checked} of the last 7 days checked in. ${checked>=5?'That is consistency.':'Small and steady wins.'}</p>
-  <div class="hero ${look?'':'solo'}">
+  <div class="hero solo">
     <div>
-      <div class="eyebrow">Today's look</div>
-      <h2>${look?esc(look.name):'Nothing planned yet'}</h2>
-      <p style="opacity:.75;margin-bottom:16px">${look?esc(look.occasion||''):'Pick a look for today so you are not deciding in front of the mirror.'}</p>
+      <div class="eyebrow">Today</div>
+      <h2>${anyToday?"Today's plan":'Nothing planned yet'}</h2>
+      <p style="opacity:.75;margin-bottom:16px">${anyToday?esc(summary):'Plan an outfit, hair, nails or anything else for today so you are not deciding in the moment.'}</p>
       <div class="row">
         ${look?`<button class="btn gold" data-act="wore" data-v="${d}">I wore this</button>`:''}
-        <button class="btn ${look?'ghost':'gold'}" style="${look?'color:var(--heroink);border-color:rgba(255,255,255,.4)':''}" data-act="assign" data-v="${d}">${look?'Change':'Plan today'}</button>
+        <button class="btn ${look?'ghost':'gold'}" style="${look?'color:var(--heroink);border-color:rgba(255,255,255,.4)':''}" data-act="assign" data-v="${d}">${look?'Change outfit':'Plan outfit'}</button>
+        <button class="btn ghost" style="color:var(--heroink);border-color:rgba(255,255,255,.4)" data-act="newappt" data-v="" data-today="1">＋ Hair, nails…</button>
         ${look&&!dayOutfit?`<button class="btn ghost" style="color:var(--heroink);border-color:rgba(255,255,255,.4)" data-act="clearplan" data-v="${d}">Remove</button>`:''}
       </div>
     </div>
-    ${look?`<div>${board(look,true)}</div>`:''}
+    ${anyToday?`<div class="gallery hgal">${lookCard}${todayPlans.map(apptGCard).join('')}</div>`:''}
   </div>
   ${prepToday()}
   <section><div class="row between"><h2>This week</h2><span class="eyebrow">Tap a day</span></div><div class="week" style="margin-top:14px">${week}</div><div style="margin-top:14px"><button class="btn small ghost" data-act="autoweek">Plan my week from my closet</button></div></section>
@@ -364,15 +369,17 @@ function today(){
   <section><div class="card"><div class="eyebrow">My closet</div><h3 style="font-size:26px;margin:6px 0">${have} of ${all} wardrobe colors owned</h3>
     <div class="progress"><i style="width:${all?have/all*100:0}%"></i></div></div></section>`;
 }
+function apptGCard(a){
+  const td = isoDay();
+  const l = a.lookId && state.looks.find(x => x.id===a.lookId), p = (a.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
+  const art = l ? `<div class="gboard thumbboard">${boardParts(l).core}</div>` : p ? `<img src="${p.src}" alt="">` : `<div class="gico">${ticon(TYPE_ICON[a.type]||'other', false)}</div>`;
+  const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
+  return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart"><span class="gday">${a.date===td?'Today':fmtDate(a.date)}</span>${art}</span><b>${esc(a.title)}</b><span class="status">${a.where==='home'?'At home · ':''}${a.time?esc(a.time)+' · ':''}${tot?(open?`${open} to prep`:'All prepped'):'No prep needed'}</span></button>`;
+}
 function prepToday(){
   const td = isoDay(), lim = addDays(td,14);
-  const soon = state.appts.filter(a=>!a.done && a.date>=td && a.date<=lim).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||'')));
-  const cards = soon.map(a=>{
-    const l = a.lookId && state.looks.find(x => x.id===a.lookId), p = (a.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
-    const art = l ? `<div class="gboard thumbboard">${boardParts(l).core}</div>` : p ? `<img src="${p.src}" alt="">` : `<div class="gico">${ticon(TYPE_ICON[a.type]||'other', false)}</div>`;
-    const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
-    return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart">${art}<span class="gday">${a.date===td?'Today':fmtDate(a.date)}</span></span><b>${esc(a.title)}</b><span class="status">${a.where==='home'?'At home · ':''}${a.time?esc(a.time)+' · ':''}${tot?(open?`${open} to prep`:'All prepped'):'No prep needed'}</span></button>`;
-  }).join('');
+  const soon = state.appts.filter(a=>!a.done && a.date>td && a.date<=lim).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||'')));
+  const cards = soon.map(apptGCard).join('');
   return `<section><div class="row between"><h2>Coming up</h2><button class="btn small ghost" data-act="newappt" data-v="">＋ Add</button></div><div class="gallery" style="margin-top:14px">${cards}<button class="gcard gadd" data-act="newappt" data-v=""><span class="gart"><span style="font-size:34px;color:var(--gold)">＋</span></span><b>Plan something</b><span class="status">Salon or at home</span></button></div></section>`;
 }
 function startRail(){
@@ -878,7 +885,7 @@ const actions = {
   calprev(){ const c=ui.cal; c.m--; if(c.m<0){c.m=11;c.y--;} },
   calnext(){ const c=ui.cal; c.m++; if(c.m>11){c.m=0;c.y++;} },
   calsel(v){ ui.calSel=v; },
-  newappt(v){ const t=v||'hair'; ui.adraft={id:uid(),type:t,title:defTitle(t,'salon'),where:'salon',date:ui.calSel||isoDay(),time:'',notes:'',prep:prepFor(t,'salon'),pics:[],edited:false,done:false};
+  newappt(v,el){ const t=v||'hair'; ui.adraft={id:uid(),type:t,title:defTitle(t,'salon'),where:'salon',date:(el&&el.currentTarget&&el.currentTarget.dataset.today)?isoDay():(ui.calSel||isoDay()),time:'',notes:'',prep:prepFor(t,'salon'),pics:[],edited:false,done:false};
     ui.sheet={type:'appt',isNew:true}; },
   editappt(v){ ui.adraft=JSON.parse(JSON.stringify(state.appts.find(a=>a.id===v))); ui.sheet={type:'appt'}; },
   settype(v){ const a=ui.adraft;

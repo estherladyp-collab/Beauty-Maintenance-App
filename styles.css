@@ -456,3 +456,8 @@ input[type=number]{width:100%;padding:11px 14px;border-radius:12px;border:1px so
 .gallery{scroll-padding-left:16px}
 .gart .gico .nail{width:44px!important;height:60px!important;background:#c9917f!important}
 .gart .gico .nail{display:block}
+
+.hero .hgal{margin:0;padding:2px 0 6px}
+.hero .gcard{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:var(--heroink)}
+.hero .gcard .status{color:rgba(243,232,223,.65)}
+.hero .gcard .btn{color:inherit}
