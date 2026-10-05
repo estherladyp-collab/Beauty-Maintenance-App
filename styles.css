@@ -461,3 +461,9 @@ input[type=number]{width:100%;padding:11px 14px;border-radius:12px;border:1px so
 .hero .gcard{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:var(--heroink)}
 .hero .gcard .status{color:rgba(243,232,223,.65)}
 .hero .gcard .btn{color:inherit}
+
+.more{margin-top:26px}
+.more>summary{cursor:pointer;list-style:none;display:inline-block;padding:9px 18px;border-radius:999px;border:1px solid var(--line);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.more>summary::-webkit-details-marker{display:none}
+.more[open]>summary{margin-bottom:6px}
+.morebtn{padding:9px 18px;border-radius:999px;border:1px solid var(--line);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}

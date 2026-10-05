@@ -328,46 +328,47 @@ function view(){
   ${ui.sheet || ui.draft || ui.tab==='calendar' ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${ui.lightbox?`<div class="lightbox" data-act="lbclose" role="dialog" aria-label="Photo"><img src="${ui.lightbox}" alt=""></div>`:''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
 }
 
+function calGrid(){
+  const {y,m} = ui.cal, first = new Date(y,m,1), off = (first.getDay()+6)%7, dim = new Date(y,m+1,0).getDate();
+  const due = dueDates(), td = isoDay();
+  let cells = '';
+  for(let i=0;i<off;i++) cells += '<span class="cd blank"></span>';
+  for(let d=1; d<=dim; d++){
+    const iso = isoDay(new Date(y,m,d)), as = state.appts.filter(a=>a.date===iso && !a.done);
+    const dots = as.slice(0,3).map(a=>`<i style="background:${typeInfo(a.type)[2]}"></i>`).join('');
+    cells += `<button class="cd ${iso===td?'today':''} ${iso===ui.calSel?'sel':''} ${due[iso]?'due':''}" data-act="calsel" data-v="${iso}" aria-label="${fmtDate(iso)}${as.length?', '+as.length+' plan'+(as.length>1?'s':''):''}"><span>${d}</span><span class="dots">${dots}</span></button>`;
+  }
+  return `<div class="row between"><button class="btn small ghost" data-act="calprev" aria-label="Previous month">←</button><h2 class="monthname">${first.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h2><button class="btn small ghost" data-act="calnext" aria-label="Next month">→</button></div>
+  <div class="cal" style="margin-top:14px"><div class="cal-h">${DAYS.map(d=>`<span>${d[0]}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
+  <div class="legend">${APPT_TYPES.filter(t=>t[0]!=='other').map(t=>`<span><i style="background:${t[2]}"></i>${t[1]}</span>`).join('')}</div>`;
+}
 function today(){
-  const d = dow(), td = isoDay();
-  const dayOutfit = state.appts.find(x => x.type==='outfit' && x.date===td && !x.done && x.lookId && state.looks.some(l => l.id===x.lookId));
-  const look = dayOutfit ? state.looks.find(l => l.id===dayOutfit.lookId) : state.looks.find(l => l.id===state.plan[d]);
+  const d = dow(), td = isoDay(), sel = ui.calSel || td, isToday = sel===td;
+  const selDow = (new Date(sel+'T12:00:00').getDay()+6)%7;
   const week = DAYS.map((n,i) => {
     const l = state.looks.find(x => x.id===state.plan[i]);
     return `<div class="day" ${i===d?'aria-current="date"':''}><button class="dayb" data-act="assign" data-v="${i}" aria-label="${n}: ${l?esc(l.name):'no look planned'}">
       <small>${n}</small>${l?`<div class="mini thumbboard">${boardParts(l).core}</div>`:`<span class="plus">+</span>`}</button>${l?`<button class="dayx" data-act="clearplan" data-v="${i}" aria-label="Remove ${DAYFULL[i]}'s look">✕</button>`:''}</div>`;
   }).join('');
-  const todayPlans = state.appts.filter(a => !a.done && a.date===td && !(dayOutfit && a.id===dayOutfit.id));
-  const lookCard = look ? `<button class="gcard" data-act="assign" data-v="${d}"><span class="gart"><span class="gday">Outfit</span><div class="gboard thumbboard">${boardParts(look).core}</div></span><b>${esc(look.name)}</b><span class="status">${esc(look.occasion||'Tap to change')}</span></button>` : '';
-  const anyToday = !!look || todayPlans.length;
-  const summary = [look?'Outfit':'', ...todayPlans.map(a=>a.title)].filter(Boolean).join(' · ');
+  const outfitAppt = state.appts.find(x => x.type==='outfit' && x.date===sel && !x.done && x.lookId && state.looks.some(l => l.id===x.lookId));
+  const look = outfitAppt ? state.looks.find(l => l.id===outfitAppt.lookId) : (isToday ? state.looks.find(l => l.id===state.plan[d]) : null);
+  const plans = state.appts.filter(a => a.date===sel && !a.done && !(outfitAppt && a.id===outfitAppt.id)).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
+  const lookCard = look ? `<button class="gcard" data-act="${isToday?'assign':'editappt'}" data-v="${isToday?d:outfitAppt.id}"><span class="gart"><span class="gday">Outfit</span><div class="gboard thumbboard">${boardParts(look).core}</div></span><b>${esc(look.name)}</b><span class="status">${esc(look.occasion||'Tap to change')}</span></button>` : '';
   const due = ROUTINE.map(r => ({r, left: dueIn(r)})).sort((a,b)=>a.left-b.left).slice(0,3);
-  const checked = weekLog();
   const have = state.items.reduce((n,i)=>n+i.variants.filter(v=>v.have).length,0), all = state.items.reduce((n,i)=>n+i.variants.length,0);
+  const any = look || plans.length;
   return `
   <h1 class="page-title">Good day, <em>gorgeous.</em></h1>
-  <p class="lede">${checked} of the last 7 days checked in. ${checked>=5?'That is consistency.':'Small and steady wins.'}</p>
-  <div class="hero solo">
-    <div>
-      <div class="eyebrow">Today</div>
-      <h2>${anyToday?"Today's plan":'Nothing planned yet'}</h2>
-      <p style="opacity:.75;margin-bottom:16px">${anyToday?esc(summary):'Plan an outfit, hair, nails or anything else for today so you are not deciding in the moment.'}</p>
-      <div class="row">
-        ${look?`<button class="btn gold" data-act="wore" data-v="${d}">I wore this</button>`:''}
-        <button class="btn ${look?'ghost':'gold'}" style="${look?'color:var(--heroink);border-color:rgba(255,255,255,.4)':''}" data-act="assign" data-v="${d}">${look?'Change outfit':'Plan outfit'}</button>
-        <button class="btn ghost" style="color:var(--heroink);border-color:rgba(255,255,255,.4)" data-act="newappt" data-v="" data-today="1">＋ Hair, nails…</button>
-        ${look&&!dayOutfit?`<button class="btn ghost" style="color:var(--heroink);border-color:rgba(255,255,255,.4)" data-act="clearplan" data-v="${d}">Remove</button>`:''}
-      </div>
-    </div>
-    ${anyToday?`<div class="gallery hgal">${lookCard}${todayPlans.map(apptGCard).join('')}</div>`:''}
-  </div>
-  ${prepToday()}
-  <section><div class="row between"><h2>This week</h2><span class="eyebrow">Tap a day</span></div><div class="week" style="margin-top:14px">${week}</div><div style="margin-top:14px"><button class="btn small ghost" data-act="autoweek">Plan my week from my closet</button></div></section>
-  ${startRail()}
-  ${freshNudge()}
-  <section><h2>Due next</h2><div class="list" style="margin-top:14px">${due.map(x=>task(x.r)).join('')}</div></section>
-  <section><div class="card"><div class="eyebrow">My closet</div><h3 style="font-size:26px;margin:6px 0">${have} of ${all} wardrobe colors owned</h3>
-    <div class="progress"><i style="width:${all?have/all*100:0}%"></i></div></div></section>`;
+  <section>${calGrid()}</section>
+  <section><div class="row between"><h2>${isToday?'Planned today':'Planned · '+fmtDate(sel)}</h2><div class="row" style="gap:8px">${!look&&isToday?`<button class="btn small ghost" data-act="assign" data-v="${d}">Outfit</button>`:''}<button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div></div>
+    ${any?`<div class="gallery" style="margin-top:14px">${lookCard}${plans.map(apptGCard).join('')}</div>`:`<div class="empty-state" style="margin-top:14px">Nothing planned. Tap ＋ Plan for hair, nails, makeup or an outfit.</div>`}
+    ${look&&isToday&&!outfitAppt?`<div class="row" style="margin-top:6px;gap:8px"><button class="btn small ghost" data-act="wore" data-v="${d}">I wore this</button><button class="btn small ghost" data-act="clearplan" data-v="${d}">Remove outfit</button></div>`:''}</section>
+  <section><h2>Beauty upkeep</h2><div class="list" style="margin-top:14px">${due.map(x=>task(x.r)).join('')}</div></section>
+  <div class="more"><button class="morebtn" data-act="more" aria-expanded="${!!ui.more}">${ui.more?'Less':'More'}</button>${ui.more?`
+    <section><div class="row between"><h2>This week</h2><span class="eyebrow">Tap a day</span></div><div class="week" style="margin-top:14px">${week}</div><div style="margin-top:14px"><button class="btn small ghost" data-act="autoweek">Plan my week from my closet</button></div></section>
+    ${startRail()}
+    ${freshNudge()}
+    <section><div class="card"><div class="eyebrow">My closet</div><h3 style="font-size:26px;margin:6px 0">${have} of ${all} wardrobe colors owned</h3><div class="progress"><i style="width:${all?have/all*100:0}%"></i></div></div></section>`:''}</div>`;
 }
 function apptGCard(a){
   const td = isoDay();
@@ -956,6 +957,7 @@ const actions = {
   setstatus(v){ const [id,vid,st]=v.split(':'), it=state.items.find(i=>i.id===id), x=it.variants.find(y=>y.id===vid); setSt(x,st); ui.vsel[id]=vid; syncHave(it); save(); },
   stage(v){ ui.stage = ui.stage===v ? 'all' : v; },
   autoweek(){ autoWeek(); },
+  more(){ ui.more=!ui.more; },
   themes(){ ui.sheet={type:'theme'}; },
   settheme(v){ state.theme={id:v}; applyTheme(); save(); },
   ownall(){ ui.sheet.own=!ui.sheet.own; },
