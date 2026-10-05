@@ -344,22 +344,24 @@ function today(){
     </div>
     ${look?`<div>${board(look,true)}</div>`:''}
   </div>
+  ${prepToday()}
   <section><div class="row between"><h2>This week</h2><span class="eyebrow">Tap a day</span></div><div class="week" style="margin-top:14px">${week}</div><div style="margin-top:14px"><button class="btn small ghost" data-act="autoweek">Plan my week from my closet</button></div></section>
   ${startRail()}
-  ${prepToday()}
   ${freshNudge()}
   <section><h2>Due next</h2><div class="list" style="margin-top:14px">${due.map(x=>task(x.r)).join('')}</div></section>
   <section><div class="card"><div class="eyebrow">My closet</div><h3 style="font-size:26px;margin:6px 0">${have} of ${all} wardrobe colors owned</h3>
     <div class="progress"><i style="width:${all?have/all*100:0}%"></i></div></div></section>`;
 }
 function prepToday(){
-  const td = isoDay(), lim = addDays(td,7);
-  const soon = state.appts.filter(a=>!a.done && a.date>=td && a.date<=lim).sort((x,y)=>x.date.localeCompare(y.date));
-  if(!soon.length) return '';
-  return `<section><h2>Coming up</h2><div class="list" style="margin-top:14px">${soon.map(a=>{
-    const open = a.prep.map((p,i)=>({p,i})).filter(x=>!x.p.done).slice(0,4);
-    return `<div class="card"><button class="appt flat" data-act="editappt" data-v="${a.id}">${apptLead(a)}<span class="grow"><b>${esc(a.title)}</b><span class="status">${a.date===td?'Today':fmtDate(a.date)}${a.time?' · '+esc(a.time):''}</span></span></button>
-    ${open.length?`<div class="prep">${open.map(x=>`<label class="chk"><input type="checkbox" data-act="prepcheck" data-v="${a.id}:${x.i}"><span>${esc(x.p.t)}<small>${esc(x.p.when)}</small></span></label>`).join('')}</div>`:'<p class="status" style="margin-top:8px">All prepped.</p>'}</div>`;}).join('')}</div></section>`;
+  const td = isoDay(), lim = addDays(td,14);
+  const soon = state.appts.filter(a=>!a.done && a.date>=td && a.date<=lim).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||'')));
+  const cards = soon.map(a=>{
+    const l = a.lookId && state.looks.find(x => x.id===a.lookId), p = (a.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
+    const art = l ? `<div class="gboard thumbboard">${boardParts(l).core}</div>` : p ? `<img src="${p.src}" alt="">` : `<div class="gico">${ticon(TYPE_ICON[a.type]||'other', false)}</div>`;
+    const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
+    return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart">${art}<span class="gday">${a.date===td?'Today':fmtDate(a.date)}</span></span><b>${esc(a.title)}</b><span class="status">${a.time?esc(a.time)+' · ':''}${tot?(open?`${open} to prep`:'All prepped'):'No prep needed'}</span></button>`;
+  }).join('');
+  return `<section><div class="row between"><h2>Coming up</h2><button class="btn small ghost" data-act="newappt" data-v="">＋ Add</button></div><div class="gallery" style="margin-top:14px">${cards}<button class="gcard gadd" data-act="newappt" data-v=""><span class="gart"><span style="font-size:34px;color:var(--gold)">＋</span></span><b>Book something</b><span class="status">Hair, nails, lashes…</span></button></div></section>`;
 }
 function startRail(){
   const src = ui.tsrc;
