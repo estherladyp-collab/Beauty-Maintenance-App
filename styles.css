@@ -689,3 +689,28 @@ h2{font-size:22px}
 .themes{gap:12px 10px}
 .themeopt .swatch{justify-content:space-between;align-items:flex-end}
 .themeopt .swatch b{font:400 22px/1 var(--display);align-self:flex-start}
+
+/* ===== appt form + motion ===== */
+.apptform{gap:16px}
+.typerow{display:flex;gap:8px;overflow-x:auto;margin:0 -18px;padding:2px 18px 6px;scrollbar-width:none}
+.typerow::-webkit-scrollbar{display:none}
+.typeb{flex:none;width:74px;display:grid;justify-items:center;gap:8px;padding:12px 4px 10px;border-radius:var(--r);border:1px solid var(--line);font-size:12px;color:var(--muted);transition:border-color .2s,background .2s,color .2s}
+.typeb[aria-pressed=true]{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent);color:var(--espresso)}
+.typeb .nail{width:20px!important;height:28px!important}
+.foldh small{font:400 12px var(--body);color:var(--muted);margin-left:8px}
+.sheet h2{font-size:30px}
+.sheet .chk small{margin-top:1px}
+
+.enter>*:not(.top){animation:rise .32s cubic-bezier(.2,.8,.2,1) both}
+.enter>*:nth-child(3){animation-delay:30ms}.enter>*:nth-child(4){animation-delay:60ms}.enter>*:nth-child(5){animation-delay:90ms}.enter>*:nth-child(n+6){animation-delay:120ms}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+.overlay.in{animation:fadein .2s ease-out both}
+.overlay.in .sheet{animation:sheetup .32s cubic-bezier(.2,.8,.2,1) both}
+@keyframes fadein{from{opacity:0}}
+@keyframes sheetup{from{transform:translateY(28px);opacity:.6}}
+@media(min-width:700px){@keyframes sheetup{from{transform:translateY(12px) scale(.98);opacity:0}}}
+.btn,.rcard,.lookb,.typeb,.nav button,.chip,.iconb,.foldh{transition:transform .15s cubic-bezier(.2,.8,.2,1),background .2s,color .2s,border-color .2s}
+.btn:active,.rcard:active,.lookb:active,.typeb:active,.nav button:active,.iconb:active{transform:scale(.96)}
+.wd{transition:background .2s,color .2s,transform .15s}
+@media(prefers-reduced-motion:reduce){.enter>*,.overlay.in,.overlay.in .sheet{animation:none!important}}
+.top .saved{margin-left:78px}

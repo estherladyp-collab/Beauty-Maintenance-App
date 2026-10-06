@@ -368,7 +368,7 @@ function seg(tab){ const g = NAV.find(n => n[2].includes(tab)); const subs = g &
 function view(){
   const body = ui.draft ? builder() : seg(ui.tab) + {today,wardrobe,closet,looks,mood,calendar,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true">Muse</div>
-  <main class="shell"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
+  <main class="shell ${ui.enter?'enter':''}"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${NAV.map(g=>`<button data-act="tab" data-v="${(ui.last&&ui.last[g[0]])||g[2][0]}" ${g[2].includes(ui.tab)&&!ui.draft?'aria-current="page"':''}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${g[3]}</svg><span>${g[1]}</span></button>`).join('')}</div></nav>
   ${true ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${ui.lightbox?`<div class="lightbox" data-act="lbclose" role="dialog" aria-label="Photo"><img src="${ui.lightbox}" alt=""></div>`:''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
 }
@@ -761,19 +761,21 @@ function sheet(){
     <div class="row" style="margin-top:16px"><label class="btn ghost small" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Add more<input type="file" id="sortmore" accept="image/*" multiple hidden></label><button class="btn small" data-act="sortsave" ${todo?'aria-disabled="true"':''}>${todo?`Sort ${todo} more`:`Save ${s.items.length} picture${s.items.length===1?'':'s'}`}</button><button class="btn ghost small" data-act="close">Cancel</button></div>`;
   } else if (s.type==='appt'){
     const a = ui.adraft, ti = typeInfo(a.type), pics = (a.pics||[]).map(id=>(state.pics||[]).find(p=>p.id===id)).filter(Boolean);
-    inner = `<h2>${s.isNew?'Add a plan':'Your plan'}</h2><div class="slots">
-      <div class="chips" style="flex-wrap:wrap" role="group" aria-label="Type">${APPT_TYPES.map(t=>`<button class="chip" aria-pressed="${a.type===t[0]}" data-act="settype" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
-      ${a.type==='outfit'?'':`<div class="chips" role="group" aria-label="Where"><button class="chip" aria-pressed="${a.where!=='home'}" data-act="setwhere" data-v="salon">At a salon</button><button class="chip" aria-pressed="${a.where==='home'}" data-act="setwhere" data-v="home">At home, DIY</button></div>`}
+    const openN = a.prep.filter(p=>!p.done).length;
+    inner = `<span class="eyebrow" style="color:var(--goldtxt)">${s.isNew?'New plan':'Your plan'}</span><h2 style="margin-top:4px">${esc(ti[1])}</h2><div class="slots apptform">
+      <div class="typerow" role="group" aria-label="Type">${APPT_TYPES.map(t=>`<button class="typeb" aria-pressed="${a.type===t[0]}" data-act="settype" data-v="${t[0]}">${ticon(TYPE_ICON[t[0]]||'other', false)}<span>${t[1]}</span></button>`).join('')}</div>
+      ${a.type==='outfit'?'':`<div class="segc" role="group" aria-label="Where" style="margin:0"><button aria-selected="${a.where!=='home'}" data-act="setwhere" data-v="salon">At a salon</button><button aria-selected="${a.where==='home'}" data-act="setwhere" data-v="home">At home, DIY</button></div>`}
+      ${a.type==='outfit'?`<div><div class="eyebrow" style="margin-bottom:8px">Look for this day</div>${state.looks.length?`<div class="hscroll">${state.looks.map(l=>`<button class="tile ${a.lookId===l.id?'on':''}" data-act="applook" data-v="${l.id}" aria-pressed="${a.lookId===l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div>`:'<p class="status">No saved looks yet. Build one on the Looks tab first.</p>'}</div>`:''}
       <label>Title<input type="text" id="aname" value="${esc(a.title)}" maxlength="50"></label>
-      <div class="row" style="gap:10px"><label style="flex:1;min-width:140px">Date<input type="date" id="adate" value="${a.date}"></label><label style="flex:1;min-width:120px">Time<input type="time" id="atime" value="${esc(a.time)}"></label></div>
+      <div class="row" style="gap:10px;flex-wrap:nowrap"><label style="flex:1;min-width:0">Date<input type="date" id="adate" value="${a.date}"></label><label style="flex:1;min-width:0">Time<input type="time" id="atime" value="${esc(a.time)}"></label></div>
       <label>Notes<input type="text" id="anotes" value="${esc(a.notes)}" placeholder="${a.where==='home'?'Products, style, how long it takes':'Stylist, place, style you want'}" maxlength="120"></label>
-      ${a.type==='outfit'?`<div class="eyebrow" style="margin-top:8px">Look for this day</div>${state.looks.length?`<div class="hscroll">${state.looks.map(l=>`<button class="tile ${a.lookId===l.id?'on':''}" data-act="applook" data-v="${l.id}" aria-pressed="${a.lookId===l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div>`:'<p class="status">No saved looks yet. Build one on the Looks tab first.</p>'}`:''}
-      <div class="eyebrow" style="margin-top:8px">${a.where==='home'?'Get ready':'Prep list'} · ${prepDone(a)} of ${a.prep.length} done</div>
-      <div class="prep">${a.prep.map((p,i)=>`<div class="chk"><input type="checkbox" id="pc${i}" data-act="preptoggle" data-v="${i}" ${p.done?'checked':''}><label for="pc${i}" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso);flex:1"><span>${esc(p.t)}<small>${esc(p.when)}</small></span></label><button class="btn small ghost" data-act="prepdel" data-v="${i}" aria-label="Remove ${esc(p.t)}">✕</button></div>`).join('')}</div>
-      <div class="row" style="gap:8px;flex-wrap:nowrap"><input type="text" id="prepnew" placeholder="Add something to prep" maxlength="80" style="flex:1"><select id="prepwhen" style="width:auto"><option>Day before</option><option>Morning of</option><option>Bring</option></select><button class="btn small" data-act="prepadd">Add</button></div>
-      <div class="eyebrow" style="margin-top:8px">Reference pictures</div>
-      <div class="picked">${pics.map(p=>`<img src="${p.src}" alt="">`).join('')}<button class="slotbtn" style="width:auto;min-height:72px" data-act="apppics"><span class="thumb">＋</span><span><b>${pics.length?'Change pictures':'Choose pictures'}</b></span></button></div>
-      <div class="row" style="margin-top:12px"><button class="btn" data-act="saveappt">Save</button><button class="btn ghost" data-act="close">Cancel</button>${s.isNew?'':`<button class="btn ghost" data-act="doneappt">${a.done?'Reopen':'Mark done'}</button><button class="btn ghost" data-act="delappt">Delete</button>`}</div></div>`;
+      <div class="folds" style="margin:6px 0 0">
+      ${foldBox('ap_prep',`${a.where==='home'?'Get ready':'Prep list'}<small>${a.prep.length?` ${openN} to do`:''}</small>`,`<div class="prep">${a.prep.map((p,i)=>`<div class="chk"><input type="checkbox" id="pc${i}" data-act="preptoggle" data-v="${i}" ${p.done?'checked':''}><label for="pc${i}" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso);flex:1"><span>${esc(p.t)}<small>${esc(p.when)}</small></span></label><button class="iconb" data-act="prepdel" data-v="${i}" aria-label="Remove ${esc(p.t)}">✕</button></div>`).join('')}</div>
+      <div class="row" style="gap:8px;flex-wrap:nowrap;margin-top:10px"><input type="text" id="prepnew" placeholder="Add something to prep" maxlength="80" style="flex:1"><select id="prepwhen" style="width:auto"><option>Day before</option><option>Morning of</option><option>Bring</option></select><button class="btn small" data-act="prepadd">Add</button></div>`)}
+      ${foldBox('ap_pics',`Reference pictures<small>${pics.length?` ${pics.length}`:''}</small>`,`<div class="picked">${pics.map(p=>`<img src="${p.src}" alt="">`).join('')}<button class="slotbtn" style="width:auto;min-height:72px" data-act="apppics"><span class="thumb">＋</span><span><b>${pics.length?'Change pictures':'Choose pictures'}</b></span></button></div>`)}
+      </div>
+      <div class="row" style="margin-top:14px;gap:10px"><button class="btn" data-act="saveappt" style="flex:1">Save</button><button class="btn ghost" data-act="close">Cancel</button></div>
+      ${s.isNew?'':`<div class="row" style="gap:18px"><button class="linkbtn" data-act="doneappt">${a.done?'Reopen':'Mark done'}</button><button class="linkbtn" data-act="delappt" style="color:#a4462b;border-color:rgba(164,70,43,.4)">Delete</button></div>`}</div>`;
   } else if (s.type==='apppics'){
     const all = state.pics||[], list = all.filter(p => inTag(p, s.tag)), sel = ui.adraft.pics||[];
     inner = `<h2>Reference pictures</h2>
@@ -828,7 +830,7 @@ function setToast(t){ toast=t; render(); setTimeout(()=>{toast='';render();},220
 function logToday(){ const t=isoDay(); if(!state.log.includes(t)) state.log.push(t); }
 
 const actions = {
-  tab(v){ ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
+  tab(v){ ui.enter=true; ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
   cat(v){ ui.cat=v; ui.sty='all'; ui.occ='all'; ui.bg='all'; },
   bg(v){ ui.bg=v; ui.sty='all'; },
   sty(v){ ui.sty=v; },
@@ -1249,7 +1251,9 @@ document.addEventListener('keydown', e => {
 
 function render(){
   const a = document.activeElement, id = a && a.id;
-  document.getElementById('app').innerHTML = view();
+  const hadSheet = !!document.querySelector('.overlay');
+  document.getElementById('app').innerHTML = view(); ui.enter = false;
+  const ov = document.querySelector('.overlay'); if(ov && !hadSheet) ov.classList.add('in');
   if (id){ const n=document.getElementById(id); if(n && n.focus) n.focus(); }
   saveDraftSoon();
 }
