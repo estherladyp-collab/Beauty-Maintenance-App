@@ -835,3 +835,4 @@ h2{font-size:22px}
 .prodt small{font-size:12px;color:var(--muted)}
 .prodlist{display:grid;gap:14px}
 .prodlist .eyebrow{display:block;margin-bottom:6px}
+.prodc img{object-fit:contain}

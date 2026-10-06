@@ -213,7 +213,7 @@ let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[],
 let booted = false;
 function init(){
   state.appts = state.appts || []; state.snaps = state.snaps || []; state.products = state.products || [];
-  if(window.MUSE_PRODUCTS && !state.seedProd1){ state.seedProd1 = true; window.MUSE_PRODUCTS.forEach(p => { if(!state.products.some(x => x.id===p.id)) state.products.push({...p}); }); }
+  if(window.MUSE_PRODUCTS){ state.seedProd = state.seedProd || {}; if(state.seedProd1) state.seedProd['prod-bq-venus'] = true; window.MUSE_PRODUCTS.forEach(p => { if(state.seedProd[p.id]) return; state.seedProd[p.id] = true; if(!state.products.some(x => x.id===p.id)) state.products.push({...p}); }); }
   if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
   state.seedAdded = state.seedAdded || {};
 if(window.MUSE_SEED_ITEMS){ window.MUSE_SEED_ITEMS.forEach(s => { if(state.seedAdded[s.id]) return; state.seedAdded[s.id] = true;
@@ -596,7 +596,7 @@ function snapView(s){
   <div class="row" style="gap:18px;margin-top:14px"><button class="linkbtn" data-act="favsnap" data-v="${sn.id}">${sn.fav?'Not my pick':'Make it look of the week'}</button><button class="linkbtn" data-act="delsnap" data-v="${sn.id}" style="color:#a4462b;border-color:rgba(164,70,43,.4)">Delete</button><button class="linkbtn" data-act="close">Close</button></div></div>`;
 }
 const eur = n => Number(n).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
-const PROD_AREAS = [['lashes','Lashes'],['nails','Nails'],['brows','Brows'],['hairwash','Hair care'],['hairtrim','Hair trim'],['face','Skin'],['body','Body'],['lips','Lips'],['pedi','Feet']];
+const PROD_AREAS = [['lashes','Lashes'],['nails','Nails'],['brows','Brows'],['hairwash','Hair care'],['hairtrim','Hair trim'],['face','Skincare'],['body','Body care'],['lips','Lips'],['pedi','Feet']];
 const areaName = id => (PROD_AREAS.find(a => a[0]===id)||[0,'Other'])[1];
 function prodCard(p){ return `<button class="prodc" data-act="editprod" data-v="${p.id}" aria-label="${esc(p.name)}">${p.photo?`<img src="${p.photo}" alt="">`:`<span class="prodph">${ticon(ROUTINE_ICON[p.area]||'other',false)}</span>`}<span class="prodt"><b>${esc(p.name)}</b><small>${p.price?eur(p.price)+' · ':''}${esc(p.shop||'')}</small></span></button>`; }
 function prodStrip(rid){ const l = (state.products||[]).filter(p => p.area===rid); return l.length ? `<div class="prodstrip">${l.map(prodCard).join('')}</div>` : ''; }
