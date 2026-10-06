@@ -686,3 +686,6 @@ h2{font-size:22px}
 .task .linkbtn{white-space:nowrap}
 .wtools-bar .morebtn{border-bottom-color:transparent;padding-left:0}
 @media(min-width:860px){.shell{padding-left:220px;padding-right:32px;max-width:1100px}.gallery.big .gcard{width:300px}}
+.themes{gap:12px 10px}
+.themeopt .swatch{justify-content:space-between;align-items:flex-end}
+.themeopt .swatch b{font:400 22px/1 var(--display);align-self:flex-start}

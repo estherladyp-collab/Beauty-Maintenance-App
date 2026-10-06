@@ -142,14 +142,14 @@ const money = n => n ? Number(n).toLocaleString('de-DE',{style:'currency',curren
 function setSt(v, st){ v.status = st; v.have = st==='own'; }
 function migrate(it){ it.occasions = it.occasions || []; (it.variants||[]).forEach(v => { if(!v.status) v.status = v.have ? 'own' : 'wish'; v.have = v.status==='own'; }); if(!it.variants) it.variants=[{id:uid(),color:it.color,photo:it.photo||null,have:!!it.have}]; syncHave(it); }
 /* ---------- colors / themes ---------- */
-const THEMES = [['cream','Cream & gold','#f4ece0','#b48a4c'],['coffee','Coffee & gold','#2a1b16','#b48a4c'],['rose','Rosé','#f3dfdb','#b4675c'],['sage','Sage','#1f2a24','#c8a96a'],['midnight','Midnight','#1b2233','#c9a45c'],['plum','Plum','#2e1a2a','#d8a28f']];
+const THEMES = [['cream','Cream & gold','#f4ece0','#b48a4c'],['champagne','Champagne','#f5efe4','#b9976a','#2b211b'],['creamgreen','Cream & green','#f2eee3','#b9976a','#1f2e27'],['blush','Blush & rosé gold','#f6e9e4','#b98a78','#3a2622'],['taupe','Greige & bronze','#e9e1d6','#a9825a','#2b2420'],['coffee','Coffee & gold','#2a1b16','#b48a4c'],['forest','Forest & champagne','#1f2e27','#c8a97a'],['noir','Noir & champagne','#151413','#c9a97c'],['midnight','Midnight','#1b2233','#c9a45c']];
 const hx = h => [1,3,5].map(i => parseInt(h.slice(i,i+2),16));
 const mixc = (a,b,t) => '#'+hx(a).map((v,i)=>Math.round(v+(hx(b)[i]-v)*t).toString(16).padStart(2,'0')).join('');
 function themeNow(){ const t = (state && state.theme) || {}; const p = THEMES.find(x => x[0]===t.id) || THEMES[0];
-  return {id: t.id==='custom' ? 'custom' : p[0], bg: t.bg || p[2], accent: t.accent || p[3]}; }
+  return {id: t.id==='custom' ? 'custom' : p[0], bg: t.bg || p[2], accent: t.accent || p[3], ink: t.id==='custom' ? undefined : p[4]}; }
 function applyTheme(t){
   t = t || themeNow(); const bg = /^#[0-9a-f]{6}$/i.test(t.bg) ? t.bg : '#f4ece0', ac = /^#[0-9a-f]{6}$/i.test(t.accent) ? t.accent : '#b48a4c';
-  const [r,g,b] = hx(bg), dark = (0.299*r+0.587*g+0.114*b) < 120, ink = dark ? '#f3e8df' : '#241713', R = document.documentElement.style;
+  const [r,g,b] = hx(bg), dark = (0.299*r+0.587*g+0.114*b) < 120, ink = /^#[0-9a-f]{6}$/i.test(t.ink) ? t.ink : dark ? '#f3e8df' : '#241713', R = document.documentElement.style;
   const set = (k,v) => R.setProperty(k,v), rgb = h => hx(h).join(',');
   set('--milk',bg); set('--espresso',ink); set('--gold',ac); set('--goldtxt', dark ? ac : mixc(ac,'#241713',.32));
   if(dark){ set('--card',mixc(bg,'#ffffff',.06)); set('--blush',mixc(bg,'#ffffff',.14)); set('--mocha',mixc(ink,bg,.18)); set('--cocoa',mixc(ink,bg,.35)); set('--hero',mixc(bg,'#ffffff',.07)); }
@@ -729,7 +729,7 @@ function sheet(){
   } else if (s.type==='theme'){
     const t = themeNow();
     inner = `<h2>App colors</h2><p class="status" style="margin-bottom:12px">Pick a look for the whole app.</p>
-    <div class="themes">${THEMES.map(p=>`<button class="themeopt" data-act="settheme" data-v="${p[0]}" aria-pressed="${t.id===p[0]}" aria-label="${esc(p[1])}"><span class="swatch" style="background:${p[2]}"><i style="background:${p[3]}"></i></span><small>${esc(p[1])}</small></button>`).join('')}</div>
+    <div class="themes">${THEMES.map(p=>`<button class="themeopt" data-act="settheme" data-v="${p[0]}" aria-pressed="${t.id===p[0]}" aria-label="${esc(p[1])}"><span class="swatch" style="background:${p[2]};color:${p[4]||((hx(p[2]).reduce((a,v,i)=>a+v*[.299,.587,.114][i],0)<120)?'#f3e8df':'#241713')}"><b>Aa</b><i style="background:${p[3]}"></i></span><small>${esc(p[1])}</small></button>`).join('')}</div>
     <div class="eyebrow" style="margin:18px 0 8px">Your own colors</div>
     <div class="row" style="gap:18px"><label class="colorpick">Background<input type="color" id="thbg" value="${t.bg}"></label><label class="colorpick">Accent<input type="color" id="thac" value="${t.accent}"></label></div>
     <div class="row" style="margin-top:18px"><button class="btn ghost small" data-act="close">Close</button></div>`;
