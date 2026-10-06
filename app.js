@@ -48,7 +48,7 @@ const GL = '<ellipse cx="11" cy="10" rx="2" ry="3.6" fill="#fff" opacity=".55" t
 const ART = {
   lashes: SV('<path d="M3 18c3.500-5 8-7.500 13-7.500S25.500 13 29 18c-3.500 5-8 7.500-13 7.500S6.500 23 3 18z" fill="#fbf4ee" stroke="#9a6f55" stroke-width="1.200"/><circle cx="16" cy="18" r="5" fill="url(#ei)"/><circle cx="16" cy="18" r="2.100" fill="#2a1b16"/><circle cx="17.700" cy="16.300" r="1.200" fill="#fff" opacity=".9"/><path d="M5.500 14.500 3.300 11.500M9.500 12.200 8.200 8.600M14 10.700 13.600 7M18.500 10.700 19.300 7M22.600 12.200 24.200 8.600M26.500 14.500 28.800 11.500" stroke="#2a1b16" stroke-width="1.600" stroke-linecap="round" fill="none"/>', G('ei','#b98462','#5a3a2a')),
   brows: SV('<path d="M3.500 21C7 11 17 7.500 28.500 12.500 19.500 12 11 14.500 3.500 21z" fill="url(#bw)"/><path d="M9 15.500C14 12 20 11.500 25 12.700" stroke="#fff" stroke-opacity=".35" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M5 25.500c5-3 12-4.200 21-2.800" stroke="#c9a98f" stroke-width="1.400" stroke-linecap="round" fill="none" opacity=".6"/>', G('bw','#7a4f38','#2e1d16')),
-  hair: SV('<path d="M16 3c-6 3-8 8-6 13 1.800 4.500-.5 8 -4 13 7-.5 12-4 13-9 .8-4-1.200-6-.6-9 .5-2.500 2-4.200-.4-8z" fill="url(#hh)"/><path d="M17 3c3.500 3.500 2 6 1.200 9-.800 3 1.500 5 .8 9" stroke="#5a3a2a" stroke-width="1.200" fill="none" stroke-linecap="round"/><path d="M13 7c-2 3-2.500 6-1.500 9" stroke="#fff" stroke-opacity=".45" stroke-width="1.400" fill="none" stroke-linecap="round"/>', G('hh','#8a5a40','#2e1d16')),
+  hair: SV('<g transform="rotate(-28 16 16)"><rect x="13" y="16" width="6" height="14" rx="3" fill="url(#hbh)"/><rect x="8" y="2" width="16" height="18" rx="8" fill="url(#hbp)"/><g fill="#fbf1e6"><circle cx="12.500" cy="7" r="1.300"/><circle cx="16" cy="7" r="1.300"/><circle cx="19.500" cy="7" r="1.300"/><circle cx="12.500" cy="11" r="1.300"/><circle cx="16" cy="11" r="1.300"/><circle cx="19.500" cy="11" r="1.300"/><circle cx="12.500" cy="15" r="1.300"/><circle cx="16" cy="15" r="1.300"/><circle cx="19.500" cy="15" r="1.300"/></g><rect x="10" y="4" width="2" height="9" rx="1" fill="#fff" opacity=".35"/><rect x="13" y="19" width="6" height="2" fill="#6b4a2f" opacity=".4"/></g>', G('hbp','#e4c07e','#a2763a')+G('hbh','#7a5240','#3a2620')),
   wash: SV('<path d="M15 3c5.500 7 8.500 11 8.500 15.200a8.500 8.500 0 0 1-17 0C6.500 14 9.500 10 15 3z" fill="url(#wd)"/><ellipse cx="11.300" cy="17" rx="1.700" ry="3.600" fill="#fff" opacity=".6" transform="rotate(14 11.300 17)"/><circle cx="26" cy="9" r="2.600" fill="#fff" stroke="#8fb7be" stroke-width="1"/><circle cx="23.200" cy="4.800" r="1.400" fill="#fff" stroke="#8fb7be" stroke-width=".9"/><circle cx="27.500" cy="14.500" r="1.200" fill="#fff" stroke="#8fb7be" stroke-width=".9"/>', G('wd','#d6e8ea','#7fa9b2')),
   scissors: SV('<path d="M11.500 20 23 4.500" stroke="url(#sm)" stroke-width="2.800" stroke-linecap="round" fill="none"/><path d="M20.500 20 9 4.500" stroke="url(#sm)" stroke-width="2.800" stroke-linecap="round" fill="none"/><circle cx="9" cy="24.500" r="4.200" fill="none" stroke="url(#sg)" stroke-width="2.600"/><circle cx="23" cy="24.500" r="4.200" fill="none" stroke="url(#sg)" stroke-width="2.600"/><circle cx="16" cy="14" r="1.400" fill="#8d6a3a"/>', G('sm','#e4dfd8','#a39a90')+G('sg','#d9b472','#9c7435')),
   face: SV('<rect x="5.500" y="14" width="21" height="14" rx="4.500" fill="url(#jb)"/><rect x="4.500" y="8" width="23" height="7" rx="3" fill="url(#jl)"/><rect x="8" y="17" width="3" height="8" rx="1.500" fill="#fff" opacity=".5"/><path d="M25 3.500l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="#d9b472"/>', G('jb','#fbf1e8','#e5cfbf')+G('jl','#e2c07f','#a67c3c')),
@@ -177,7 +177,7 @@ function applyTheme(t){
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = bg;
 }
 /* ---------- cloud backup of plans/looks/status (private per person, survives cleared browser data) ---------- */
-const LIGHT = ['appts','looks','plan','routine','log','wears','theme','shops','snaps','products'];
+const LIGHT = ['appts','looks','plan','routine','log','wears','theme','shops','snaps','products','series'];
 let dbc = null, lastSent = {}, upTimer = null, cloudOk = false, assetsNs = null, dlNs = null;
 const withTimeout = (p,ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
 async function dbInit(){
@@ -209,10 +209,10 @@ async function syncUp(){
   for(const k of Object.keys(l)){ const str = JSON.stringify(l[k]); if(str===lastSent[k] || str.length>240000) continue;
     try { await dbc.doc('muse_'+k).set({j:str}); lastSent[k] = str; } catch(e){} }
 }
-let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[], snaps:[], products:[]};
+let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[], snaps:[], products:[], series:{}};
 let booted = false;
 function init(){
-  state.appts = state.appts || []; state.snaps = state.snaps || []; state.products = state.products || [];
+  state.appts = state.appts || []; state.snaps = state.snaps || []; state.products = state.products || []; state.series = state.series || {};
   if(window.MUSE_PRODUCTS){ state.seedProd = state.seedProd || {}; if(state.seedProd1) state.seedProd['prod-bq-venus'] = true; window.MUSE_PRODUCTS.forEach(p => { if(state.seedProd[p.id]) return; state.seedProd[p.id] = true; if(!state.products.some(x => x.id===p.id)) state.products.push({...p}); }); }
   if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
   state.seedAdded = state.seedAdded || {};
@@ -288,7 +288,7 @@ async function boot(){
   try { s = await idbGet(KEY); } catch(e){}
   if(!s){ try { s = JSON.parse(localStorage.getItem(KEY)); fromLocal = !!s; } catch(e){} }
   if(s && Array.isArray(s.items)) state = s;
-  init(); await dbInit(); await syncDown(); init(); dirty = true; await persist();
+  init(); await dbInit(); await syncDown(); init(); extendSeries(); dirty = true; await persist();
   if(fromLocal){ try { const chk = await idbGet(KEY); if(chk && chk.items && chk.items.length===state.items.length) localStorage.removeItem(KEY); } catch(e){} }
   try { if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
   let restored = false; try { restored = restoreDraft(await idbGet(DRAFT_KEY)); } catch(e){}
@@ -410,6 +410,19 @@ function calGrid(){
 }
 const QUICK = [['hair','Hair'],['nails','Nails'],['outfit','Outfit'],['lashes','Lashes'],['brows','Brows'],['skin','Skin']];
 function quickPlan(msg){ return `<div class="quickplan"><span class="status">${msg}</span><div class="qprow">${QUICK.map(q => `<button class="qp" data-act="newappt" data-v="${q[0]}" aria-label="Plan ${q[1]}"><span class="qpc">${ticon(TYPE_ICON[q[0]]||'other', false)}</span><small>${q[1]}</small></button>`).join('')}</div></div>`; }
+
+/* ---------- repeating plans: weekly or every 2 weeks, planned 12 weeks ahead ---------- */
+const SERIES_AHEAD = 84;
+const repeatLabel = n => n===7 ? 'Weekly' : n===14 ? 'Every 2 weeks' : '';
+function seriesOccurrence(sr, id, date){ const t = sr.tpl;
+  return {id:uid(), type:t.type, title:t.title, where:t.where, date, time:t.time||'', notes:t.notes||'', prep:(t.prep||[]).map(p => ({t:p.t, when:p.when, done:false})), pics:[], edited:false, done:false, lookId:t.lookId||undefined, seriesId:id}; }
+function extendSeries(){
+  const limit = addDays(isoDay(), SERIES_AHEAD); let added = 0;
+  Object.keys(state.series||{}).forEach(id => { const sr = state.series[id]; if(!sr || sr.stopped) return;
+    let next = addDays(sr.last, sr.every), guard = 0;
+    while(next <= limit && guard++ < 60){ if(!state.appts.some(a => a.seriesId===id && a.date===next)) state.appts.push(seriesOccurrence(sr, id, next)); sr.last = next; next = addDays(next, sr.every); added++; } });
+  return added;
+}
 function weekStrip(){
   const sel = ui.calSel || isoDay(), td = isoDay();
   const base = new Date(sel+'T12:00:00'); base.setDate(base.getDate() - ((base.getDay()+6)%7));
@@ -438,7 +451,7 @@ function apptGCard(a){
   const art = l ? `<div class="gboard thumbboard">${boardParts(l).core}</div>` : p ? `<img src="${p.src}" alt="">` : `<div class="gico">${ticon(TYPE_ICON[a.type]||'other', false)}</div>`;
   const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
   const when = a.date!==td && a.date!==ui.calSel ? fmtDate(a.date) : '';
-  const meta = [when, a.time, a.where==='home'?'At home':'', tot?(open?`${open} to prep`:'Prepped'):''].filter(Boolean).map(esc).join(' · ');
+  const meta = [when, a.time, a.seriesId?repeatLabel((state.series[a.seriesId]||{}).every):'', a.where==='home'?'At home':'', tot?(open?`${open} to prep`:'Prepped'):''].filter(Boolean).map(esc).join(' · ');
   return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart ${p?'photo':'plain'}">${art}<span class="gx" role="button" aria-label="Delete this plan" data-act="delplan" data-v="${a.id}">✕</span><span class="gcap"><b>${esc(a.title)}</b>${meta?`<span class="status">${meta}</span>`:''}</span></span></button>`;
 }
 function prepToday(){
@@ -914,6 +927,8 @@ function sheet(){
       ${a.type==='outfit'?`<div><div class="eyebrow" style="margin-bottom:8px">Look for this day</div>${state.looks.length?`<div class="hscroll">${state.looks.map(l=>`<button class="tile ${a.lookId===l.id?'on':''}" data-act="applook" data-v="${l.id}" aria-pressed="${a.lookId===l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div>`:'<p class="status">No saved looks yet. Build one on the Looks tab first.</p>'}</div>`:''}
       <label>Title<input type="text" id="aname" value="${esc(a.title)}" maxlength="50"></label>
       <div class="row" style="gap:10px;flex-wrap:nowrap"><label style="flex:1;min-width:0">Date<input type="date" id="adate" value="${a.date}"></label><label style="flex:1;min-width:0">Time<input type="time" id="atime" value="${esc(a.time)}"></label></div>
+      ${a.seriesId?`<div class="repnote"><span class="status">Repeats ${esc((repeatLabel((state.series[a.seriesId]||{}).every)||'').toLowerCase())}</span><button class="linkbtn" data-act="stoprepeat">Stop repeating</button></div>`
+      :`<div><div class="eyebrow" style="margin-bottom:8px">Repeat</div><div class="segc" role="group" aria-label="Repeat" style="margin:0"><button aria-selected="${!a.repeat}" data-act="setrepeat" data-v="">Once</button><button aria-selected="${a.repeat==='weekly'}" data-act="setrepeat" data-v="weekly">Weekly</button><button aria-selected="${a.repeat==='biweekly'}" data-act="setrepeat" data-v="biweekly">Every 2 weeks</button></div>${a.repeat?`<p class="status" style="margin-top:8px">I plan the next 12 weeks and keep adding more.</p>`:''}</div>`}
       <label>Notes<input type="text" id="anotes" value="${esc(a.notes)}" placeholder="${a.where==='home'?'Products, style, how long it takes':'Stylist, place, style you want'}" maxlength="120"></label>
       <div class="folds" style="margin:6px 0 0">
       ${foldBox('ap_prep',`${a.where==='home'?'Get ready':'Prep list'}<small>${a.prep.length?` ${openN} to do`:''}</small>`,`<div class="prep">${a.prep.map((p,i)=>`<div class="chk"><input type="checkbox" id="pc${i}" data-act="preptoggle" data-v="${i}" ${p.done?'checked':''}><label for="pc${i}" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso);flex:1"><span>${esc(p.t)}<small>${esc(p.when)}</small></span></label><button class="iconb" data-act="prepdel" data-v="${i}" aria-label="Remove ${esc(p.t)}">✕</button></div>`).join('')}</div>
@@ -1090,7 +1105,10 @@ const actions = {
   toggleapppic(v){ const d=ui.adraft; d.pics=d.pics||[]; const i=d.pics.indexOf(v); if(i>=0) d.pics.splice(i,1); else d.pics.push(v); },
   saveappt(){ const a=ui.adraft; if(!a.date){ return setToast('Pick a date for this plan.'); }
     if(!a.title.trim()) a.title=defTitle(a.type,a.where);
+    const every = a.repeat==='weekly' ? 7 : a.repeat==='biweekly' ? 14 : 0; delete a.repeat;
+    if(every && !a.seriesId){ const sid = uid(); a.seriesId = sid; state.series[sid] = {every, last:a.date, stopped:false, tpl:{type:a.type, title:a.title, where:a.where, time:a.time, notes:a.notes, prep:a.prep.map(p=>({t:p.t,when:p.when})), lookId:a.lookId}}; }
     const i=state.appts.findIndex(x=>x.id===a.id); if(i>=0) state.appts[i]=a; else state.appts.push(a);
+    if(every) extendSeries();
     const p=a.date.split('-'); ui.cal={y:+p[0],m:+p[1]-1}; ui.calSel=a.date; save(); ui.sheet=null; ui.adraft=null; },
   doneappt(){ syncAppt(); const a=ui.adraft; a.done=!a.done;
     if(a.done && ROUTINE_OF[a.type]){ state.routine[ROUTINE_OF[a.type]]=a.date; }
@@ -1142,6 +1160,10 @@ const actions = {
   stage(v){ ui.stage = ui.stage===v ? 'all' : v; },
   autoweek(){ autoWeek(); },
   more(){ ui.more=!ui.more; },
+  setrepeat(v){ ui.adraft.repeat = v; },
+  stoprepeat(){ const a=ui.adraft, sid=a.seriesId; if(!sid) return; const sr=state.series[sid]; if(sr) sr.stopped = true;
+    state.appts = state.appts.filter(x => !(x.seriesId===sid && x.date>a.date && !x.done)); save(); ui.sheet=null; ui.adraft=null; setToast('Stopped repeating.'); },
+
   addprod(){ ui.pdraft = {id:uid(), area:'lashes', name:'', price:0, shop:'', note:'', photo:null}; ui.sheet = {type:'prod', isNew:true}; },
   editprod(v){ ui.pdraft = JSON.parse(JSON.stringify(state.products.find(p=>p.id===v))); ui.sheet = {type:'prod'}; },
   prodarea(v){ ui.pdraft.area = v; },

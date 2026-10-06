@@ -845,3 +845,5 @@ h2{font-size:22px}
   .top{padding-top:40px;min-height:84px;align-items:center}
   .brand{font-weight:500}
 }
+.repnote{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r);border:1px solid var(--gold-line)}
+.segc button{font-size:13px}
