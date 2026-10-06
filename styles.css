@@ -858,3 +858,12 @@ h2{font-size:22px}
 .typeb .ticon.photo{width:36px;height:36px}
 .prodph .ticon.photo{width:52px;height:52px}
 .ticon.photo img{transform:scale(1.22)}
+
+/* lips: lipstick, gloss, balm */
+.lipgrp{margin-top:10px}
+.lipgrp small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.nail.lip-gloss::after{left:20%;top:14%;width:26%;height:30%;border-radius:50%;transform:rotate(-18deg);background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,0))}
+.nail.lip-balm{box-shadow:inset 0 0 0 3px rgba(255,255,255,.55),inset 0 -6px 10px rgba(0,0,0,.06),0 2px 4px rgba(36,23,19,.15)}
+.nail.lip-balm::after{display:none}
+.nail.lip-colour::after{display:none}
+.lipgrp .pick{align-items:flex-start}.lipgrp .pick figure{width:72px}

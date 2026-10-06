@@ -95,7 +95,10 @@ const allShops = () => [...SHOPS, ...((state.shops||[]).map(s => [s.name, s.url]
 const shopUrl = (tpl, q) => tpl.replace('{q}', encodeURIComponent(q));
 const OCC = ['Casual Outing','Formal Event','Birthday Party','Special Occasion','Work','Church','Date Night','Brunch','Travel'];
 const NAILS = [['Milky pink','#efd3d0'],['Sheer nude','#e3c2b3'],['Champagne shimmer','#eadbd6'],['Rose beige','#d7aa9b'],['Cocoa','#7a4a3a'],['Espresso','#3a231c'],['Sheer red','#a83a3a']];
-const LIPS = [['Brown gloss','#7b4a3c'],['Mocha','#5a3328'],['Nude rosewood','#a86a5c'],['Terracotta','#b5573f'],['Plum brown','#5b2c33'],['Clear gloss','#c98f7a']];
+const LIPS = [['Brown gloss','#7b4a3c','Gloss'],['Mocha','#5a3328','Colour'],['Nude rosewood','#a86a5c','Colour'],['Terracotta','#b5573f','Colour'],['Plum brown','#5b2c33','Colour'],['Clear gloss','#c98f7a','Gloss'],
+  ['Peach gloss','#e39a82','Gloss'],['Cherry gloss','#a8323f','Gloss'],['Honey gloss','#c58a48','Gloss'],
+  ['Clear balm','#ecd2c2','Balm'],['Rosé balm','#d98f86','Balm'],['Berry balm','#a64a5e','Balm'],['Nude balm','#d3a68f','Balm']];
+const LIP_GROUPS = ['Colour','Gloss','Balm'];
 const APPT_TYPES = [['hair','Hair','#7a5240'],['nails','Nails','#d7aa9b'],['outfit','Outfit','#c39a4d'],['lashes','Lashes','#4a3128'],['brows','Brows','#4c6280'],['skin','Skin','#65735b'],['pedi','Pedicure','#a86a5c'],['other','Other','#8d7a70']];
 const ROUTINE_OF = {hair:'hairtrim',nails:'nails',lashes:'lashes',brows:'brows',skin:'face',pedi:'pedi'};
 const TYPE_OF_ROUTINE = {nails:'nails',lashes:'lashes',brows:'brows',hairtrim:'hair',face:'skin',pedi:'pedi'};
@@ -776,7 +779,7 @@ function builder(){
   } else if (ui.btab==='nails'){
     body = `<div class="brow"><div class="eyebrow">Nails</div><div class="pick">${NAILS.map(n=>`<figure><button class="nail lg" style="background:${n[1]}" data-act="beauty" data-k="nails" data-v="${esc(n[0])}" aria-pressed="${d.beauty.nails===n[0]}" aria-label="${esc(n[0])}"></button>${esc(n[0])}</figure>`).join('')}</div></div>
       ${picsRow('Nails',d,'Nail inspiration')}
-      <div class="brow"><div class="eyebrow">Lips</div><div class="pick">${LIPS.map(n=>`<figure><button class="nail lg" style="background:${n[1]};border-radius:50%;height:44px" data-act="beauty" data-k="lips" data-v="${esc(n[0])}" aria-pressed="${d.beauty.lips===n[0]}" aria-label="${esc(n[0])}"></button>${esc(n[0])}</figure>`).join('')}</div></div>
+      <div class="brow"><div class="eyebrow">Lips</div>${LIP_GROUPS.map(g => `<div class="lipgrp"><small>${g==='Colour'?'Lipstick and stain':g==='Gloss'?'Lip gloss':'Lip balm'}</small><div class="pick">${LIPS.filter(n=>(n[2]||'Colour')===g).map(n=>`<figure><button class="nail lg lip-${g.toLowerCase()}" style="background:${n[1]};border-radius:50%;height:44px" data-act="beauty" data-k="lips" data-v="${esc(n[0])}" aria-pressed="${d.beauty.lips===n[0]}" aria-label="${esc(n[0])}"></button>${esc(n[0])}</figure>`).join('')}</div></div>`).join('')}</div>
       ${picsRow('Makeup',d,'Makeup inspiration')}`;
   } else {
     body = `${itemRow('Bag','bag',d)}${itemRow('Jewelry','jewel',d)}${picsRow('Accessories',d,'Accessories inspiration')}`;
