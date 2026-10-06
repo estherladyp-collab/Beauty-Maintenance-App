@@ -772,3 +772,12 @@ h2{font-size:22px}
 @keyframes spark{0%{opacity:1;transform:rotate(var(--a)) translateY(0) scale(1)}100%{opacity:0;transform:rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(.3)}}
 @media(prefers-reduced-motion:reduce){.sparkle{display:none}}
 .snapprev{margin-bottom:4px}.snapprev+div{margin-top:4px}
+
+/* floating tab bar (seen on Cladwell's app) */
+@media(max-width:859px){
+  .nav{left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));padding-bottom:0;border:1px solid var(--line);border-radius:30px;background:var(--navbg);box-shadow:0 12px 30px -12px rgba(36,23,19,.35);overflow:hidden}
+  .nav-in{padding:5px}
+  .nav button{border-radius:24px;padding:9px 0 8px}
+  .nav button[aria-current=page]{background:color-mix(in srgb,var(--gold) 20%,transparent)}
+  .shell{padding-bottom:130px}
+}
