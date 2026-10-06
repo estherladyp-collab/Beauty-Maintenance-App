@@ -1,0 +1,26 @@
+# Muse: Übergabe-Notiz
+
+Muse ist Esthers visueller Garderoben- und Beauty-Planer (Körperform: umgekehrtes Dreieck, warmer Unterton). Sie schreibt auf Deutsch/Englisch, direkt und locker, will keine langen Listen und findet die App schnell "zu AI" und "zu viel Information".
+
+## Stand
+- Vanilla JS, Dateien: `index.html`, `styles.css`, `app.js`, `seed-pics.js`, `seed-items.js`, `sw.js`, `manifest.webmanifest`.
+- Veröffentlicht als einzelnes Artifact (CSS, Seeds und JS eingebaut): https://claude.ai/artifact/3yZPQXZBypussT8vtUbErM (zuletzt Version 41). Branch: `claude/beauty-outfit-planner-as77s8`.
+- Build-Weg: `styles.css` + `seed-pics.js` + `seed-items.js` + `app.js` (mit `confirm(` -> `(()=>true)(`) in eine HTML-Datei packen und mit dem Artifact-Tool unter derselben URL neu veröffentlichen. Capabilities `db` und `user` sind deklariert und bleiben erhalten.
+- Seiten: Today (Kalender oben, "Planned today" als Galerie, "Beauty upkeep", Rest hinter "More"), Wardrobe (Wunschliste mit Pipeline Wish -> Cart -> Ordered -> Own), Closet (nur Besitz), Looks, Mood, Calendar, Beauty.
+- Pläne sind Datumspläne (Outfit, Hair, Nails, Lashes ...), je "At a salon" oder "At home, DIY". Alles erscheint als Bildkarten. Jede Karte hat ein ✕ zum Löschen.
+- Farben: Standard ist Kaffeebraun (#2a1b16) mit Gold (#b48a4c). Über den Kreis oben rechts wählbar: 6 Presets plus eigene Farben (`applyTheme`, `THEMES` in `app.js`).
+- Schriften: Bodoni Moda + Hanken Grotesk.
+
+## Speichern (wichtig, war ein Problem)
+- Lokal: IndexedDB, Fallback localStorage. Im Artifact-Viewer ging das offenbar verloren.
+- Cloud: `db`-Capability, privat pro Person, Pfad `data/users/<id>` mit Dokumenten `muse_appts`, `muse_looks`, `muse_plan`, `muse_routine`, `muse_log`, `muse_wears`, `muse_theme`, `muse_shops`, `muse_vs` (Stati/Preise). Pfad war bis Version 40 falsch (4 Segmente), seit Version 41 korrigiert.
+- NOCH NICHT BESTÄTIGT, dass es im echten Viewer speichert. Prüfen: Plan anlegen, App neu öffnen, dann mit dem ArtifactData-Tool `data/users/me` auflisten.
+- Nicht in der Cloud: selbst hochgeladene Fotos (zu groß, nur im Browser).
+
+## Offene Wünsche / nächste Schritte
+- Wardrobe aufräumen, weniger Informationen pro Seite (Esthers größte Kritik).
+- Echte Web-Adresse, damit sie die App aufs Handy installieren kann (Angebot, noch unbeantwortet).
+- Skills im Projekt: `impeccable` und `design-taste-frontend` (in `.claude/skills/`). Nur nutzen, wenn Esthers Wunsch nach ruhig und aufgeräumt gewahrt bleibt. Keine Hooks installiert.
+
+## Nicht wollen
+- Premium-Redesign mit Look "zu AI" (wurde rückgängig gemacht), weiße/kalte Töne, viel Text, Bullet-Listen in Antworten.
