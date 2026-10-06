@@ -61,6 +61,7 @@ const ART = {
 const ROUTINE_ICON = {nails:'nails',lashes:'lashes',brows:'brows',hairwash:'wash',hairtrim:'scissors',face:'face',body:'body',lips:'lips',pedi:'polish'};
 const TYPE_ICON = {hair:'hair',nails:'nails',lashes:'lashes',brows:'brows',skin:'face',pedi:'polish',outfit:'outfit',other:'other'};
 function ticon(name, ok){
+  const IM = window.MUSE_ICONS||{}; if(IM[name]) return `<span class="ticon photo"><img src="${IM[name]}" alt=""></span>`;
   if(name==='nails') return `<i class="nail" style="background:${ok?'#cdd6c1':'#e6cfc5'};width:22px;height:30px;flex:none"></i>`;
   if(ART[name]) return `<span class="ticon art">${ART[name]}</span>`;
   return `<span class="ticon ${ok?'ok':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]||ICONS.other}</svg></span>`;

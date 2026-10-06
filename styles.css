@@ -847,3 +847,14 @@ h2{font-size:22px}
 }
 .repnote{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r);border:1px solid var(--gold-line)}
 .segc button{font-size:13px}
+
+/* generated photo icons (round) */
+.ticon.photo{flex:none;width:42px;height:42px;border-radius:50%;overflow:hidden;background:none!important;box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 40%,transparent),0 3px 8px -3px rgba(36,23,19,.35);display:block}
+.ticon.photo img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.02)}
+.ringw .ticon.photo{width:38px;height:38px;box-shadow:none}
+.qpc{width:60px;height:60px;padding:0;overflow:hidden;background:none}
+.qpc .ticon.photo{width:100%;height:100%;box-shadow:none}
+.gart .gico .ticon.photo{width:112px;height:112px}
+.typeb .ticon.photo{width:36px;height:36px}
+.prodph .ticon.photo{width:52px;height:52px}
+.ticon.photo img{transform:scale(1.22)}
