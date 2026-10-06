@@ -821,3 +821,17 @@ h2{font-size:22px}
 .gart .gico .ticon.art{width:84px;height:84px}
 .gart .gico .ticon.art svg{width:76px;height:76px;filter:drop-shadow(0 6px 8px rgba(36,23,19,.25))}
 .typeb .ticon.art svg{width:30px;height:30px}
+
+/* products */
+.taskw{border-bottom:1px solid var(--line)}
+.taskw .task{border-bottom:0}
+.prodstrip{display:grid;gap:10px;padding:0 0 16px 62px}
+.prodc{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:8px;border-radius:var(--r);background:var(--card);border:1px solid var(--line);transition:transform .15s}
+.prodc:active{transform:scale(.98)}
+.prodc img{width:68px;height:68px;flex:none;object-fit:cover;border-radius:10px;background:#fff}
+.prodph{width:68px;height:68px;flex:none;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--gold) 14%,transparent)}
+.prodt{display:grid;gap:3px;min-width:0}
+.prodt b{font:400 16px/1.2 var(--display)}
+.prodt small{font-size:12px;color:var(--muted)}
+.prodlist{display:grid;gap:14px}
+.prodlist .eyebrow{display:block;margin-bottom:6px}

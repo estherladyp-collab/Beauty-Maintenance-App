@@ -177,7 +177,7 @@ function applyTheme(t){
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = bg;
 }
 /* ---------- cloud backup of plans/looks/status (private per person, survives cleared browser data) ---------- */
-const LIGHT = ['appts','looks','plan','routine','log','wears','theme','shops','snaps'];
+const LIGHT = ['appts','looks','plan','routine','log','wears','theme','shops','snaps','products'];
 let dbc = null, lastSent = {}, upTimer = null, cloudOk = false, assetsNs = null, dlNs = null;
 const withTimeout = (p,ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
 async function dbInit(){
@@ -209,10 +209,11 @@ async function syncUp(){
   for(const k of Object.keys(l)){ const str = JSON.stringify(l[k]); if(str===lastSent[k] || str.length>240000) continue;
     try { await dbc.doc('muse_'+k).set({j:str}); lastSent[k] = str; } catch(e){} }
 }
-let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[], snaps:[]};
+let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[], snaps:[], products:[]};
 let booted = false;
 function init(){
-  state.appts = state.appts || []; state.snaps = state.snaps || [];
+  state.appts = state.appts || []; state.snaps = state.snaps || []; state.products = state.products || [];
+  if(window.MUSE_PRODUCTS && !state.seedProd1){ state.seedProd1 = true; window.MUSE_PRODUCTS.forEach(p => { if(!state.products.some(x => x.id===p.id)) state.products.push({...p}); }); }
   if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
   state.seedAdded = state.seedAdded || {};
 if(window.MUSE_SEED_ITEMS){ window.MUSE_SEED_ITEMS.forEach(s => { if(state.seedAdded[s.id]) return; state.seedAdded[s.id] = true;
@@ -594,6 +595,24 @@ function snapView(s){
   <div class="row" style="margin-top:16px;gap:10px"><button class="btn" data-act="sharesnap" data-v="${sn.id}" style="flex:1">Save to share</button><button class="btn ghost" data-act="savephoto" data-v="${sn.id}">Photo only</button></div>
   <div class="row" style="gap:18px;margin-top:14px"><button class="linkbtn" data-act="favsnap" data-v="${sn.id}">${sn.fav?'Not my pick':'Make it look of the week'}</button><button class="linkbtn" data-act="delsnap" data-v="${sn.id}" style="color:#a4462b;border-color:rgba(164,70,43,.4)">Delete</button><button class="linkbtn" data-act="close">Close</button></div></div>`;
 }
+const eur = n => Number(n).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+const PROD_AREAS = [['lashes','Lashes'],['nails','Nails'],['brows','Brows'],['hairwash','Hair care'],['hairtrim','Hair trim'],['face','Skin'],['body','Body'],['lips','Lips'],['pedi','Feet']];
+const areaName = id => (PROD_AREAS.find(a => a[0]===id)||[0,'Other'])[1];
+function prodCard(p){ return `<button class="prodc" data-act="editprod" data-v="${p.id}" aria-label="${esc(p.name)}">${p.photo?`<img src="${p.photo}" alt="">`:`<span class="prodph">${ticon(ROUTINE_ICON[p.area]||'other',false)}</span>`}<span class="prodt"><b>${esc(p.name)}</b><small>${p.price?eur(p.price)+' · ':''}${esc(p.shop||'')}</small></span></button>`; }
+function prodStrip(rid){ const l = (state.products||[]).filter(p => p.area===rid); return l.length ? `<div class="prodstrip">${l.map(prodCard).join('')}</div>` : ''; }
+function taskP(r){ return `<div class="taskw">${task(r)}${prodStrip(r[0])}</div>`; }
+function prodSheet(s){
+  const p = ui.pdraft, isNew = !!s.isNew;
+  return `<span class="eyebrow" style="color:var(--goldtxt)">${isNew?'New product':'Product'}</span><h2 style="margin-top:4px">${esc(areaName(p.area))}</h2><div class="apptform">
+    ${p.photo?`<div class="snapprev"><img src="${p.photo}" alt="${esc(p.name)}" style="max-height:34vh;object-fit:contain;background:#fff"><label class="linkbtn retake">Change photo<input type="file" id="prodphoto" accept="image/*" hidden></label></div>`:`<label class="snapbtn" tabindex="0"><span class="plusc">＋</span><span>Add a photo</span><input type="file" id="prodphoto" accept="image/*" hidden></label>`}
+    <div class="typerow" role="group" aria-label="Area">${PROD_AREAS.map(a => `<button class="chip s" aria-pressed="${p.area===a[0]}" data-act="prodarea" data-v="${a[0]}" style="flex:none">${a[1]}</button>`).join('')}</div>
+    <label>Name<input type="text" id="prodname" value="${esc(p.name)}" maxlength="80" placeholder="What is it?"></label>
+    <div class="row" style="gap:10px;flex-wrap:nowrap"><label style="flex:1;min-width:0">Price in €<input type="number" id="prodprice" step="0.01" min="0" value="${p.price||''}" inputmode="decimal"></label><label style="flex:1.4;min-width:0">Shop<input type="text" id="prodshop" value="${esc(p.shop||'')}" maxlength="60"></label></div>
+    <label>Note<input type="text" id="prodnote" value="${esc(p.note||'')}" maxlength="140" placeholder="Size, colour, delivery"></label>
+    <div class="row" style="margin-top:8px;gap:10px"><button class="btn" data-act="saveprod" style="flex:1">Save</button><button class="btn ghost" data-act="close">Cancel</button></div>
+    ${isNew?'':`<div class="row"><button class="linkbtn" data-act="delprod" style="color:#a4462b;border-color:rgba(164,70,43,.4)">Delete</button></div>`}</div>`;
+}
+function syncProd(){ const p=ui.pdraft, g=id=>document.getElementById(id); if(!p||!g('prodname')) return; p.name=g('prodname').value; p.price=parseFloat(g('prodprice').value)||0; p.shop=g('prodshop').value; p.note=g('prodnote').value; }
 function weekLog(){ let n=0; for(let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-i); if(state.log.includes(isoDay(d))) n++; } return n; }
 
 function dots(it, cur, act, key){
@@ -823,9 +842,10 @@ function beauty(){
   const soon = rows.filter(x => x.c.soon).sort((a,b) => a.c.left-b.c.left), rest = rows.filter(x => !x.c.soon);
   const open = (k, label, inner) => `<div class="fold"><button class="foldh" data-act="fold" data-v="${k}" aria-expanded="${!!ui.fold[k]}"><span>${label}</span><i aria-hidden="true">${ui.fold[k]?'−':'+'}</i></button>${ui.fold[k]?`<div class="foldb">${inner}</div>`:''}</div>`;
   return `<header class="dayhead"><span class="eyebrow">Grooming</span><h1 class="page-title">Care</h1></header>
-  ${soon.length?`<section class="tight"><h2>Coming due</h2><div class="list" style="margin-top:14px">${soon.map(x=>task(x.r)).join('')}</div></section>`:`<section class="tight"><div class="blank slim"><span>✦</span>Tap Done on anything below once. After that I keep count and tell you when it is due.</div></section>`}
-  <section><h2>${soon.length?'Everything else':'Your routine'}</h2><div class="list" style="margin-top:14px">${rest.map(x=>task(x.r)).join('')}</div></section>
-  <section class="folds">${open('guide','Style guide',`<div class="guide"><div><div class="eyebrow">Inverted triangle</div><h3>Balance the shoulders</h3><ul><li>V-necks, wraps and scoop necks open up the top.</li><li>Wide-leg trousers, A-line and pleated skirts add volume below.</li><li>Belt at the waist, keep detail on the bottom half.</li><li>Go easy on boat necks, puff sleeves and halters.</li></ul></div><div><div class="eyebrow">Warm undertone</div><h3>Gold, earth and glow</h3><ul><li>Gold jewelry over silver.</li><li>Bronze, terracotta and coral blush. Brown and rosewood lips.</li><li>Milky nude and sheer pink nails.</li></ul></div></div><div class="palette" style="margin-top:18px">${warm.map(c=>`<div class="pal"><i style="background:${c[1]}"></i>${c[0]}</div>`).join('')}</div>`)}
+  ${soon.length?`<section class="tight"><h2>Coming due</h2><div class="list" style="margin-top:14px">${soon.map(x=>taskP(x.r)).join('')}</div></section>`:`<section class="tight"><div class="blank slim"><span>✦</span>Tap Done on anything below once. After that I keep count and tell you when it is due.</div></section>`}
+  <section><h2>${soon.length?'Everything else':'Your routine'}</h2><div class="list" style="margin-top:14px">${rest.map(x=>taskP(x.r)).join('')}</div></section>
+  <section class="folds">${open('prod','My products',`${(state.products||[]).length?`<div class="prodlist">${state.products.map(p=>`<div><span class="eyebrow">${esc(areaName(p.area))}</span>${prodCard(p)}</div>`).join('')}</div>`:'<p class="lede">Nothing saved yet.</p>'}<div style="margin-top:14px"><button class="btn small" data-act="addprod">＋ Add product</button></div>`)}
+  ${open('guide','Style guide',`<div class="guide"><div><div class="eyebrow">Inverted triangle</div><h3>Balance the shoulders</h3><ul><li>V-necks, wraps and scoop necks open up the top.</li><li>Wide-leg trousers, A-line and pleated skirts add volume below.</li><li>Belt at the waist, keep detail on the bottom half.</li><li>Go easy on boat necks, puff sleeves and halters.</li></ul></div><div><div class="eyebrow">Warm undertone</div><h3>Gold, earth and glow</h3><ul><li>Gold jewelry over silver.</li><li>Bronze, terracotta and coral blush. Brown and rosewood lips.</li><li>Milky nude and sheer pink nails.</li></ul></div></div><div class="palette" style="margin-top:18px">${warm.map(c=>`<div class="pal"><i style="background:${c[1]}"></i>${c[0]}</div>`).join('')}</div>`)}
   ${open('backup','Backup',`<p class="lede" style="margin-bottom:14px">Your plans are saved to your account. This file is an extra copy, or a way to move to another device.</p><div class="row"><button class="btn small" data-act="export">Save backup</button><label class="btn small ghost" style="cursor:pointer">Load backup<input type="file" id="import" accept="application/json" hidden></label></div>`)}</section>`;
 }
 
@@ -904,6 +924,7 @@ function sheet(){
       ${s.isNew?'':`<div class="row" style="gap:18px"><button class="linkbtn" data-act="doneappt">${a.done?'Reopen':'Mark done'}</button><button class="linkbtn" data-act="delappt" style="color:#a4462b;border-color:rgba(164,70,43,.4)">Delete</button></div>`}</div>`;
   } else if (s.type==='snap'){ inner = snapSheet(s);
   } else if (s.type==='snapview'){ inner = snapView(s);
+  } else if (s.type==='prod'){ inner = prodSheet(s);
   } else if (s.type==='apppics'){
     const all = state.pics||[], list = all.filter(p => inTag(p, s.tag)), sel = ui.adraft.pics||[];
     inner = `<h2>Reference pictures</h2>
@@ -1121,6 +1142,13 @@ const actions = {
   stage(v){ ui.stage = ui.stage===v ? 'all' : v; },
   autoweek(){ autoWeek(); },
   more(){ ui.more=!ui.more; },
+  addprod(){ ui.pdraft = {id:uid(), area:'lashes', name:'', price:0, shop:'', note:'', photo:null}; ui.sheet = {type:'prod', isNew:true}; },
+  editprod(v){ ui.pdraft = JSON.parse(JSON.stringify(state.products.find(p=>p.id===v))); ui.sheet = {type:'prod'}; },
+  prodarea(v){ ui.pdraft.area = v; },
+  saveprod(){ syncProd(); const p=ui.pdraft; if(!p.name.trim()) return setToast('Give the product a name.');
+    const i = state.products.findIndex(x=>x.id===p.id); if(i>=0) state.products[i]=p; else state.products.push(p); save(); ui.sheet=null; ui.pdraft=null; setToast('Product saved.'); },
+  delprod(){ state.products = state.products.filter(p=>p.id!==ui.pdraft.id); save(); ui.sheet=null; ui.pdraft=null; },
+
   opensnap(v){ ui.sheet = {type:'snap', date: v||isoDay(), photo:null, sel:null, note:''}; },
   newapptday(v){ ui.calSel = v; ui.tab='today'; },
   snapplan(v){ const s=ui.sheet, day=s.date, plans=state.appts.filter(a=>a.date===day&&LOOK_TYPES.includes(a.type)); const cur = s.sel || plans.map(a=>a.id); s.sel = cur.includes(v) ? cur.filter(x=>x!==v) : [...cur, v]; },
@@ -1181,6 +1209,7 @@ document.addEventListener('click', e => {
   if (!fn) return;
   if (el.tagName==='SELECT') return;
   if (ui.adraft && ui.sheet && ui.sheet.type==='appt' && el.dataset.act!=='close') syncAppt();
+  if (ui.sheet && ui.sheet.type==='prod') syncProd();
   if (ui.sheet && ui.sheet.type==='snap'){ const n=document.getElementById('snnote'); if(n) ui.sheet.note=n.value; }
   if (ui.draft && !ui.sheet) syncDraft();
   fn(el.dataset.v, {target:e.target, currentTarget:el});
@@ -1372,6 +1401,7 @@ document.addEventListener('change', async e => {
   if (e.target.id==='pdpphoto' && e.target.files[0]){ const it=state.items.find(i=>i.id===ui.sheet.id), c=vOf(it,ui.vsel[it.id]); const r=await prepare(e.target.files[0]); if(r){ c.photo=r.src; syncHave(it); save(); render(); } return; }
   if ((e.target.id==='snapfile'||e.target.id==='snapcam') && e.target.files[0] && ui.sheet && ui.sheet.type==='snap'){ const f=e.target.files[0]; e.target.value=''; const n=document.getElementById('snnote'); if(n) ui.sheet.note=n.value; const d = await shrink(f, 1000); if(d){ ui.sheet.photo=d; render(); } else setToast('That picture would not open.'); return; }
   if (e.target.id==='sndate' && ui.sheet && ui.sheet.type==='snap'){ ui.sheet.date = e.target.value || isoDay(); ui.sheet.sel=null; const n=document.getElementById('snnote'); if(n) ui.sheet.note=n.value; render(); return; }
+  if (e.target.id==='prodphoto' && e.target.files[0] && ui.pdraft){ const f=e.target.files[0]; e.target.value=''; syncProd(); const d = await shrink(f, 700); if(d){ ui.pdraft.photo=d; render(); } else setToast('That picture would not open.'); return; }
   if (e.target.id==='wardup' && e.target.files.length){ const fs=[...e.target.files].filter(f=>f.type.startsWith('image/')); e.target.value=''; await startSort(fs,'ward'); return; }
   if (e.target.id==='sortmore' && e.target.files.length){ const fs=[...e.target.files].filter(f=>f.type.startsWith('image/')); e.target.value=''; await startSort(fs,ui.sheet.mode); return; }
   if (e.target.id==='import' && e.target.files[0]){
