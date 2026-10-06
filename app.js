@@ -125,12 +125,12 @@ const PREP_HOME = {
 const prepFor = (t,w) => ((w==='home' ? PREP_HOME : PREP)[t]||PREP.other).map(p=>({t:p[0],when:p[1],done:false}));
 const defTitle = (t,w) => t==='outfit' ? 'Outfit' : (APPT_TYPES.find(x=>x[0]===t)||APPT_TYPES[7])[1]+(w==='home'?' at home':' appointment');
 const isDefTitle = a => !a.title.trim() || a.title===defTitle(a.type,'salon') || a.title===defTitle(a.type,'home');
-const DEFTAG = {hair:'Hair',nails:'Nails',pedi:'Nails',lashes:'Makeup',brows:'Makeup',skin:'Makeup',outfit:'Outfit'};
+const DEFTAG = {hair:'Hair',nails:'Nails',pedi:'Nails',lashes:'Makeup',brows:'Makeup',skin:'Skincare',outfit:'Outfit'};
 const CFIL = [['all','All'],['hair','Hair'],['nails','Nails'],['outfit','Outfit'],['other','More']];
 const typeInfo = t => APPT_TYPES.find(x => x[0]===t) || APPT_TYPES[6];
 const addDays = (iso,n) => { const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return isoDay(d); };
 const fmtDate = iso => new Date(iso+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-const TAGS = ['Outfit','Hair','Nails','Makeup','Accessories'];
+const TAGS = ['Outfit','Hair','Nails','Makeup','Skincare','Accessories'];
 const HAIR = ['Blowout','Braids','Silk press','Curls','Afro','Updo','Sleek bun','Ponytail','Half-up','Other'];
 const HCATS = [['Wigs','Wigs'],['Braids','Braids'],['Natural','Natural & blowout']];
 const hcatName = c => (HCATS.find(x=>x[0]===c)||['','Natural & blowout'])[1];
