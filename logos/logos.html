@@ -1,0 +1,60 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#f4ece0;--ink:#2a1b16;--gold:#b48a4c;--gold2:#d9b878;--gold3:#8d6a3a}
+body{margin:0;background:#e9dfd1;font-family:"Hanken Grotesk",sans-serif;padding:40px;width:1720px}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+.card{background:var(--cream);border-radius:28px;padding:34px 20px 30px;display:grid;justify-items:center;gap:26px}
+.card h4{margin:0;font:500 13px "Hanken Grotesk";letter-spacing:.2em;text-transform:uppercase;color:#85622f;align-self:start;justify-self:start;margin-left:14px}
+.logo svg{display:block}
+.icons{display:flex;gap:18px;align-items:center}
+.icons svg{display:block;border-radius:22%;box-shadow:0 8px 20px -10px rgba(42,27,22,.5)}
+</style></head><body><div class="board">
+
+<!-- A -->
+<div class="card"><h4>A · Monogram</h4>
+<div class="logo" id="logoA"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 420" width="520" height="420">
+<defs><linearGradient id="gA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9b878"/><stop offset=".5" stop-color="#b48a4c"/><stop offset="1" stop-color="#8d6a3a"/></linearGradient></defs>
+<circle cx="260" cy="150" r="112" fill="none" stroke="url(#gA)" stroke-width="2.5"/>
+<circle cx="260" cy="150" r="100" fill="none" stroke="url(#gA)" stroke-width=".9"/>
+<text x="260" y="186" text-anchor="middle" font-family="Bodoni Moda" font-size="112" fill="#2a1b16" letter-spacing="-4">M<tspan fill="url(#gA)">Y</tspan></text>
+<text x="260" y="336" text-anchor="middle" font-family="Hanken Grotesk" font-weight="500" font-size="21" fill="#2a1b16" letter-spacing="9">MAINTAINING YOU</text>
+<line x1="150" y1="366" x2="238" y2="366" stroke="#b48a4c" stroke-width="1.2"/><line x1="282" y1="366" x2="370" y2="366" stroke="#b48a4c" stroke-width="1.2"/>
+<path d="M260 358l6 8-6 8-6-8z" fill="url(#gA)"/>
+</svg></div>
+<div class="icons" id="iconsA">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><rect width="120" height="120" fill="#f4ece0"/><circle cx="60" cy="60" r="44" fill="none" stroke="#b48a4c" stroke-width="2"/><text x="60" y="76" text-anchor="middle" font-family="Bodoni Moda" font-size="48" fill="#2a1b16" letter-spacing="-2">M<tspan fill="#b48a4c">Y</tspan></text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><rect width="120" height="120" fill="#2a1b16"/><circle cx="60" cy="60" r="44" fill="none" stroke="#d9b878" stroke-width="2"/><text x="60" y="76" text-anchor="middle" font-family="Bodoni Moda" font-size="48" fill="#f4ece0" letter-spacing="-2">M<tspan fill="#d9b878">Y</tspan></text></svg>
+</div></div>
+
+<!-- B -->
+<div class="card"><h4>B · Wortmarke</h4>
+<div class="logo" id="logoB"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 420" width="520" height="420">
+<defs><linearGradient id="gB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9b878"/><stop offset=".55" stop-color="#b48a4c"/><stop offset="1" stop-color="#8d6a3a"/></linearGradient></defs>
+<text x="260" y="170" text-anchor="middle" font-family="Bodoni Moda" font-size="74" fill="#2a1b16" letter-spacing="-2">Maintaining</text>
+<text x="260" y="262" text-anchor="middle" font-family="Bodoni Moda" font-style="italic" font-size="92" fill="url(#gB)" letter-spacing="-2">You</text>
+<path d="M380 196l6 17 17 6-17 6-6 17-6-17-17-6 17-6z" fill="url(#gB)"/>
+<text x="260" y="336" text-anchor="middle" font-family="Hanken Grotesk" font-weight="500" font-size="15" fill="#6b5043" letter-spacing="7">HAIR · NAILS · LOOKS</text>
+</svg></div>
+<div class="icons" id="iconsB">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><rect width="120" height="120" fill="#b48a4c"/><text x="60" y="80" text-anchor="middle" font-family="Bodoni Moda" font-style="italic" font-size="68" fill="#f4ece0">Y</text><path d="M91 26l2.600 7.400 7.400 2.600-7.400 2.600-2.600 7.400-2.600-7.400-7.400-2.600 7.400-2.600z" fill="#f4ece0"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><rect width="120" height="120" fill="#f4ece0"/><text x="60" y="80" text-anchor="middle" font-family="Bodoni Moda" font-style="italic" font-size="68" fill="#b48a4c">Y</text><path d="M91 26l2.600 7.400 7.400 2.600-7.400 2.600-2.600 7.400-2.600-7.400-7.400-2.600 7.400-2.600z" fill="#2a1b16"/></svg>
+</div></div>
+
+<!-- C -->
+<div class="card"><h4>C · Nagel</h4>
+<div class="logo" id="logoC"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 420" width="520" height="420">
+<defs><linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6c98c"/><stop offset=".55" stop-color="#b48a4c"/><stop offset="1" stop-color="#8d6a3a"/></linearGradient>
+<linearGradient id="hC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+<g transform="translate(200 24)"><path d="M60 4C86 4 110 40 110 98L110 152Q110 182 80 182L40 182Q10 182 10 152L10 98C10 40 34 4 60 4z" fill="url(#gC)"/>
+<path d="M60 4C86 4 110 40 110 98L110 152Q110 182 80 182L40 182Q10 182 10 152L10 98C10 40 34 4 60 4z" fill="none" stroke="#8d6a3a" stroke-width="1.2" opacity=".6"/>
+<ellipse cx="36" cy="64" rx="9" ry="36" fill="url(#hC)" transform="rotate(10 38 62)"/></g>
+<text x="260" y="276" text-anchor="middle" font-family="Cormorant Garamond" font-style="italic" font-weight="500" font-size="64" fill="#2a1b16" letter-spacing="0">Maintaining You</text>
+<text x="260" y="330" text-anchor="middle" font-family="Hanken Grotesk" font-weight="500" font-size="14" fill="#6b5043" letter-spacing="8">GROOMING, PLANNED</text>
+</svg></div>
+<div class="icons" id="iconsC">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><defs><linearGradient id="gCi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e7c5"/><stop offset="1" stop-color="#e3c690"/></linearGradient></defs><rect width="120" height="120" fill="#b48a4c"/><path d="M60 20C74 20 87 40 87 66L87 90Q87 106 71 106L49 106Q33 106 33 90L33 66C33 40 46 20 60 20z" fill="url(#gCi)"/><ellipse cx="49" cy="52" rx="5" ry="17" fill="#fff" opacity=".7" transform="rotate(10 49 52)"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><defs><linearGradient id="gCj" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e6c98c"/><stop offset="1" stop-color="#9a7339"/></linearGradient></defs><rect width="120" height="120" fill="#2a1b16"/><path d="M60 20C74 20 87 40 87 66L87 90Q87 106 71 106L49 106Q33 106 33 90L33 66C33 40 46 20 60 20z" fill="url(#gCj)"/><ellipse cx="49" cy="52" rx="5" ry="17" fill="#fff" opacity=".6" transform="rotate(10 49 52)"/></svg>
+</div></div>
+
+</div></body></html>
