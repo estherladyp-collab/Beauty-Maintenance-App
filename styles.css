@@ -867,3 +867,9 @@ h2{font-size:22px}
 .nail.lip-balm::after{display:none}
 .nail.lip-colour::after{display:none}
 .lipgrp .pick{align-items:flex-start}.lipgrp .pick figure{width:72px}
+
+/* plan card without own photo: show the generated icon whole, as a tile */
+.gart .gico{width:62%}
+.gart .gico .ticon.photo{width:100%;height:auto;aspect-ratio:1;border-radius:26px;box-shadow:0 14px 26px -12px rgba(0,0,0,.45),0 0 0 1px color-mix(in srgb,var(--gold) 45%,transparent)}
+.gart .gico .ticon.photo img{transform:none}
+.gallery.big .gart .ticon.photo img{position:static;inset:auto;width:100%;height:100%}
