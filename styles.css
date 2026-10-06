@@ -467,3 +467,4 @@ input[type=number]{width:100%;padding:11px 14px;border-radius:12px;border:1px so
 .more>summary::-webkit-details-marker{display:none}
 .more[open]>summary{margin-bottom:6px}
 .morebtn{padding:9px 18px;border-radius:999px;border:1px solid var(--line);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.gart .slot.empty{border-color:transparent}

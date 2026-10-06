@@ -211,6 +211,11 @@ if(!state.cleanup1){
     state.cleanup1 = true;
   }
   if(!state.ownReset1){ state.items.forEach(i => { if(/^x\d+$/.test(i.id)) (i.variants||[]).forEach(v => setSt(v,'wish')); }); state.ownReset1 = true; }
+  if(!state.planMig){ state.planMig = true;
+    Object.keys(state.plan||{}).forEach(k => { const lid = state.plan[k]; if(!state.looks.some(l=>l.id===lid)) return;
+      const t = new Date(); t.setHours(12); const n = ((+k - ((t.getDay()+6)%7)) + 7) % 7; const iso = isoDay(new Date(t.getTime()+n*864e5));
+      if(!state.appts.some(x=>x.type==='outfit'&&x.date===iso&&x.lookId===lid)) state.appts.push({id:uid(),type:'outfit',title:(state.looks.find(l=>l.id===lid)||{}).name||'Outfit',where:'salon',date:iso,time:'',notes:'',prep:prepFor('outfit'),pics:[],edited:false,done:false,lookId:lid}); });
+  }
   state.items.forEach(migrate);
   if(!state.seedFix){ const sp=(state.pics||[]).find(p=>p.id==='seed4'&&p.tag==='Makeup'); if(sp) sp.tag='Hair'; state.seedFix=true; }
   state.seedPics = state.seedPics || {};
@@ -381,22 +386,18 @@ function today(){
     return `<div class="day" ${i===d?'aria-current="date"':''}><button class="dayb" data-act="assign" data-v="${i}" aria-label="${n}: ${l?esc(l.name):'no look planned'}">
       <small>${n}</small>${l?`<div class="mini thumbboard">${boardParts(l).core}</div>`:`<span class="plus">+</span>`}</button>${l?`<button class="dayx" data-act="clearplan" data-v="${i}" aria-label="Remove ${DAYFULL[i]}'s look">✕</button>`:''}</div>`;
   }).join('');
-  const outfitAppt = state.appts.find(x => x.type==='outfit' && x.date===sel && !x.done && x.lookId && state.looks.some(l => l.id===x.lookId));
-  const look = outfitAppt ? state.looks.find(l => l.id===outfitAppt.lookId) : (isToday ? state.looks.find(l => l.id===state.plan[d]) : null);
-  const plans = state.appts.filter(a => a.date===sel && !a.done && !(outfitAppt && a.id===outfitAppt.id)).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
-  const lookCard = look ? `<button class="gcard" data-act="${isToday?'assign':'editappt'}" data-v="${isToday?d:outfitAppt.id}"><span class="gart"><span class="gday">Outfit</span><div class="gboard thumbboard">${boardParts(look).core}</div></span><b>${esc(look.name)}</b><span class="status">${esc(look.occasion||'Tap to change')}</span></button>` : '';
+  const plans = state.appts.filter(a => a.date===sel && !a.done).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
   const due = ROUTINE.map(r => ({r, left: dueIn(r)})).sort((a,b)=>a.left-b.left).slice(0,3);
   const have = state.items.reduce((n,i)=>n+i.variants.filter(v=>v.have).length,0), all = state.items.reduce((n,i)=>n+i.variants.length,0);
-  const any = look || plans.length;
+  const any = plans.length;
   return `
   <h1 class="page-title">Good day, <em>gorgeous.</em></h1>
   <section>${calGrid()}</section>
-  <section><div class="row between"><h2>${isToday?'Planned today':'Planned · '+fmtDate(sel)}</h2><div class="row" style="gap:8px">${!look&&isToday?`<button class="btn small ghost" data-act="assign" data-v="${d}">Outfit</button>`:''}<button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div></div>
-    ${any?`<div class="gallery" style="margin-top:14px">${lookCard}${plans.map(apptGCard).join('')}</div>`:`<div class="empty-state" style="margin-top:14px">Nothing planned. Tap ＋ Plan for hair, nails, makeup or an outfit.</div>`}
-    ${look&&isToday&&!outfitAppt?`<div class="row" style="margin-top:6px;gap:8px"><button class="btn small ghost" data-act="wore" data-v="${d}">I wore this</button><button class="btn small ghost" data-act="clearplan" data-v="${d}">Remove outfit</button></div>`:''}</section>
+  <section><div class="row between"><h2>${isToday?'Planned today':'Planned · '+fmtDate(sel)}</h2><div class="row" style="gap:8px"><button class="btn small ghost" data-act="newappt" data-v="outfit">＋ Outfit</button><button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div></div>
+    ${any?`<div class="gallery" style="margin-top:14px">${plans.map(apptGCard).join('')}</div>`:`<div class="empty-state" style="margin-top:14px">Nothing planned. Tap ＋ Plan for hair, nails, makeup or an outfit.</div>`}
+</section>
   <section><h2>Beauty upkeep</h2><div class="list" style="margin-top:14px">${due.map(x=>task(x.r)).join('')}</div></section>
   <div class="more"><button class="morebtn" data-act="more" aria-expanded="${!!ui.more}">${ui.more?'Less':'More'}</button>${ui.more?`
-    <section><div class="row between"><h2>This week</h2><span class="eyebrow">Tap a day</span></div><div class="week" style="margin-top:14px">${week}</div><div style="margin-top:14px"><button class="btn small ghost" data-act="autoweek">Plan my week from my closet</button></div></section>
     ${startRail()}
     ${freshNudge()}
     <section><div class="card"><div class="eyebrow">My closet</div><h3 style="font-size:26px;margin:6px 0">${have} of ${all} wardrobe colors owned</h3><div class="progress"><i style="width:${all?have/all*100:0}%"></i></div></div></section>`:''}</div>`;
@@ -682,7 +683,7 @@ function calendar(){
   <div class="cal" style="margin-top:14px"><div class="cal-h">${DAYS.map(d=>`<span>${d[0]}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
   <div class="legend">${APPT_TYPES.filter(t=>t[0]!=='other').map(t=>`<span><i style="background:${t[2]}"></i>${t[1]}</span>`).join('')}<span><i class="ring"></i>Due</span></div></section>
   <section><div class="row between"><h2>${fmtDate(sel)}</h2><button class="btn small" data-act="newappt" data-v="">Add plan</button></div>
-  <div class="list" style="margin-top:12px">${dayAppts.map(apptCard).join('')}${dayDue.map(x=>`<div class="task">${ticon(TYPE_ICON[x.t]||'other', true)}<div class="grow"><h3>${esc(x.r[1])}</h3><div class="status">Due on this day</div></div><button class="btn small ghost" data-act="newappt" data-v="${x.t}">Book</button></div>`).join('')}
+  <div class="list" style="margin-top:12px">${dayAppts.length?`<div class="gallery" style="margin:0 -16px">${dayAppts.map(apptGCard).join('')}</div>`:''}${dayDue.map(x=>`<div class="task">${ticon(TYPE_ICON[x.t]||'other', true)}<div class="grow"><h3>${esc(x.r[1])}</h3><div class="status">Due on this day</div></div><button class="btn small ghost" data-act="newappt" data-v="${x.t}">Book</button></div>`).join('')}
   ${!dayAppts.length&&!dayDue.length?'<div class="empty-state">Nothing planned. Add a plan to get your prep list.</div>':''}</div></section>
   <section><h2>Coming up</h2><div class="list" style="margin-top:12px">${upcoming.length?upcoming.map(apptCard).join(''):'<div class="empty-state">No upcoming plans.</div>'}</div></section>`;
 }
