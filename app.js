@@ -1229,8 +1229,12 @@ function syncDraft(){
 let upTag = null;
 document.addEventListener('click', e => {
   const up = e.target.closest && e.target.closest('label[data-tag]'); if (up) upTag = up.dataset.tag;
+  /* never re-render while a file picker is opening: a render would remove the file input before its change event */
+  const fl = e.target.closest && e.target.closest('label');
+  if ((fl && fl.querySelector('input[type=file]')) || (e.target.tagName==='INPUT' && e.target.type==='file')) return;
   const el = e.target.closest('[data-act]');
   if (!el) return;
+  if (el.dataset.act==='overlay' && !e.target.classList.contains('overlay')) return;
   const fn = actions[el.dataset.act];
   if (!fn) return;
   if (el.tagName==='SELECT') return;
