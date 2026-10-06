@@ -389,6 +389,8 @@ function calGrid(){
   <div class="cal" style="margin-top:14px"><div class="cal-h">${DAYS.map(d=>`<span>${d[0]}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
   <div class="legend">${APPT_TYPES.filter(t=>t[0]!=='other').map(t=>`<span><i style="background:${t[2]}"></i>${t[1]}</span>`).join('')}</div>`;
 }
+const QUICK = [['hair','Hair'],['nails','Nails'],['outfit','Outfit'],['lashes','Lashes'],['brows','Brows'],['skin','Skin']];
+function quickPlan(msg){ return `<div class="quickplan"><span class="status">${msg}</span><div class="qprow">${QUICK.map(q => `<button class="qp" data-act="newappt" data-v="${q[0]}" aria-label="Plan ${q[1]}"><span class="qpc">${ticon(TYPE_ICON[q[0]]||'other', false)}</span><small>${q[1]}</small></button>`).join('')}</div></div>`; }
 function weekStrip(){
   const sel = ui.calSel || isoDay(), td = isoDay();
   const base = new Date(sel+'T12:00:00'); base.setDate(base.getDate() - ((base.getDay()+6)%7));
@@ -407,7 +409,7 @@ function today(){
   <section class="tight">${weekStrip()}</section>
   ${isToday?snapPrompt():''}
   <section class="plans"><div class="row between"><h2>${plans.length?(plans.length===1?'One plan':plans.length+' plans'):'Free day'}</h2><button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div>
-    ${plans.length?`<div class="gallery big" style="margin-top:16px">${plans.map(apptGCard).join('')}</div>`:`<button class="blank" data-act="newappt" data-v=""><span>＋</span>Nothing planned. Add hair, nails or an outfit.</button>`}
+    ${plans.length?`<div class="gallery big" style="margin-top:16px">${plans.map(apptGCard).join('')}</div>`:quickPlan('Nothing planned yet. What is next?')}
   </section>
   ${stayReady()}`;
 }
@@ -459,17 +461,19 @@ function miniLook(l){
 function dueIn(r){ const last = state.routine[r[0]]; return last ? r[2]-daysSince(last) : 0; }
 function careState(r){ const last = state.routine[r[0]], left = last ? r[2]-daysSince(last) : null;
   const txt = left===null ? 'Not tracked yet' : left<0 ? `${-left} day${left===-1?'':'s'} overdue` : left===0 ? 'Due today' : `Due in ${left} day${left===1?'':'s'}`;
-  return {left, txt, over: left!==null && left<0, soon: left!==null && left<=7}; }
+  const pct = left===null ? 0 : Math.max(0, Math.min(1, (r[2]-left)/r[2]));
+  return {left, txt, pct, over: left!==null && left<0, soon: left!==null && left<=7}; }
+function ringIcon(r,c){ return `<span class="ringw ${c.over?'over':''} ${c.left===null?'idle':''}" style="--p:${Math.round((c.over?1:c.pct)*100)}">${ticon(ROUTINE_ICON[r[0]]||'other', false)}</span>`; }
 function task(r){
   const c = careState(r), t = TYPE_OF_ROUTINE[r[0]];
-  return `<div class="task">${ticon(ROUTINE_ICON[r[0]]||'other', c.left!==null && c.left>0)}
+  return `<div class="task">${ringIcon(r,c)}
     <div class="grow"><h3>${esc(r[1])}</h3><div class="status ${c.over?'over':''}">${c.txt}</div></div>
     <div class="row" style="gap:14px;flex-wrap:nowrap">${t?`<button class="linkbtn" data-act="newappt" data-v="${t}">Plan</button>`:''}<button class="btn small ${c.soon?'':'ghost'}" data-act="done" data-v="${r[0]}">Done</button></div></div>`;
 }
 function stayReady(){
   const rows = ROUTINE.map(r => ({r, c: careState(r)})).filter(x => x.c.soon).sort((a,b) => a.c.left-b.c.left).slice(0,3);
   if(!rows.length) return `<section class="tight"><button class="blank slim" data-act="tab" data-v="beauty"><span>✦</span>Set up your care routine so nothing slips</button></section>`;
-  return `<section class="ready"><div class="row between"><h2>Stay ready</h2><button class="linkbtn" data-act="tab" data-v="beauty">All care</button></div><div class="rrow">${rows.map(x => `<button class="rcard ${x.c.over?'over':''}" data-act="tab" data-v="beauty">${ticon(ROUTINE_ICON[x.r[0]]||'other', false)}<b>${esc(x.r[1])}</b><span>${x.c.txt}</span></button>`).join('')}</div></section>`;
+  return `<section class="ready"><div class="row between"><h2>Stay ready</h2><button class="linkbtn" data-act="tab" data-v="beauty">All care</button></div><div class="rrow">${rows.map(x => `<button class="rcard ${x.c.over?'over':''}" data-act="tab" data-v="beauty">${ringIcon(x.r,x.c)}<b>${esc(x.r[1])}</b><span>${x.c.txt}</span></button>`).join('')}</div></section>`;
 }
 
 /* ---------- snaps: accountability for planned looks ---------- */
@@ -791,7 +795,7 @@ function calendar(){
   <section class="plans"><div class="row between"><h2>${fmtDate(sel)}</h2><button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div>
   ${dayAppts.length?`<div class="gallery big" style="margin-top:16px">${dayAppts.map(apptGCard).join('')}</div>`:''}
   <div class="list" style="margin-top:14px">${dayDue.map(x=>`<div class="task">${ticon(TYPE_ICON[x.t]||'other', true)}<div class="grow"><h3>${esc(x.r[1])}</h3><div class="status">Due on this day</div></div><button class="btn small ghost" data-act="newappt" data-v="${x.t}">Book</button></div>`).join('')}</div>
-  ${!dayAppts.length&&!dayDue.length?`<button class="blank" data-act="newappt" data-v=""><span>＋</span>Nothing planned for this day.</button>`:''}</section>
+  ${!dayAppts.length&&!dayDue.length?quickPlan('Nothing planned for this day.'):''}</section>
   ${upcoming.length?`<section><h2>Coming up</h2><div class="list" style="margin-top:14px">${upcoming.map(apptCard).join('')}</div></section>`:''}`;
 }
 

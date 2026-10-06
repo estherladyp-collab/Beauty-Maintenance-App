@@ -792,3 +792,22 @@ h2{font-size:22px}
 .pic-tile.on .check,.ptile.on .check{background:var(--gold);color:#241713;border-color:var(--gold)}
 .tick{color:#241713}
 .item.have .tick{color:#fff}
+
+/* progress rings (idea from Streaks) + quick plan circles (idea from Booksy) */
+.ringw{position:relative;flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--gold) calc(var(--p) * 1%),color-mix(in srgb,var(--espresso) 12%,transparent) 0)}
+.ringw::before{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--milk)}
+.rcard .ringw::before{background:var(--card)}
+.ringw>*{position:relative}
+.ringw.over{background:conic-gradient(#a4462b 0 100%)}
+.ringw.idle{background:color-mix(in srgb,var(--espresso) 12%,transparent)}
+.ringw .ticon{width:34px;height:34px;background:transparent}
+.ringw .nail{width:18px!important;height:26px!important}
+.quickplan{margin-top:16px;padding:20px 8px 18px;border:1px solid var(--gold-line);border-radius:var(--r);text-align:center}
+.qprow{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 4px;margin-top:16px}
+.qp{display:grid;justify-items:center;gap:7px;transition:transform .15s}
+.qp:active{transform:scale(.94)}
+.qpc{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--gold) 16%,transparent);border:1px solid var(--gold-line);color:var(--goldtxt)}
+.qpc .ticon{background:transparent;width:30px;height:30px}
+.qpc .nail{width:18px!important;height:26px!important}
+.qp small{font-size:12px;color:var(--muted)}
+.rrow{scroll-padding-left:20px}
