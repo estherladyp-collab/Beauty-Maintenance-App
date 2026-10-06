@@ -838,3 +838,10 @@ h2{font-size:22px}
 .prodc img{object-fit:contain}
 .brand{font-size:23px;letter-spacing:-.01em}
 .brand-fixed{white-space:nowrap}
+
+/* header: more room above the name, a bit larger */
+@media(max-width:859px){
+  .brand-fixed{padding:40px 20px 0;font-size:27px;line-height:1.05}
+  .top{padding-top:40px;min-height:84px;align-items:center}
+  .brand{font-weight:500}
+}
