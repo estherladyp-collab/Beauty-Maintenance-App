@@ -811,3 +811,13 @@ h2{font-size:22px}
 .qpc .nail{width:18px!important;height:26px!important}
 .qp small{font-size:12px;color:var(--muted)}
 .rrow{scroll-padding-left:20px}
+
+/* illustrated care icons */
+.ticon.art{background:transparent!important;color:inherit;width:38px;height:38px;border-radius:0;box-shadow:none}
+.ticon.art svg{width:34px;height:34px;filter:drop-shadow(0 2px 3px rgba(36,23,19,.22))}
+.ringw .ticon.art{width:36px;height:36px}
+.ringw .ticon.art svg{width:29px;height:29px}
+.qpc .ticon.art svg{width:32px;height:32px}
+.gart .gico .ticon.art{width:84px;height:84px}
+.gart .gico .ticon.art svg{width:76px;height:76px;filter:drop-shadow(0 6px 8px rgba(36,23,19,.25))}
+.typeb .ticon.art svg{width:30px;height:30px}
