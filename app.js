@@ -159,17 +159,18 @@ function applyTheme(t){
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = bg;
 }
 /* ---------- cloud backup of plans/looks/status (private per person, survives cleared browser data) ---------- */
-const LIGHT = ['appts','looks','plan','routine','log','wears','theme','shops'];
-let dbc = null, lastSent = {}, upTimer = null, cloudOk = false;
+const LIGHT = ['appts','looks','plan','routine','log','wears','theme','shops','snaps'];
+let dbc = null, lastSent = {}, upTimer = null, cloudOk = false, assetsNs = null, dlNs = null;
 const withTimeout = (p,ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
 async function dbInit(){
   try { if(!window.claude || !claude.use) return;
     const db = await withTimeout(claude.use('db'), 5000), user = await withTimeout(claude.use('user'), 5000);
     if(!db || !user || !user.id) return; const id = await user.id();
     dbc = db.collection('data/users/'+id); } catch(e){ dbc = null; }
+  try { if(window.claude && claude.use){ assetsNs = await withTimeout(claude.use('assets'), 3000); dlNs = await withTimeout(claude.use('downloads'), 3000); } } catch(e){}
 }
 function lightOf(){
-  const o = {}; LIGHT.forEach(k => { if(state[k]!==undefined) o[k] = state[k]; });
+  const o = {}; LIGHT.forEach(k => { if(state[k]!==undefined) o[k] = k==='snaps' ? state.snaps.map(x => ({...x, photo:undefined})) : state[k]; });
   o.vs = {}; state.items.forEach(i => { o.vs[i.id] = {p:i.price||0, v:Object.fromEntries((i.variants||[]).map(v => [v.id, v.status || (v.have?'own':'wish')]))}; });
   return o;
 }
@@ -180,6 +181,7 @@ async function syncDown(){
       const str = snap.data().j; let val; try { val = JSON.parse(str); } catch(e){ continue; }
       lastSent[k] = str;
       if(k==='vs'){ state.items.forEach(it => { const r = val[it.id]; if(!r) return; if(r.p) it.price = r.p; (it.variants||[]).forEach(v => { if(r.v && r.v[v.id]) setSt(v, r.v[v.id]); }); syncHave(it); }); }
+      else if(k==='snaps'){ const have = state.snaps||[]; val.forEach(c => { if(!have.some(x => x.id===c.id)) have.push(c); }); state.snaps = have; }
       else state[k] = val; }
     cloudOk = true; } catch(e){}
 }
@@ -189,10 +191,10 @@ async function syncUp(){
   for(const k of Object.keys(l)){ const str = JSON.stringify(l[k]); if(str===lastSent[k] || str.length>240000) continue;
     try { await dbc.doc('muse_'+k).set({j:str}); lastSent[k] = str; } catch(e){} }
 }
-let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[]};
+let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[], snaps:[]};
 let booted = false;
 function init(){
-  state.appts = state.appts || [];
+  state.appts = state.appts || []; state.snaps = state.snaps || [];
   if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
   state.seedAdded = state.seedAdded || {};
 if(window.MUSE_SEED_ITEMS){ window.MUSE_SEED_ITEMS.forEach(s => { if(state.seedAdded[s.id]) return; state.seedAdded[s.id] = true;
@@ -359,14 +361,14 @@ const NAV = [
   ['today','Today',['today'],'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/>'],
   ['plan','Plan',['calendar'],'<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8 3v4M16 3v4"/>'],
   ['care','Care',['beauty','mood'],'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 16.5v3M17 18h3"/>'],
-  ['looks','Looks',['looks'],'<path d="M12 7.5a2.3 2.3 0 1 0-2.3-2.3M12 7.5V10l8 5.2a1 1 0 0 1-.6 1.8H4.6a1 1 0 0 1-.6-1.8L12 10"/>'],
+  ['looks','Looks',['looks','snaps'],'<path d="M12 7.5a2.3 2.3 0 1 0-2.3-2.3M12 7.5V10l8 5.2a1 1 0 0 1-.6 1.8H4.6a1 1 0 0 1-.6-1.8L12 10"/>'],
   ['wardrobe','Wardrobe',['wardrobe','closet'],'<path d="M8.5 4L3 7l2 4 3-1.5V20h8v-10.5l3 1.5 2-4-5.5-3a3.5 3.5 0 0 1-7 0z"/>']
 ];
-const SUBS = {care:[['beauty','Routine'],['mood','Inspiration']], wardrobe:[['wardrobe','Wishlist'],['closet','My closet']]};
+const SUBS = {care:[['beauty','Routine'],['mood','Inspiration']], wardrobe:[['wardrobe','Wishlist'],['closet','My closet']], looks:[['looks','Looks'],['snaps','Snaps']]};
 function seg(tab){ const g = NAV.find(n => n[2].includes(tab)); const subs = g && SUBS[g[0]]; if(!subs) return '';
   return `<div class="segc" role="tablist">${subs.map(x=>`<button role="tab" aria-selected="${tab===x[0]}" data-act="tab" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`; }
 function view(){
-  const body = ui.draft ? builder() : seg(ui.tab) + {today,wardrobe,closet,looks,mood,calendar,beauty}[ui.tab]();
+  const body = ui.draft ? builder() : seg(ui.tab) + {today,wardrobe,closet,looks,snaps,mood,calendar,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true">Muse</div>
   <main class="shell ${ui.enter?'enter':''}"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${NAV.map(g=>`<button data-act="tab" data-v="${(ui.last&&ui.last[g[0]])||g[2][0]}" ${g[2].includes(ui.tab)&&!ui.draft?'aria-current="page"':''}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${g[3]}</svg><span>${g[1]}</span></button>`).join('')}</div></nav>
@@ -403,6 +405,7 @@ function today(){
   return `
   <header class="dayhead"><span class="eyebrow">${isToday?'Today':dt.toLocaleDateString('en-GB',{weekday:'long'})}</span><h1 class="page-title">${dt.toLocaleDateString('en-GB',{day:'numeric'})} <em>${dt.toLocaleDateString('en-GB',{month:'long'})}</em></h1></header>
   <section class="tight">${weekStrip()}</section>
+  ${isToday?snapPrompt():''}
   <section class="plans"><div class="row between"><h2>${plans.length?(plans.length===1?'One plan':plans.length+' plans'):'Free day'}</h2><button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div>
     ${plans.length?`<div class="gallery big" style="margin-top:16px">${plans.map(apptGCard).join('')}</div>`:`<button class="blank" data-act="newappt" data-v=""><span>＋</span>Nothing planned. Add hair, nails or an outfit.</button>`}
   </section>
@@ -467,6 +470,107 @@ function stayReady(){
   const rows = ROUTINE.map(r => ({r, c: careState(r)})).filter(x => x.c.soon).sort((a,b) => a.c.left-b.c.left).slice(0,3);
   if(!rows.length) return `<section class="tight"><button class="blank slim" data-act="tab" data-v="beauty"><span>✦</span>Set up your care routine so nothing slips</button></section>`;
   return `<section class="ready"><div class="row between"><h2>Stay ready</h2><button class="linkbtn" data-act="tab" data-v="beauty">All care</button></div><div class="rrow">${rows.map(x => `<button class="rcard ${x.c.over?'over':''}" data-act="tab" data-v="beauty">${ticon(ROUTINE_ICON[x.r[0]]||'other', false)}<b>${esc(x.r[1])}</b><span>${x.c.txt}</span></button>`).join('')}</div></section>`;
+}
+
+/* ---------- snaps: accountability for planned looks ---------- */
+const LOOK_TYPES = ['outfit','hair','nails'];
+function mondayOf(iso){ const d = new Date(iso+'T12:00:00'); d.setDate(d.getDate() - ((d.getDay()+6)%7)); return isoDay(d); }
+function snapSrc(sn){ return sn.photo || (sn.aid ? '/_blob/'+sn.aid : ''); }
+function weekInfo(mon){
+  const td = isoDay(), days = DAYS.map((n,i) => { const iso = addDays(mon,i);
+    const plans = state.appts.filter(a => a.date===iso && LOOK_TYPES.includes(a.type));
+    const snap = (state.snaps||[]).filter(x => x.date===iso).sort((a,b)=>(b.at||'').localeCompare(a.at||''))[0];
+    return {n, iso, plans, snap, isToday: iso===td, future: iso>td}; });
+  const planned = days.filter(d => d.plans.length || d.snap), snapped = days.filter(d => d.snap);
+  return {mon, days, planned: planned.length, snapped: snapped.length, complete: planned.length>0 && snapped.length>=planned.length && !days.some(d => d.plans.length && !d.snap)};
+}
+function streakInfo(){
+  const sn = state.snaps||[]; if(!sn.length) return {cur:0,best:0};
+  const first = mondayOf(sn.map(x=>x.date).sort()[0]), nowMon = mondayOf(isoDay());
+  let run = 0, best = 0, mon = first;
+  while(mon <= nowMon){ const w = weekInfo(mon); if(w.complete){ run++; best = Math.max(best,run); } else if(mon !== nowMon) run = 0; mon = addDays(mon,7); }
+  return {cur: run, best};
+}
+const BADGES = [
+  ['first','First snap','One look on record',(c)=>c.total>=1],
+  ['hat','Hat trick','Three snaps in one week',(c)=>c.maxWeek>=3],
+  ['full','Full week','Every planned look snapped',(c)=>c.fullWeeks>=1],
+  ['streak','3 weeks running','Three full weeks in a row',(c)=>c.best>=3]
+];
+function badgeCtx(){
+  const sn = state.snaps||[], by = {}; sn.forEach(x => { const m = mondayOf(x.date); by[m] = (by[m]||0)+1; });
+  const mons = Object.keys(by); let full = 0; mons.forEach(m => { if(weekInfo(m).complete) full++; });
+  return {total: sn.length, maxWeek: Math.max(0,...Object.values(by)), fullWeeks: full, best: streakInfo().best};
+}
+function earnedIds(){ const c = badgeCtx(); return BADGES.filter(b => b[3](c)).map(b => b[0]); }
+const CAM = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.2-2h5.6L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.4"/></svg>';
+const STAR = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z" fill="currentColor"/></svg>';
+function snapTags(sn){ return [...new Set((sn.apptIds||[]).map(id => state.appts.find(a=>a.id===id)).filter(Boolean).map(a => typeInfo(a.type)[1]))]; }
+function dayLabel(iso){ return new Date(iso+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}); }
+function snapPrompt(){
+  const td = isoDay(), w = weekInfo(mondayOf(td)), today = w.days.find(d => d.iso===td);
+  if(!today || today.snap || !today.plans.length) return '';
+  return `<button class="snapcta" data-act="opensnap" data-v="${td}"><span class="snapcta-i">${CAM}</span><span><b>Snap today's look</b><small>${w.snapped} of ${w.planned} snapped this week</small></span><i aria-hidden="true">›</i></button>`;
+}
+function snaps(){
+  const td = isoDay(), mon = mondayOf(td), w = weekInfo(mon), st = streakInfo(), earned = earnedIds();
+  const all = [...(state.snaps||[])].sort((a,b) => b.date.localeCompare(a.date) || (b.at||'').localeCompare(a.at||''));
+  const thisWeek = all.filter(x => mondayOf(x.date)===mon);
+  const best = thisWeek.find(x => x.fav) || thisWeek[0];
+  const weeks = {}; all.forEach(x => { const m = mondayOf(x.date); (weeks[m] = weeks[m]||[]).push(x); });
+  const wl = m => { const a = new Date(m+'T12:00:00'), b = new Date(addDays(m,6)+'T12:00:00'); const f = d => d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); return f(a)+' to '+f(b); };
+  const cells = w.days.map(d => { const src = d.snap ? snapSrc(d.snap) : '';
+    const cls = d.snap ? 'got' : d.plans.length ? 'plan' : ''; const can = d.iso<=td;
+    return `<button class="sd ${cls} ${d.isToday?'now':''}" data-act="${d.snap?'viewsnap':can?'opensnap':'newapptday'}" data-v="${d.snap?d.snap.id:d.iso}" aria-label="${dayLabel(d.iso)}${d.snap?', snapped':d.plans.length?', planned':''}"><small>${d.n[0]}</small><span class="sdc">${src?`<img src="${src}" alt="">`:d.plans.length?`<i class="sdp"></i>`:''}</span></button>`; }).join('');
+  const msg = !w.planned ? 'Plan an outfit, hair or nails this week, then snap it.' : w.complete ? 'Full week. Every planned look is on record.' : `${w.snapped} of ${w.planned} planned look${w.planned===1?'':'s'} snapped`;
+  return `<header class="dayhead"><span class="eyebrow">Week of ${new Date(mon+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long'})}</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">Snaps</h1><button class="roundbtn" data-act="opensnap" data-v="${td}" aria-label="Snap a look">${CAM}</button></div></header>
+  <section class="tight"><div class="weekcard"><div class="sweek">${cells}</div><div class="row between" style="margin-top:14px;flex-wrap:nowrap"><span class="smsg">${msg}</span>${st.cur?`<span class="streak">${st.cur} week${st.cur===1?'':'s'} running</span>`:''}</div></div></section>
+  <section><div class="row between"><h2>Look of the week</h2>${best?`<button class="linkbtn" data-act="sharesnap" data-v="${best.id}">Save to share</button>`:''}</div>
+    ${best?`<button class="lotw" data-act="viewsnap" data-v="${best.id}" aria-label="Open look of the week"><img src="${snapSrc(best)}" alt=""><span class="lotw-c"><b>${best.fav?'Your pick':'Latest'}</b><small>${dayLabel(best.date)}</small></span></button>`:`<button class="blank" data-act="opensnap" data-v="${td}"><span>＋</span>No snap yet this week. Show me the look you planned.</button>`}</section>
+  <section><h2>Badges</h2><div class="badges">${BADGES.map(b => { const on = earned.includes(b[0]); return `<div class="badge ${on?'on':''}"><span class="bi">${STAR}</span><b>${b[1]}</b><small>${b[2]}</small></div>`; }).join('')}</div></section>
+  ${Object.keys(weeks).sort().reverse().map(m => `<section class="wgroup"><h2>${wl(m)}</h2><div class="sgrid">${weeks[m].map(x => `<button class="sth" data-act="viewsnap" data-v="${x.id}" aria-label="${dayLabel(x.date)}"><img src="${snapSrc(x)}" alt="">${x.fav?`<span class="sfav">${STAR}</span>`:''}</button>`).join('')}</div></section>`).join('')}`;
+}
+async function renderCard(sn, withFrame){
+  const src = snapSrc(sn); const img = await loadImg(src); if(!img) return null;
+  try { await Promise.all([document.fonts.load('italic 400 56px "Bodoni Moda"'), document.fonts.load('400 30px "Hanken Grotesk"')]); } catch(e){}
+  const t = themeNow(), W = 1080, H = withFrame ? 1350 : Math.round(1080*img.height/img.width), c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  if(!withFrame){ g.drawImage(img,0,0,W,H); return new Promise(r => c.toBlob(r,'image/jpeg',.92)); }
+  g.fillStyle = t.bg; g.fillRect(0,0,W,H);
+  const x = 70, y = 70, w = W-140, h = 1010, r = 26;
+  g.save(); g.beginPath(); g.roundRect(x,y,w,h,r); g.clip();
+  const sc = Math.max(w/img.width, h/img.height), dw = img.width*sc, dh = img.height*sc; g.drawImage(img, x+(w-dw)/2, y+(h-dh)/2, dw, dh); g.restore();
+  g.strokeStyle = t.accent; g.lineWidth = 2; g.beginPath(); g.roundRect(x-14,y-14,w+28,h+28,r+10); g.stroke();
+  const ink = t.ink || (isDarkHex(t.bg) ? '#f3e8df' : '#241713'); g.fillStyle = ink; g.textAlign = 'left';
+  g.font = 'italic 400 64px "Bodoni Moda", Didot, serif'; g.fillText(sn.fav ? 'Look of the week' : 'My look', x, 1190);
+  g.font = '400 28px "Hanken Grotesk", system-ui, sans-serif'; g.globalAlpha = .7;
+  const tags = snapTags(sn).join('  ·  '); g.fillText(dayLabel(sn.date).toUpperCase() + (tags ? '   ' + tags.toUpperCase() : ''), x, 1250);
+  g.globalAlpha = 1; g.textAlign = 'right'; g.fillStyle = t.accent; g.font = 'italic 400 44px "Bodoni Moda", Didot, serif'; g.fillText('Muse', W-x, 1250);
+  return new Promise(r => c.toBlob(r,'image/jpeg',.92));
+}
+function isDarkHex(h){ const [r,g,b] = hx(h); return (0.299*r+0.587*g+0.114*b) < 120; }
+async function saveBlob(blob, filename){
+  if(!blob) return setToast('Could not make the picture.');
+  try { if(dlNs){ const r = await dlNs.save({filename, data: blob}); if(r && r.status==='saved') setToast('Saved. Open it from your photos or downloads.'); return; } } catch(e){ if(e && e.code==='declined') return; if(e && e.code && e.code!=='unavailable') return setToast('Saving was not possible here.'); }
+  try { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); } catch(e){ setToast('Saving is not available in this view.'); }
+}
+function snapSheet(s){
+  const day = s.date || isoDay(), plans = state.appts.filter(a => a.date===day && LOOK_TYPES.includes(a.type));
+  const sel = s.sel || plans.filter(a=>!a.done).map(a=>a.id).concat(plans.filter(a=>a.done).map(a=>a.id)).slice(0,6);
+  return `<span class="eyebrow" style="color:var(--goldtxt)">${dayLabel(day)}</span><h2 style="margin-top:4px">Snap your look</h2><div class="apptform">
+    ${s.photo?`<div class="snapprev"><img src="${s.photo}" alt="Your look"><label class="linkbtn retake">Change photo<input type="file" id="snapfile" accept="image/*" hidden></label></div>`
+    :`<div class="snappick"><label class="snapbtn gold" tabindex="0">${CAM}<span>Take a photo</span><input type="file" id="snapcam" accept="image/*" capture="user" hidden></label><label class="snapbtn" tabindex="0"><span class="plusc">＋</span><span>Choose from photos</span><input type="file" id="snapfile" accept="image/*" hidden></label></div>`}
+    ${plans.length?`<div><div class="eyebrow" style="margin-bottom:8px">This look includes</div><div class="chips" style="flex-wrap:wrap">${plans.map(a => `<button class="chip s" aria-pressed="${sel.includes(a.id)}" data-act="snapplan" data-v="${a.id}">${esc(typeInfo(a.type)[1])}</button>`).join('')}</div></div>`:''}
+    <label>Date<input type="date" id="sndate" value="${day}" max="${isoDay()}"></label>
+    <label>Caption<input type="text" id="snnote" value="${esc(s.note||'')}" placeholder="Hair, nails, how it felt" maxlength="100"></label>
+    <div class="row" style="margin-top:8px;gap:10px"><button class="btn" data-act="savesnap" style="flex:1" ${s.photo?'':'aria-disabled="true"'}>Save snap</button><button class="btn ghost" data-act="close">Cancel</button></div></div>`;
+}
+function snapView(s){
+  const sn = state.snaps.find(x => x.id===s.id); if(!sn) return '<div class="empty-state">This snap is gone.</div>';
+  const tags = snapTags(sn);
+  return `<div class="snapbig"><img src="${snapSrc(sn)}" alt="Your look on ${dayLabel(sn.date)}"></div>
+  <div class="snapmeta"><span class="eyebrow" style="color:var(--goldtxt)">${dayLabel(sn.date)}</span>${sn.note?`<p style="margin-top:6px">${esc(sn.note)}</p>`:''}${tags.length?`<div class="chips" style="margin-top:8px;flex-wrap:wrap">${tags.map(t=>`<span class="chip s">${esc(t)}</span>`).join('')}</div>`:''}
+  <div class="row" style="margin-top:16px;gap:10px"><button class="btn" data-act="sharesnap" data-v="${sn.id}" style="flex:1">Save to share</button><button class="btn ghost" data-act="savephoto" data-v="${sn.id}">Photo only</button></div>
+  <div class="row" style="gap:18px;margin-top:14px"><button class="linkbtn" data-act="favsnap" data-v="${sn.id}">${sn.fav?'Not my pick':'Make it look of the week'}</button><button class="linkbtn" data-act="delsnap" data-v="${sn.id}" style="color:#a4462b;border-color:rgba(164,70,43,.4)">Delete</button><button class="linkbtn" data-act="close">Close</button></div></div>`;
 }
 function weekLog(){ let n=0; for(let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-i); if(state.log.includes(isoDay(d))) n++; } return n; }
 
@@ -776,6 +880,8 @@ function sheet(){
       </div>
       <div class="row" style="margin-top:14px;gap:10px"><button class="btn" data-act="saveappt" style="flex:1">Save</button><button class="btn ghost" data-act="close">Cancel</button></div>
       ${s.isNew?'':`<div class="row" style="gap:18px"><button class="linkbtn" data-act="doneappt">${a.done?'Reopen':'Mark done'}</button><button class="linkbtn" data-act="delappt" style="color:#a4462b;border-color:rgba(164,70,43,.4)">Delete</button></div>`}</div>`;
+  } else if (s.type==='snap'){ inner = snapSheet(s);
+  } else if (s.type==='snapview'){ inner = snapView(s);
   } else if (s.type==='apppics'){
     const all = state.pics||[], list = all.filter(p => inTag(p, s.tag)), sel = ui.adraft.pics||[];
     inner = `<h2>Reference pictures</h2>
@@ -993,6 +1099,25 @@ const actions = {
   stage(v){ ui.stage = ui.stage===v ? 'all' : v; },
   autoweek(){ autoWeek(); },
   more(){ ui.more=!ui.more; },
+  opensnap(v){ ui.sheet = {type:'snap', date: v||isoDay(), photo:null, sel:null, note:''}; },
+  newapptday(v){ ui.calSel = v; ui.tab='today'; },
+  snapplan(v){ const s=ui.sheet, day=s.date, plans=state.appts.filter(a=>a.date===day&&LOOK_TYPES.includes(a.type)); const cur = s.sel || plans.map(a=>a.id); s.sel = cur.includes(v) ? cur.filter(x=>x!==v) : [...cur, v]; },
+  viewsnap(v){ ui.sheet = {type:'snapview', id:v}; },
+  favsnap(v){ const sn=state.snaps.find(x=>x.id===v), m=mondayOf(sn.date), on=!sn.fav; state.snaps.forEach(x => { if(mondayOf(x.date)===m) x.fav=false; }); sn.fav=on; save(); },
+  delsnap(v){ const sn=state.snaps.find(x=>x.id===v); if(sn && sn.aid && assetsNs){ assetsNs.delete(sn.aid).catch(()=>{}); } state.snaps=state.snaps.filter(x=>x.id!==v); ui.sheet=null; save(); setToast('Snap deleted.'); },
+  async sharesnap(v){ const sn=state.snaps.find(x=>x.id===v); setToast('Making your card…'); const b = await renderCard(sn,true); await saveBlob(b, 'muse-look-'+sn.date+'.jpg'); },
+  async savephoto(v){ const sn=state.snaps.find(x=>x.id===v); const b = await renderCard(sn,false); await saveBlob(b, 'muse-photo-'+sn.date+'.jpg'); },
+  savesnap(){ const s=ui.sheet; if(!s.photo) return setToast('Add a photo first.');
+    const day = s.date || isoDay(), plans=state.appts.filter(a=>a.date===day&&LOOK_TYPES.includes(a.type));
+    const note = (document.getElementById('snnote')||{}).value || s.note || '';
+    const before = new Set(earnedIds()); const sn = {id:uid(), date:day, note, apptIds:(s.sel||plans.map(a=>a.id)), photo:s.photo, at:new Date().toISOString(), fav:false};
+    state.snaps.push(sn); const wk = mondayOf(day);
+    plans.filter(a=>sn.apptIds.includes(a.id)).forEach(a => { a.done = true; if(ROUTINE_OF[a.type]) state.routine[ROUTINE_OF[a.type]] = a.date; });
+    logToday(); save(); ui.sheet=null; ui.celebrate = true;
+    const w = weekInfo(wk), gained = BADGES.filter(b => b[3](badgeCtx()) && !before.has(b[0]));
+    setToast(gained.length ? 'New badge: '+gained[0][1] : w.complete ? 'Full week. Nice.' : `Snapped. ${w.snapped} of ${w.planned||w.snapped} this week.`);
+    if(assetsNs){ fetch(sn.photo).then(r=>r.blob()).then(b=>assetsNs.upload(b)).then(r=>{ sn.aid = r.id; save(); }).catch(()=>{}); } },
+
   fold(v){ ui.fold[v]=!ui.fold[v]; },
   wtools(){ ui.wtools=!ui.wtools; },
   weekshift(v){ const d=new Date((ui.calSel||isoDay())+'T12:00:00'); d.setDate(d.getDate()+(+v)); ui.calSel=isoDay(d); },
@@ -1034,13 +1159,14 @@ document.addEventListener('click', e => {
   if (!fn) return;
   if (el.tagName==='SELECT') return;
   if (ui.adraft && ui.sheet && ui.sheet.type==='appt' && el.dataset.act!=='close') syncAppt();
+  if (ui.sheet && ui.sheet.type==='snap'){ const n=document.getElementById('snnote'); if(n) ui.sheet.note=n.value; }
   if (ui.draft && !ui.sheet) syncDraft();
   fn(el.dataset.v, {target:e.target, currentTarget:el});
   render();
 });
-function shrink(file){
+function shrink(file, max){
   return new Promise(res => { const fr=new FileReader(); fr.onload=()=>{ const img=new Image(); img.onload=()=>{
-    const s=Math.min(1,640/Math.max(img.width,img.height)), c=document.createElement('canvas');
+    const s=Math.min(1,(max||640)/Math.max(img.width,img.height)), c=document.createElement('canvas');
     c.width=img.width*s; c.height=img.height*s; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
     res(c.toDataURL('image/jpeg',.75)); }; img.onerror=()=>res(null); img.src=fr.result; }; fr.onerror=()=>res(null); fr.readAsDataURL(file); });
 }
@@ -1222,6 +1348,8 @@ document.addEventListener('change', async e => {
     const fs=[...e.target.files]; e.target.value=''; await addFiles(fs, e.target.id==='picup'&&ui.tab==='mood'?'insp':undefined); return;
   }
   if (e.target.id==='pdpphoto' && e.target.files[0]){ const it=state.items.find(i=>i.id===ui.sheet.id), c=vOf(it,ui.vsel[it.id]); const r=await prepare(e.target.files[0]); if(r){ c.photo=r.src; syncHave(it); save(); render(); } return; }
+  if ((e.target.id==='snapfile'||e.target.id==='snapcam') && e.target.files[0] && ui.sheet && ui.sheet.type==='snap'){ const f=e.target.files[0]; e.target.value=''; const n=document.getElementById('snnote'); if(n) ui.sheet.note=n.value; const d = await shrink(f, 1000); if(d){ ui.sheet.photo=d; render(); } else setToast('That picture would not open.'); return; }
+  if (e.target.id==='sndate' && ui.sheet && ui.sheet.type==='snap'){ ui.sheet.date = e.target.value || isoDay(); ui.sheet.sel=null; const n=document.getElementById('snnote'); if(n) ui.sheet.note=n.value; render(); return; }
   if (e.target.id==='wardup' && e.target.files.length){ const fs=[...e.target.files].filter(f=>f.type.startsWith('image/')); e.target.value=''; await startSort(fs,'ward'); return; }
   if (e.target.id==='sortmore' && e.target.files.length){ const fs=[...e.target.files].filter(f=>f.type.startsWith('image/')); e.target.value=''; await startSort(fs,ui.sheet.mode); return; }
   if (e.target.id==='import' && e.target.files[0]){
@@ -1254,6 +1382,7 @@ function render(){
   const hadSheet = !!document.querySelector('.overlay');
   document.getElementById('app').innerHTML = view(); ui.enter = false;
   const ov = document.querySelector('.overlay'); if(ov && !hadSheet) ov.classList.add('in');
+  if(ui.celebrate){ ui.celebrate=false; const c=document.createElement('div'); c.className='sparkle'; c.setAttribute('aria-hidden','true'); c.innerHTML=Array.from({length:14},(_,i)=>`<i style="--a:${i*26}deg;--d:${60+(i%4)*22}px;animation-delay:${(i%5)*40}ms"></i>`).join(''); document.body.appendChild(c); setTimeout(()=>c.remove(),1400); }
   if (id){ const n=document.getElementById(id); if(n && n.focus) n.focus(); }
   saveDraftSoon();
 }
