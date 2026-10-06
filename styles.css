@@ -468,3 +468,4 @@ input[type=number]{width:100%;padding:11px 14px;border-radius:12px;border:1px so
 .more[open]>summary{margin-bottom:6px}
 .morebtn{padding:9px 18px;border-radius:999px;border:1px solid var(--line);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .gart .slot.empty{border-color:transparent}
+.gx{position:absolute;right:8px;top:8px;z-index:2;width:28px;height:28px;border-radius:50%;background:rgba(36,23,19,.78);color:#f3e8df;display:grid;place-items:center;font-size:13px}

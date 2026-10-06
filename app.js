@@ -166,7 +166,7 @@ async function dbInit(){
   try { if(!window.claude || !claude.use) return;
     const db = await withTimeout(claude.use('db'), 5000), user = await withTimeout(claude.use('user'), 5000);
     if(!db || !user || !user.id) return; const id = await user.id();
-    dbc = db.collection('data/users/'+id+'/muse'); } catch(e){ dbc = null; }
+    dbc = db.collection('data/users/'+id); } catch(e){ dbc = null; }
 }
 function lightOf(){
   const o = {}; LIGHT.forEach(k => { if(state[k]!==undefined) o[k] = state[k]; });
@@ -176,7 +176,7 @@ function lightOf(){
 async function syncDown(){
   if(!dbc) return;
   try { for(const k of [...LIGHT,'vs']){
-      const snap = await withTimeout(dbc.doc(k).get(), 6000); if(!snap || !snap.exists) continue;
+      const snap = await withTimeout(dbc.doc('muse_'+k).get(), 6000); if(!snap || !snap.exists) continue;
       const str = snap.data().j; let val; try { val = JSON.parse(str); } catch(e){ continue; }
       lastSent[k] = str;
       if(k==='vs'){ state.items.forEach(it => { const r = val[it.id]; if(!r) return; if(r.p) it.price = r.p; (it.variants||[]).forEach(v => { if(r.v && r.v[v.id]) setSt(v, r.v[v.id]); }); syncHave(it); }); }
@@ -187,7 +187,7 @@ function syncUpSoon(){ if(!dbc) return; clearTimeout(upTimer); upTimer = setTime
 async function syncUp(){
   if(!dbc) return; const l = lightOf();
   for(const k of Object.keys(l)){ const str = JSON.stringify(l[k]); if(str===lastSent[k] || str.length>240000) continue;
-    try { await dbc.doc(k).set({j:str}); lastSent[k] = str; } catch(e){} }
+    try { await dbc.doc('muse_'+k).set({j:str}); lastSent[k] = str; } catch(e){} }
 }
 let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[]};
 let booted = false;
@@ -407,7 +407,7 @@ function apptGCard(a){
   const l = a.lookId && state.looks.find(x => x.id===a.lookId), p = (a.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
   const art = l ? `<div class="gboard thumbboard">${boardParts(l).core}</div>` : p ? `<img src="${p.src}" alt="">` : `<div class="gico">${ticon(TYPE_ICON[a.type]||'other', false)}</div>`;
   const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
-  return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart"><span class="gday">${a.date===td?'Today':fmtDate(a.date)}</span>${art}</span><b>${esc(a.title)}</b><span class="status">${a.where==='home'?'At home · ':''}${a.time?esc(a.time)+' · ':''}${tot?(open?`${open} to prep`:'All prepped'):'No prep needed'}</span></button>`;
+  return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart"><span class="gday">${a.date===td?'Today':fmtDate(a.date)}</span><span class="gx" role="button" aria-label="Delete this plan" data-act="delplan" data-v="${a.id}">✕</span>${art}</span><b>${esc(a.title)}</b><span class="status">${a.where==='home'?'At home · ':''}${a.time?esc(a.time)+' · ':''}${tot?(open?`${open} to prep`:'All prepped'):'No prep needed'}</span></button>`;
 }
 function prepToday(){
   const td = isoDay(), lim = addDays(td,14);
@@ -946,6 +946,7 @@ const actions = {
     if(a.done){ logToday(); }
     const i=state.appts.findIndex(x=>x.id===a.id); if(i>=0) state.appts[i]=a; else state.appts.push(a);
     save(); ui.sheet=null; ui.adraft=null; },
+  delplan(v){ state.appts=state.appts.filter(a=>a.id!==v); save(); },
   delappt(){ const id=ui.adraft.id; state.appts=state.appts.filter(a=>a.id!==id); save(); ui.sheet=null; ui.adraft=null; },
   sortmode(v){ ui.sheet.mode=v; ui.sheet.items.forEach(f=>f.cat=null); },
   sortcat(v){ const [i,c]=v.split(':'); applyCat(ui.sheet.items[+i],c); },
