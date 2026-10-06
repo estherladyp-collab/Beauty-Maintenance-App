@@ -142,16 +142,16 @@ const money = n => n ? Number(n).toLocaleString('de-DE',{style:'currency',curren
 function setSt(v, st){ v.status = st; v.have = st==='own'; }
 function migrate(it){ it.occasions = it.occasions || []; (it.variants||[]).forEach(v => { if(!v.status) v.status = v.have ? 'own' : 'wish'; v.have = v.status==='own'; }); if(!it.variants) it.variants=[{id:uid(),color:it.color,photo:it.photo||null,have:!!it.have}]; syncHave(it); }
 /* ---------- colors / themes ---------- */
-const THEMES = [['coffee','Coffee & gold','#2a1b16','#b48a4c'],['cream','Cream','#f1e6de','#b48a4c'],['rose','Rosé','#f3dfdb','#b4675c'],['sage','Sage','#1f2a24','#c8a96a'],['midnight','Midnight','#1b2233','#c9a45c'],['plum','Plum','#2e1a2a','#d8a28f']];
+const THEMES = [['cream','Cream & gold','#f4ece0','#b48a4c'],['coffee','Coffee & gold','#2a1b16','#b48a4c'],['rose','Rosé','#f3dfdb','#b4675c'],['sage','Sage','#1f2a24','#c8a96a'],['midnight','Midnight','#1b2233','#c9a45c'],['plum','Plum','#2e1a2a','#d8a28f']];
 const hx = h => [1,3,5].map(i => parseInt(h.slice(i,i+2),16));
 const mixc = (a,b,t) => '#'+hx(a).map((v,i)=>Math.round(v+(hx(b)[i]-v)*t).toString(16).padStart(2,'0')).join('');
 function themeNow(){ const t = (state && state.theme) || {}; const p = THEMES.find(x => x[0]===t.id) || THEMES[0];
   return {id: t.id==='custom' ? 'custom' : p[0], bg: t.bg || p[2], accent: t.accent || p[3]}; }
 function applyTheme(t){
-  t = t || themeNow(); const bg = /^#[0-9a-f]{6}$/i.test(t.bg) ? t.bg : '#2a1b16', ac = /^#[0-9a-f]{6}$/i.test(t.accent) ? t.accent : '#b48a4c';
+  t = t || themeNow(); const bg = /^#[0-9a-f]{6}$/i.test(t.bg) ? t.bg : '#f4ece0', ac = /^#[0-9a-f]{6}$/i.test(t.accent) ? t.accent : '#b48a4c';
   const [r,g,b] = hx(bg), dark = (0.299*r+0.587*g+0.114*b) < 120, ink = dark ? '#f3e8df' : '#241713', R = document.documentElement.style;
   const set = (k,v) => R.setProperty(k,v), rgb = h => hx(h).join(',');
-  set('--milk',bg); set('--espresso',ink); set('--gold',ac);
+  set('--milk',bg); set('--espresso',ink); set('--gold',ac); set('--goldtxt', dark ? ac : mixc(ac,'#241713',.32));
   if(dark){ set('--card',mixc(bg,'#ffffff',.06)); set('--blush',mixc(bg,'#ffffff',.14)); set('--mocha',mixc(ink,bg,.18)); set('--cocoa',mixc(ink,bg,.35)); set('--hero',mixc(bg,'#ffffff',.07)); }
   else { set('--card',mixc(bg,'#ffffff',.5)); set('--blush',mixc(bg,'#7a5240',.14)); set('--mocha','#4a3128'); set('--cocoa','#7a5240'); set('--hero','#241713'); }
   set('--line',`rgba(${rgb(ink)},.16)`); set('--muted',`rgba(${rgb(ink)},.62)`); set('--navbg',`rgba(${rgb(bg)},.93)`);
@@ -277,7 +277,7 @@ async function boot(){
 document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); syncUp(); } });
 window.addEventListener('pagehide', () => { persist(); flushDraft(); syncUp(); });
 
-let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
+let ui = {fold:{}, tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
 let toast = '';
 
 /* ---------- garments ---------- */
@@ -355,13 +355,22 @@ function lookNotes(look){
 }
 
 /* ---------- views ---------- */
+const NAV = [
+  ['today','Today',['today'],'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/>'],
+  ['plan','Plan',['calendar'],'<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8 3v4M16 3v4"/>'],
+  ['care','Care',['beauty','mood'],'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 16.5v3M17 18h3"/>'],
+  ['looks','Looks',['looks'],'<path d="M12 7.5a2.3 2.3 0 1 0-2.3-2.3M12 7.5V10l8 5.2a1 1 0 0 1-.6 1.8H4.6a1 1 0 0 1-.6-1.8L12 10"/>'],
+  ['wardrobe','Wardrobe',['wardrobe','closet'],'<path d="M8.5 4L3 7l2 4 3-1.5V20h8v-10.5l3 1.5 2-4-5.5-3a3.5 3.5 0 0 1-7 0z"/>']
+];
+const SUBS = {care:[['beauty','Routine'],['mood','Inspiration']], wardrobe:[['wardrobe','Wishlist'],['closet','My closet']]};
+function seg(tab){ const g = NAV.find(n => n[2].includes(tab)); const subs = g && SUBS[g[0]]; if(!subs) return '';
+  return `<div class="segc" role="tablist">${subs.map(x=>`<button role="tab" aria-selected="${tab===x[0]}" data-act="tab" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`; }
 function view(){
-  const tabs = [['today','Today'],['wardrobe','Wardrobe'],['closet','Closet'],['looks','Looks'],['mood','Mood'],['calendar','Calendar'],['beauty','Beauty']];
-  const body = ui.draft ? builder() : {today,wardrobe,closet,looks,mood,calendar,beauty}[ui.tab]();
+  const body = ui.draft ? builder() : seg(ui.tab) + {today,wardrobe,closet,looks,mood,calendar,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true">Muse</div>
   <main class="shell"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
-  <nav class="nav" aria-label="Main"><div class="nav-in">${tabs.map(t=>`<button data-act="tab" data-v="${t[0]}" ${ui.tab===t[0]&&!ui.draft?'aria-current="page"':''}>${t[1]}</button>`).join('')}</div></nav>
-  ${ui.sheet || ui.draft || ['calendar','today','wardrobe'].includes(ui.tab) ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${ui.lightbox?`<div class="lightbox" data-act="lbclose" role="dialog" aria-label="Photo"><img src="${ui.lightbox}" alt=""></div>`:''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
+  <nav class="nav" aria-label="Main"><div class="nav-in">${NAV.map(g=>`<button data-act="tab" data-v="${(ui.last&&ui.last[g[0]])||g[2][0]}" ${g[2].includes(ui.tab)&&!ui.draft?'aria-current="page"':''}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${g[3]}</svg><span>${g[1]}</span></button>`).join('')}</div></nav>
+  ${true ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${ui.lightbox?`<div class="lightbox" data-act="lbclose" role="dialog" aria-label="Photo"><img src="${ui.lightbox}" alt=""></div>`:''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
 }
 
 function calGrid(){
@@ -391,19 +400,13 @@ function today(){
   const td = isoDay(), sel = ui.calSel || td, isToday = sel===td;
   const dt = new Date(sel+'T12:00:00');
   const plans = state.appts.filter(a => a.date===sel && !a.done).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
-  const due = ROUTINE.map(r => ({r, left: dueIn(r)})).sort((a,b)=>a.left-b.left).slice(0,3);
-  const have = state.items.reduce((n,i)=>n+i.variants.filter(v=>v.have).length,0), all = state.items.reduce((n,i)=>n+i.variants.length,0);
   return `
   <header class="dayhead"><span class="eyebrow">${isToday?'Today':dt.toLocaleDateString('en-GB',{weekday:'long'})}</span><h1 class="page-title">${dt.toLocaleDateString('en-GB',{day:'numeric'})} <em>${dt.toLocaleDateString('en-GB',{month:'long'})}</em></h1></header>
   <section class="tight">${weekStrip()}</section>
   <section class="plans"><div class="row between"><h2>${plans.length?(plans.length===1?'One plan':plans.length+' plans'):'Free day'}</h2><button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div>
     ${plans.length?`<div class="gallery big" style="margin-top:16px">${plans.map(apptGCard).join('')}</div>`:`<button class="blank" data-act="newappt" data-v=""><span>＋</span>Nothing planned. Add hair, nails or an outfit.</button>`}
   </section>
-  <div class="more"><button class="morebtn" data-act="more" aria-expanded="${!!ui.more}">${ui.more?'Less':'More'}</button>${ui.more?`
-    <section><h2>Beauty upkeep</h2><div class="list" style="margin-top:14px">${due.map(x=>task(x.r)).join('')}</div></section>
-    ${startRail()}
-    ${freshNudge()}
-    <section><div class="card"><div class="eyebrow">My closet</div><h3 style="font-size:26px;margin:6px 0">${have} of ${all} wardrobe colors owned</h3><div class="progress"><i style="width:${all?have/all*100:0}%"></i></div></div></section>`:''}</div>`;
+  ${stayReady()}`;
 }
 function apptGCard(a){
   const td = isoDay();
@@ -412,7 +415,7 @@ function apptGCard(a){
   const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
   const when = a.date!==td && a.date!==ui.calSel ? fmtDate(a.date) : '';
   const meta = [when, a.time, a.where==='home'?'At home':'', tot?(open?`${open} to prep`:'Prepped'):''].filter(Boolean).map(esc).join(' · ');
-  return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart ${l||p?'':'plain'}">${art}<span class="gx" role="button" aria-label="Delete this plan" data-act="delplan" data-v="${a.id}">✕</span><span class="gcap"><b>${esc(a.title)}</b>${meta?`<span class="status">${meta}</span>`:''}</span></span></button>`;
+  return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart ${p?'photo':'plain'}">${art}<span class="gx" role="button" aria-label="Delete this plan" data-act="delplan" data-v="${a.id}">✕</span><span class="gcap"><b>${esc(a.title)}</b>${meta?`<span class="status">${meta}</span>`:''}</span></span></button>`;
 }
 function prepToday(){
   const td = isoDay(), lim = addDays(td,14);
@@ -433,7 +436,7 @@ function startRail(){
     rail = pool.map(p => `<button class="ptile" data-act="startpic" data-v="${p.id}:${src}" aria-label="Start a look with this ${tag.toLowerCase()} picture"><img src="${p.src}" alt=""></button>`).join('') +
       `<label class="ptile addp"><span>＋</span><span>Upload</span><input type="file" id="picup" accept="image/*" multiple hidden></label>`;
   }
-  return `<section><div class="row between"><h2>Plan a look</h2><button class="btn small ghost" data-act="newtoday">Start blank</button></div>
+  return `<section style="margin:0"><div class="row between"><span class="status">Choose a source</span><button class="btn small ghost" data-act="newtoday">Start blank</button></div>
     <div class="chips" style="margin:12px 0 4px" role="group" aria-label="Pictures"><button class="chip" aria-pressed="${src==='ward'}" data-act="tsrc" data-v="ward">Wardrobe</button><button class="chip" aria-pressed="${src==='hair'}" data-act="tsrc" data-v="hair">Hair</button><button class="chip" aria-pressed="${src==='nails'}" data-act="tsrc" data-v="nails">Nails</button></div>
     <div class="hscroll rail">${rail}</div></section>`;
 }
@@ -451,12 +454,19 @@ function miniLook(l){
   return its.map(x => garment(x.i.cat,x.i.style,x.v.color)).join('').replace(/<svg /g,'<svg style="display:block;width:34px;height:'+(its.length>1?'24':'40')+'px" ');
 }
 function dueIn(r){ const last = state.routine[r[0]]; return last ? r[2]-daysSince(last) : 0; }
+function careState(r){ const last = state.routine[r[0]], left = last ? r[2]-daysSince(last) : null;
+  const txt = left===null ? 'Not tracked yet' : left<0 ? `${-left} day${left===-1?'':'s'} overdue` : left===0 ? 'Due today' : `Due in ${left} day${left===1?'':'s'}`;
+  return {left, txt, over: left!==null && left<0, soon: left!==null && left<=7}; }
 function task(r){
-  const left = dueIn(r), last = state.routine[r[0]];
-  const txt = !last ? 'Not tracked yet' : left<0 ? `${-left} day${left===-1?'':'s'} overdue` : left===0 ? 'Due today' : `Due in ${left} day${left===1?'':'s'}`;
-  return `<div class="task">${ticon(ROUTINE_ICON[r[0]]||'other', left>0)}
-    <div class="grow"><h3>${esc(r[1])}</h3><div class="status ${left<0?'over':''}">${txt} · every ${r[2]} days</div></div>
-    <button class="btn small ${left<=0?'':'ghost'}" data-act="done" data-v="${r[0]}">Done</button></div>`;
+  const c = careState(r), t = TYPE_OF_ROUTINE[r[0]];
+  return `<div class="task">${ticon(ROUTINE_ICON[r[0]]||'other', c.left!==null && c.left>0)}
+    <div class="grow"><h3>${esc(r[1])}</h3><div class="status ${c.over?'over':''}">${c.txt}</div></div>
+    <div class="row" style="gap:14px;flex-wrap:nowrap">${t?`<button class="linkbtn" data-act="newappt" data-v="${t}">Plan</button>`:''}<button class="btn small ${c.soon?'':'ghost'}" data-act="done" data-v="${r[0]}">Done</button></div></div>`;
+}
+function stayReady(){
+  const rows = ROUTINE.map(r => ({r, c: careState(r)})).filter(x => x.c.soon).sort((a,b) => a.c.left-b.c.left).slice(0,3);
+  if(!rows.length) return `<section class="tight"><button class="blank slim" data-act="tab" data-v="beauty"><span>✦</span>Set up your care routine so nothing slips</button></section>`;
+  return `<section class="ready"><div class="row between"><h2>Stay ready</h2><button class="linkbtn" data-act="tab" data-v="beauty">All care</button></div><div class="rrow">${rows.map(x => `<button class="rcard ${x.c.over?'over':''}" data-act="tab" data-v="beauty">${ticon(ROUTINE_ICON[x.r[0]]||'other', false)}<b>${esc(x.r[1])}</b><span>${x.c.txt}</span></button>`).join('')}</div></section>`;
 }
 function weekLog(){ let n=0; for(let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-i); if(state.log.includes(isoDay(d))) n++; } return n; }
 
@@ -504,7 +514,7 @@ function wardrobe(){
   return `<header class="dayhead"><span class="eyebrow">${state.items.length} pieces</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">Wardrobe</h1><label class="roundbtn" aria-label="Upload photos" title="Upload photos">＋<input type="file" id="wardup" accept="image/*" multiple hidden></label></div></header>
   ${pipeline()}
   <div class="chips catrow" role="group" aria-label="Category">${[['all','All'],...WCATS].map(c=>`<button class="chip" aria-pressed="${ui.cat===c[0]}" data-act="cat" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
-  <div class="wtools-bar"><button class="morebtn" data-act="wtools" aria-expanded="${!!ui.wtools}">${ui.wtools?'Hide tools':'Tools'}${filt&&!ui.wtools?` · ${filt} filter${filt>1?'s':''}`:''}</button></div>
+  <div class="wtools-bar"><button class="morebtn" data-act="wtools" aria-expanded="${!!ui.wtools}">${ui.wtools?'Hide filters':'Filters & tools'}${filt&&!ui.wtools?` · ${filt} filter${filt>1?'s':''}`:''}</button></div>
   ${ui.wtools?`<div class="wtools"><div class="row" style="gap:8px"><button class="btn small ghost" data-act="add">Add a piece</button><button class="btn small ghost" data-act="smart">Smart merge</button><button class="btn small ghost" data-act="selmode">${ui.selMode?'Cancel':'Select'}</button></div>
     ${ui.cat!=='all'&&styles.length>1?chips('Style','sty',[['all','All styles'],...styles.map(s=>[s,s])],'sty'):''}
     ${occs.length?chips('Occasion','occ',[['all','Any occasion'],...occs.map(o=>[o,o])],'occ'):''}</div>`:''}
@@ -557,21 +567,21 @@ function closet(){
   const inGroup = (o,k) => k==='pants' ? o.it.cat==='bottom' && bottomGroup(o.it)==='Pants' : k==='skirts' ? o.it.cat==='bottom' && bottomGroup(o.it)==='Skirts' : o.it.cat===k;
   const groups = WCATS.map(([k,label]) => ({k,label,list:owned.filter(o => inGroup(o,k))}));
   const pieces = new Set(owned.map(o => o.it.id)).size;
-  return `<h1 class="page-title">My <em>closet</em></h1>
-  <p class="lede">What you own, one card per color. Tap a category to open it.</p>
-  <div class="card" style="margin:20px 0 14px">${owned.length?`<b>${owned.length} color${owned.length===1?'':'s'}</b> in ${pieces} piece${pieces===1?'':'s'}`:'Nothing here yet. Open a piece in Wardrobe and tick the colors you own.'}</div>
+  return `<header class="dayhead"><span class="eyebrow">${owned.length?`${owned.length} color${owned.length===1?'':'s'} in ${pieces} piece${pieces===1?'':'s'}`:'Nothing yet'}</span><h1 class="page-title">My closet</h1></header>
+  ${owned.length?'':'<p class="lede" style="margin-top:14px">Open a piece in the wishlist and tick the colors you own.</p>'}<div style="height:18px"></div>
   <div class="acc">${groups.map(g => { const open = !!ui.acc[g.k] && g.list.length>0;
     return `<section class="accitem ${open?'open':''}"><button class="acchead" data-act="acc" data-v="${g.k}" aria-expanded="${open}" ${g.list.length?'':'disabled'}>
       <span class="acctitle">${g.label}</span>
       <span class="accmeta"><span class="accdots" aria-hidden="true">${g.list.slice(0,6).map(o=>`<i style="background:${o.v.color}"></i>`).join('')}</span><b>${g.list.length}</b> color${g.list.length===1?'':'s'}<span class="chev" aria-hidden="true">⌄</span></span></button>
       ${open?`<div class="grid accbody">${g.list.map(o=>`<button class="item" data-act="closetopen" data-v="${o.it.id}:${o.v.id}" aria-label="${esc(o.it.name)}, ${esc(colorName(o.v.color))}"><div class="pic">${pic(o.it,o.v)}</div><h3>${esc(o.it.name)}</h3><p>${esc(colorName(o.v.color))}${wearInfo(o.it,o.v)}</p></button>`).join('')}</div>`:''}</section>`; }).join('')}</div>`;
 }
+function foldBox(k,label,inner){ return `<div class="fold"><button class="foldh" data-act="fold" data-v="${k}" aria-expanded="${!!ui.fold[k]}"><span>${label}</span><i aria-hidden="true">${ui.fold[k]?'−':'+'}</i></button>${ui.fold[k]?`<div class="foldb">${inner}</div>`:''}</div>`; }
 function looks(){
-  return `<div class="row between"><h1 class="page-title">Your <em>looks</em></h1><button class="btn" data-act="newlook">Create a look</button></div>
-  <p class="lede">Build outfits piece by piece, add nails, lips and hair, then drop them into your week.</p>
-  ${state.looks.length?`<div class="grid wide" style="margin-top:22px">${state.looks.map(l=>`<div class="card"><button style="display:block;width:100%;text-align:left" data-act="editlook" data-v="${l.id}" aria-label="Edit ${esc(l.name)}">${board(l)}</button>
-    <div class="row between" style="margin-top:12px"><div><h3 style="font-size:22px">${esc(l.name)}</h3><span class="status">${esc(l.occasion||'')}</span></div><div class="row" style="gap:6px"><button class="btn small ghost" data-act="shoplook" data-v="${l.id}" aria-label="Shop this look">${CART}</button><button class="btn small ghost" data-act="dellook" data-v="${l.id}">Delete</button></div></div></div>`).join('')}</div>`
-  :`<div class="empty-state" style="margin-top:22px">No looks yet. Tap “Create a look” to build your first one.</div>`}`;
+  return `<header class="dayhead"><span class="eyebrow">${state.looks.length} saved</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">Looks</h1><button class="roundbtn" data-act="newlook" aria-label="Create a look">＋</button></div></header>
+  ${state.looks.length?`<div class="grid wgrid looksgrid">${state.looks.map(l=>`<div class="lookc"><button class="lookb" data-act="editlook" data-v="${l.id}" aria-label="Edit ${esc(l.name)}">${board(l)}</button>
+    <div class="row between" style="flex-wrap:nowrap;margin-top:12px;gap:6px"><div style="min-width:0"><h3 class="lname">${esc(l.name)}</h3>${l.occasion?`<span class="status">${esc(l.occasion)}</span>`:''}</div><div class="row" style="gap:2px;flex-wrap:nowrap"><button class="iconb" data-act="shoplook" data-v="${l.id}" aria-label="Shop this look">${CART}</button><button class="iconb" data-act="dellook" data-v="${l.id}" aria-label="Delete ${esc(l.name)}">✕</button></div></div></div>`).join('')}</div>`
+  :`<button class="blank" data-act="newlook"><span>＋</span>Build your first look. Pick pieces, nails, lips and hair.</button>`}
+  <section class="folds">${foldBox('rail','Start from a picture',startRail())}</section>`;
 }
 
 const BTABS = [['outfit','Outfit'],['hair','Hair'],['nails','Nails & lips'],['acc','Accessories']];
@@ -629,12 +639,10 @@ function lastAdded(){ const d=(state.pics||[]).map(p=>p.at).filter(Boolean).sort
 function mood(){
   const all = state.pics||[];
   const list = all.filter(p => inTag(p, ui.ptag)).filter(p => !(ui.ptag==='Hair' && ui.hc!=='all') || (p.hcat||'Natural')===ui.hc);
-  return `<div class="row between"><h1 class="page-title">Your <em>mood</em></h1>
-    <label class="btn" style="display:inline-block;cursor:pointer;text-transform:none;letter-spacing:0;font-size:14px">Upload pictures<input type="file" id="picup" accept="image/*" multiple hidden></label></div>
-  <p class="lede">Hair, nails, makeup and outfit ideas you love. Pick from these when you build a look.</p>
-  <div class="chips" style="margin-top:18px" role="group" aria-label="Filter">${PCHIPS.map(c=>`<button class="chip" aria-pressed="${ui.ptag===c[0]}" data-act="ptag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
-  ${ui.ptag==='Hair'?`<div class="chips" style="margin-top:6px" role="group" aria-label="Hair type">${[['all','All hair'],...HCATS].map(c=>`<button class="chip" aria-pressed="${ui.hc===c[0]}" data-act="hc" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>`:''}
-  <div class="note" style="margin-top:14px" id="dropzone"><b>Add fresh looks anytime.</b> Save an image from Pinterest or take a screenshot, then upload it here. You can also drag pictures onto this page, or copy an image on your computer and paste it.</div>
+  return `<header class="dayhead"><span class="eyebrow">Hair, nails, makeup, outfits</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">Inspiration</h1><label class="roundbtn" aria-label="Upload pictures" title="Upload pictures">＋<input type="file" id="picup" accept="image/*" multiple hidden></label></div></header>
+  <div class="chips catrow" role="group" aria-label="Filter">${PCHIPS.map(c=>`<button class="chip" aria-pressed="${ui.ptag===c[0]}" data-act="ptag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
+  ${ui.ptag==='Hair'?`<div class="chips" style="margin-top:2px" role="group" aria-label="Hair type">${[['all','All hair'],...HCATS].map(c=>`<button class="chip s" aria-pressed="${ui.hc===c[0]}" data-act="hc" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>`:''}
+  <div id="dropzone" style="height:6px"></div>
   ${list.length?`<div class="pics" style="margin-top:12px">${(()=>{ const seen=new Set(); return list.map(p=>{ if(p.tag==='Hair'){ const k=(p.hcat||'Natural')+'|'+(p.style||'Other'); if(seen.has(k)) return ''; seen.add(k); const g=list.filter(x=>x.tag==='Hair'&&((x.hcat||'Natural')+'|'+(x.style||'Other'))===k); return `<button class="pic-tile" data-act="hairopen" data-v="${esc(k)}" aria-label="${esc(k.split('|')[1])}, ${esc(hcatName(k.split('|')[0]))}, ${g.length} variation${g.length===1?'':'s'}"><img src="${g[0].src}" alt=""><span class="tag">${esc(k.split('|')[1])}</span>${g.length>1?`<span class="count">${g.length}</span>`:''}${g.some(isNew)?'<span class="new">New</span>':''}</button>`; } return `<button class="pic-tile" data-act="picopen" data-v="${p.id}" aria-label="Open picture, ${esc(p.tag)}"><img src="${p.src}" alt=""><span class="tag">${esc(p.tag)}</span>${p.fav?'<span class="heart" aria-label="Favorite">♥</span>':''}${isNew(p)?'<span class="new">New</span>':''}</button>`; }).join(''); })()}</div>`
   :`<div class="empty-state" style="margin-top:12px">${all.length?'No pictures here yet.':'No pictures yet. Tap “Upload pictures” and pick as many as you like.'}</div>`}`;
 }
@@ -672,33 +680,27 @@ function calendar(){
   const sel = ui.calSel, dayAppts = state.appts.filter(a=>a.date===sel && inFil(a)).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
   const dayDue = due[sel] || [];
   const upcoming = state.appts.filter(a=>!a.done && a.date>=td && inFil(a)).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||''))).slice(0,5);
-  const toBook = ROUTINE.filter(r => TYPE_OF_ROUTINE[r[0]] && state.routine[r[0]] && dueIn(r)<=7 && !state.appts.some(a=>!a.done&&a.date>=td&&a.type===TYPE_OF_ROUTINE[r[0]]));
-  return `<h1 class="page-title">Beauty <em>calendar</em></h1>
-  <p class="lede">Plan your hair and beauty upkeep, at the salon or at home, and get a prep list for each one so you are ready.</p>
-  <div class="chips" style="margin-top:18px" role="group" aria-label="Category">${CFIL.map(c=>`<button class="chip" aria-pressed="${ui.cfil===c[0]}" data-act="cfil" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
-  ${toBook.length?`<section style="margin-top:22px"><h2>Time to plan</h2><div class="list" style="margin-top:12px">${toBook.map(r=>`<div class="task">${ticon(ROUTINE_ICON[r[0]]||'other', false)}<div class="grow"><h3>${esc(r[1])}</h3><div class="status ${dueIn(r)<0?'over':''}">${dueIn(r)<0?-dueIn(r)+' days overdue':dueIn(r)===0?'Due today':'Due in '+dueIn(r)+' days'}</div></div><button class="btn small" data-act="newappt" data-v="${TYPE_OF_ROUTINE[r[0]]}">Plan</button></div>`).join('')}</div></section>`:''}
-  <section><div class="row between"><button class="btn small ghost" data-act="calprev" aria-label="Previous month">←</button><h2 class="monthname">${first.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</h2><button class="btn small ghost" data-act="calnext" aria-label="Next month">→</button></div>
-  <div class="cal" style="margin-top:14px"><div class="cal-h">${DAYS.map(d=>`<span>${d[0]}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
-  <div class="legend">${APPT_TYPES.filter(t=>t[0]!=='other').map(t=>`<span><i style="background:${t[2]}"></i>${t[1]}</span>`).join('')}<span><i class="ring"></i>Due</span></div></section>
-  <section><div class="row between"><h2>${fmtDate(sel)}</h2><button class="btn small" data-act="newappt" data-v="">Add plan</button></div>
-  <div class="list" style="margin-top:12px">${dayAppts.length?`<div class="gallery" style="margin:0 -16px">${dayAppts.map(apptGCard).join('')}</div>`:''}${dayDue.map(x=>`<div class="task">${ticon(TYPE_ICON[x.t]||'other', true)}<div class="grow"><h3>${esc(x.r[1])}</h3><div class="status">Due on this day</div></div><button class="btn small ghost" data-act="newappt" data-v="${x.t}">Book</button></div>`).join('')}
-  ${!dayAppts.length&&!dayDue.length?'<div class="empty-state">Nothing planned. Add a plan to get your prep list.</div>':''}</div></section>
-  <section><h2>Coming up</h2><div class="list" style="margin-top:12px">${upcoming.length?upcoming.map(apptCard).join(''):'<div class="empty-state">No upcoming plans.</div>'}</div></section>`;
+  const mname = first.toLocaleDateString('en-GB',{month:'long'});
+  return `<header class="dayhead"><span class="eyebrow">${y}</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">${mname}</h1><div class="row" style="gap:4px;flex-wrap:nowrap"><button class="roundbtn ghost" data-act="calprev" aria-label="Previous month">‹</button><button class="roundbtn ghost" data-act="calnext" aria-label="Next month">›</button></div></div></header>
+  <div class="chips catrow" role="group" aria-label="Category">${CFIL.map(c=>`<button class="chip" aria-pressed="${ui.cfil===c[0]}" data-act="cfil" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
+  <div class="cal" style="margin-top:18px"><div class="cal-h">${DAYS.map(d=>`<span>${d[0]}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
+  <section class="plans"><div class="row between"><h2>${fmtDate(sel)}</h2><button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div>
+  ${dayAppts.length?`<div class="gallery big" style="margin-top:16px">${dayAppts.map(apptGCard).join('')}</div>`:''}
+  <div class="list" style="margin-top:14px">${dayDue.map(x=>`<div class="task">${ticon(TYPE_ICON[x.t]||'other', true)}<div class="grow"><h3>${esc(x.r[1])}</h3><div class="status">Due on this day</div></div><button class="btn small ghost" data-act="newappt" data-v="${x.t}">Book</button></div>`).join('')}</div>
+  ${!dayAppts.length&&!dayDue.length?`<button class="blank" data-act="newappt" data-v=""><span>＋</span>Nothing planned for this day.</button>`:''}</section>
+  ${upcoming.length?`<section><h2>Coming up</h2><div class="list" style="margin-top:14px">${upcoming.map(apptCard).join('')}</div></section>`:''}`;
 }
 
 function beauty(){
   const warm = COLORS.filter(c => c[2]===1);
-  return `<h1 class="page-title">Beauty <em>upkeep</em></h1>
-  <p class="lede">Tap Done when you finish something. It resets the clock so nothing slips.</p>
-  <section style="margin-top:22px"><div class="list">${ROUTINE.map(task).join('')}</div></section>
-  <section><h2>Move to another device</h2><div class="card" style="margin-top:14px"><p class="lede" style="margin-bottom:14px">Your data lives on this device. Save a backup file, then load it on your other phone or laptop.</p><div class="row"><button class="btn small" data-act="export">Save backup</button><label class="btn small ghost" style="display:inline-block;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--espresso)">Load backup<input type="file" id="import" accept="application/json" hidden></label></div></div></section>
-  <section><h2>Your style guide</h2><div class="guide" style="margin-top:14px">
-    <div class="card"><div class="eyebrow">Inverted triangle</div><h3>Balance the shoulders</h3>
-      <ul><li>V-necks, wraps and scoop necks open up the top and draw the eye in.</li><li>Wide-leg trousers, A-line and pleated skirts add volume below.</li><li>Belt at the waist, keep detail and texture on the bottom half.</li><li>Go easy on boat necks, puff sleeves, halters and padded shoulders.</li></ul></div>
-    <div class="card"><div class="eyebrow">Warm undertone</div><h3>Gold, earth and glow</h3>
-      <ul><li>Gold jewelry over silver.</li><li>Bronze, terracotta and coral blush. Brown, mocha and rosewood lips.</li><li>Milky nude and sheer pink nails.</li><li>Icy pastels and silver-greys wash you out, so keep them below the chest.</li></ul></div>
-  </div>
-  <div class="card" style="margin-top:14px"><div class="eyebrow" style="margin-bottom:12px">Your palette</div><div class="palette">${warm.map(c=>`<div class="pal"><i style="background:${c[1]}"></i>${c[0]}</div>`).join('')}</div></div></section>`;
+  const rows = ROUTINE.map(r => ({r, c: careState(r)}));
+  const soon = rows.filter(x => x.c.soon).sort((a,b) => a.c.left-b.c.left), rest = rows.filter(x => !x.c.soon);
+  const open = (k, label, inner) => `<div class="fold"><button class="foldh" data-act="fold" data-v="${k}" aria-expanded="${!!ui.fold[k]}"><span>${label}</span><i aria-hidden="true">${ui.fold[k]?'−':'+'}</i></button>${ui.fold[k]?`<div class="foldb">${inner}</div>`:''}</div>`;
+  return `<header class="dayhead"><span class="eyebrow">Grooming</span><h1 class="page-title">Care</h1></header>
+  ${soon.length?`<section class="tight"><h2>Coming due</h2><div class="list" style="margin-top:14px">${soon.map(x=>task(x.r)).join('')}</div></section>`:`<section class="tight"><div class="blank slim"><span>✦</span>Tap Done on anything below once. After that I keep count and tell you when it is due.</div></section>`}
+  <section><h2>${soon.length?'Everything else':'Your routine'}</h2><div class="list" style="margin-top:14px">${rest.map(x=>task(x.r)).join('')}</div></section>
+  <section class="folds">${open('guide','Style guide',`<div class="guide"><div><div class="eyebrow">Inverted triangle</div><h3>Balance the shoulders</h3><ul><li>V-necks, wraps and scoop necks open up the top.</li><li>Wide-leg trousers, A-line and pleated skirts add volume below.</li><li>Belt at the waist, keep detail on the bottom half.</li><li>Go easy on boat necks, puff sleeves and halters.</li></ul></div><div><div class="eyebrow">Warm undertone</div><h3>Gold, earth and glow</h3><ul><li>Gold jewelry over silver.</li><li>Bronze, terracotta and coral blush. Brown and rosewood lips.</li><li>Milky nude and sheer pink nails.</li></ul></div></div><div class="palette" style="margin-top:18px">${warm.map(c=>`<div class="pal"><i style="background:${c[1]}"></i>${c[0]}</div>`).join('')}</div>`)}
+  ${open('backup','Backup',`<p class="lede" style="margin-bottom:14px">Your plans are saved to your account. This file is an extra copy, or a way to move to another device.</p><div class="row"><button class="btn small" data-act="export">Save backup</button><label class="btn small ghost" style="cursor:pointer">Load backup<input type="file" id="import" accept="application/json" hidden></label></div>`)}</section>`;
 }
 
 function sheet(){
@@ -826,7 +828,7 @@ function setToast(t){ toast=t; render(); setTimeout(()=>{toast='';render();},220
 function logToday(){ const t=isoDay(); if(!state.log.includes(t)) state.log.push(t); }
 
 const actions = {
-  tab(v){ ui.tab=v; ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
+  tab(v){ ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
   cat(v){ ui.cat=v; ui.sty='all'; ui.occ='all'; ui.bg='all'; },
   bg(v){ ui.bg=v; ui.sty='all'; },
   sty(v){ ui.sty=v; },
@@ -989,6 +991,7 @@ const actions = {
   stage(v){ ui.stage = ui.stage===v ? 'all' : v; },
   autoweek(){ autoWeek(); },
   more(){ ui.more=!ui.more; },
+  fold(v){ ui.fold[v]=!ui.fold[v]; },
   wtools(){ ui.wtools=!ui.wtools; },
   weekshift(v){ const d=new Date((ui.calSel||isoDay())+'T12:00:00'); d.setDate(d.getDate()+(+v)); ui.calSel=isoDay(d); },
   themes(){ ui.sheet={type:'theme'}; },
