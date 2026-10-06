@@ -20,7 +20,8 @@ Muse ist Esthers visueller Garderoben- und Beauty-Planer (Körperform: umgekehrt
 ## Offene Wünsche / nächste Schritte
 - Wardrobe aufräumen, weniger Informationen pro Seite (Esthers größte Kritik).
 - Echte Web-Adresse, damit sie die App aufs Handy installieren kann (Angebot, noch unbeantwortet).
-- Skills im Projekt: `impeccable` und `design-taste-frontend` (in `.claude/skills/`). Nur nutzen, wenn Esthers Wunsch nach ruhig und aufgeräumt gewahrt bleibt. Keine Hooks installiert.
+- Skills im Projekt (`.claude/skills/`): `impeccable`, `design-taste-frontend` (Ordner `taste-skill`), `claude-design` (Warm-Stone-Stil, nur auf Ansage), die Emil-Kowalski-Skills (Animation/Design, viele React/Swift-spezifisch) und `playwright-skill` zum Testen im Browser. Keine Hooks installiert. Referenz: `design-references/claude-design.md` (nicht angewendet).
+- Esthers Ziel jetzt: die App "richtig geil" gestalten, mit den Skills, aber Kaffeebraun + Gold behalten und die Seiten ruhig halten.
 
 ## Nicht wollen
 - Premium-Redesign mit Look "zu AI" (wurde rückgängig gemacht), weiße/kalte Töne, viel Text, Bullet-Listen in Antworten.
