@@ -388,7 +388,7 @@ function seg(tab){ const g = NAV.find(n => n[2].includes(tab)); const subs = g &
   return `<div class="segc" role="tablist">${subs.map(x=>`<button role="tab" aria-selected="${tab===x[0]}" data-act="tab" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`; }
 function view(){
   const body = ui.draft ? builder() : seg(ui.tab) + {today,wardrobe,closet,looks,snaps,mood,calendar,beauty}[ui.tab]();
-  return `<div class="brand brand-fixed" aria-hidden="true">Muse</div>
+  return `<div class="brand brand-fixed" aria-hidden="true">Maintaining You</div>
   <main class="shell ${ui.enter?'enter':''}"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${NAV.map(g=>`<button data-act="tab" data-v="${(ui.last&&ui.last[g[0]])||g[2][0]}" ${g[2].includes(ui.tab)&&!ui.draft?'aria-current="page"':''}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${g[3]}</svg><span>${g[1]}</span></button>`).join('')}</div></nav>
   ${true ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${ui.lightbox?`<div class="lightbox" data-act="lbclose" role="dialog" aria-label="Photo"><img src="${ui.lightbox}" alt=""></div>`:''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
@@ -567,7 +567,7 @@ async function renderCard(sn, withFrame){
   g.font = 'italic 400 64px "Bodoni Moda", Didot, serif'; g.fillText(sn.fav ? 'Look of the week' : 'My look', x, 1190);
   g.font = '400 28px "Hanken Grotesk", system-ui, sans-serif'; g.globalAlpha = .7;
   const tags = snapTags(sn).join('  ·  '); g.fillText(dayLabel(sn.date).toUpperCase() + (tags ? '   ' + tags.toUpperCase() : ''), x, 1250);
-  g.globalAlpha = 1; g.textAlign = 'right'; g.fillStyle = t.accent; g.font = 'italic 400 44px "Bodoni Moda", Didot, serif'; g.fillText('Muse', W-x, 1250);
+  g.globalAlpha = 1; g.textAlign = 'right'; g.fillStyle = t.accent; g.font = 'italic 400 44px "Bodoni Moda", Didot, serif'; g.fillText('Maintaining You', W-x, 1250);
   return new Promise(r => c.toBlob(r,'image/jpeg',.92));
 }
 function isDarkHex(h){ const [r,g,b] = hx(h); return (0.299*r+0.587*g+0.114*b) < 120; }
@@ -1409,7 +1409,7 @@ document.addEventListener('change', async e => {
     fr.onload=()=>{ try{ const s=JSON.parse(fr.result); if(!Array.isArray(s.items)||!Array.isArray(s.looks)) throw 0;
       if(!confirm('Replace what is on this device with the backup?')) return;
       state={plan:{},routine:{},log:[],pics:[],appts:[],...s}; state.items.forEach(migrate); save(); render(); setToast('Backup loaded.'); }
-      catch(err){ setToast('That file is not a Muse backup.'); } };
+      catch(err){ setToast('That file is not a Maintaining You backup.'); } };
     fr.readAsText(e.target.files[0]);
   }
   if (e.target.id==='icat'){ actions.icat(); render(); }

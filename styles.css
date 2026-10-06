@@ -836,3 +836,5 @@ h2{font-size:22px}
 .prodlist{display:grid;gap:14px}
 .prodlist .eyebrow{display:block;margin-bottom:6px}
 .prodc img{object-fit:contain}
+.brand{font-size:23px;letter-spacing:-.01em}
+.brand-fixed{white-space:nowrap}

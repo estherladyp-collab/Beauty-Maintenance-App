@@ -1,4 +1,4 @@
-# Muse
+# Maintaining You
 
 A wardrobe and beauty planner built for an inverted triangle shape and warm undertone.
 Open `index.html` in a browser. Everything saves on your device (localStorage).

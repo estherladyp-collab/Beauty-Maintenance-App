@@ -1,6 +1,6 @@
-# Muse: Übergabe-Notiz
+# Maintaining You: Übergabe-Notiz (früher "Muse")
 
-Muse ist Esthers visueller Garderoben- und Beauty-Planer (Körperform: umgekehrtes Dreieck, warmer Unterton). Sie schreibt auf Deutsch/Englisch, direkt und locker, will keine langen Listen und findet die App schnell "zu AI" und "zu viel Information".
+Maintaining You ist Esthers visueller Garderoben- und Beauty-Planer (Körperform: umgekehrtes Dreieck, warmer Unterton). Sie schreibt auf Deutsch/Englisch, direkt und locker, will keine langen Listen und findet die App schnell "zu AI" und "zu viel Information".
 
 ## Stand
 - Vanilla JS, Dateien: `index.html`, `styles.css`, `app.js`, `seed-pics.js`, `seed-items.js`, `sw.js`, `manifest.webmanifest`.
@@ -25,3 +25,13 @@ Muse ist Esthers visueller Garderoben- und Beauty-Planer (Körperform: umgekehrt
 
 ## Nicht wollen
 - Premium-Redesign mit Look "zu AI" (wurde rückgängig gemacht), weiße/kalte Töne, viel Text, Bullet-Listen in Antworten.
+
+## Stand Oktober 2026 (Ergänzung)
+- App heißt jetzt "Maintaining You". Interne Namen (`muse_*` Dokumente, `KEY = 'muse.v1'`, `MuseDebug`) bleiben absichtlich gleich, damit gespeicherte Daten nicht verloren gehen.
+- Standard-Look: Creme (#f4ece0) mit Gold (#b48a4c). 9 wählbare Farben in `THEMES` (Eintrag 5 = optionale Schriftfarbe).
+- 5 Tabs: Today, Plan, Care (Routine | Inspiration), Looks (Looks | Snaps), Wardrobe (Wishlist | My closet). `NAV`/`SUBS` in `app.js`.
+- Care: Routinen mit Fortschrittsring, Plan/Done, illustrierte Icons (`ART`), Produkte pro Bereich (`state.products`, Seed in `seed-products.js`, je Produkt einmal über `state.seedProd`).
+- Snaps: Foto zu geplantem Look, Wochenleiste, Serie, Badges, Look der Woche, Teilen-Karte (Canvas, Speichern über `downloads`). Fotos über `assets`, Metadaten in `muse_snaps`.
+- Capabilities beim Veröffentlichen: db, user, downloads, assets.
+- Offen: Schrift der Überschriften (Vorschläge Cormorant Garamond, Playfair Display, Marcellus), Look-Builder und Produktansicht in Wardrobe angleichen, Shop-Links bei Produkten.
+- Netzwerk der Cloud-Umgebung ist für einige Seiten freigegeben (Referenzseiten ansehen geht).
