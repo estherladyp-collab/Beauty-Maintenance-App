@@ -158,6 +158,37 @@ function applyTheme(t){
   document.documentElement.dataset.mode = dark ? 'dark' : 'light';
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = bg;
 }
+/* ---------- cloud backup of plans/looks/status (private per person, survives cleared browser data) ---------- */
+const LIGHT = ['appts','looks','plan','routine','log','wears','theme','shops'];
+let dbc = null, lastSent = {}, upTimer = null, cloudOk = false;
+const withTimeout = (p,ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+async function dbInit(){
+  try { if(!window.claude || !claude.use) return;
+    const db = await withTimeout(claude.use('db'), 5000), user = await withTimeout(claude.use('user'), 5000);
+    if(!db || !user || !user.id) return; const id = await user.id();
+    dbc = db.collection('data/users/'+id+'/muse'); } catch(e){ dbc = null; }
+}
+function lightOf(){
+  const o = {}; LIGHT.forEach(k => { if(state[k]!==undefined) o[k] = state[k]; });
+  o.vs = {}; state.items.forEach(i => { o.vs[i.id] = {p:i.price||0, v:Object.fromEntries((i.variants||[]).map(v => [v.id, v.status || (v.have?'own':'wish')]))}; });
+  return o;
+}
+async function syncDown(){
+  if(!dbc) return;
+  try { for(const k of [...LIGHT,'vs']){
+      const snap = await withTimeout(dbc.doc(k).get(), 6000); if(!snap || !snap.exists) continue;
+      const str = snap.data().j; let val; try { val = JSON.parse(str); } catch(e){ continue; }
+      lastSent[k] = str;
+      if(k==='vs'){ state.items.forEach(it => { const r = val[it.id]; if(!r) return; if(r.p) it.price = r.p; (it.variants||[]).forEach(v => { if(r.v && r.v[v.id]) setSt(v, r.v[v.id]); }); syncHave(it); }); }
+      else state[k] = val; }
+    cloudOk = true; } catch(e){}
+}
+function syncUpSoon(){ if(!dbc) return; clearTimeout(upTimer); upTimer = setTimeout(syncUp, 1200); }
+async function syncUp(){
+  if(!dbc) return; const l = lightOf();
+  for(const k of Object.keys(l)){ const str = JSON.stringify(l[k]); if(str===lastSent[k] || str.length>240000) continue;
+    try { await dbc.doc(k).set({j:str}); lastSent[k] = str; } catch(e){} }
+}
 let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[]};
 let booted = false;
 function init(){
@@ -201,7 +232,7 @@ async function idbSet(k,v){ const db = await idb(); return new Promise((res,rej)
 function flash(){ const el = document.getElementById('savedmark'); if(el){ el.classList.add('on'); clearTimeout(flash.t); flash.t = setTimeout(() => el.classList.remove('on'), 1600); } }
 function save(){ dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(persist, 250); }
 async function persist(){
-  if(!dirty && booted) return; dirty = false; clearTimeout(saveTimer);
+  if(!dirty && booted) return; dirty = false; clearTimeout(saveTimer); syncUpSoon();
   try { await idbSet(KEY, state); flash(); }
   catch(e){ try { localStorage.setItem(KEY, JSON.stringify(state)); flash(); } catch(e2){ toast = 'Storage is full. Remove a photo to keep saving.'; render(); } }
 }
@@ -231,14 +262,14 @@ async function boot(){
   try { s = await idbGet(KEY); } catch(e){}
   if(!s){ try { s = JSON.parse(localStorage.getItem(KEY)); fromLocal = !!s; } catch(e){} }
   if(s && Array.isArray(s.items)) state = s;
-  init(); dirty = true; await persist();
+  init(); await dbInit(); await syncDown(); init(); dirty = true; await persist();
   if(fromLocal){ try { const chk = await idbGet(KEY); if(chk && chk.items && chk.items.length===state.items.length) localStorage.removeItem(KEY); } catch(e){} }
   try { if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
   let restored = false; try { restored = restoreDraft(await idbGet(DRAFT_KEY)); } catch(e){}
   applyTheme(); booted = true; render();
   if(restored) setToast('Picked up where you left off.');
 }
-document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); } });
+document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); syncUp(); } });
 window.addEventListener('pagehide', () => { persist(); flushDraft(); });
 
 let ui = {tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
