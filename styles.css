@@ -781,3 +781,14 @@ h2{font-size:22px}
   .nav button[aria-current=page]{background:color-mix(in srgb,var(--gold) 20%,transparent)}
   .shell{padding-bottom:130px}
 }
+
+/* contrast fixes: no white text on light or gold */
+.btn.gold{color:#241713}
+.pic-tile .new{background:var(--gold);color:#241713;font-weight:600;font-size:10px;letter-spacing:.08em}
+.pic-tile .tag{background:rgba(246,237,231,.96);color:#241713;font-size:11px;font-weight:500;letter-spacing:.06em;padding:3px 9px}
+.pic-tile .count{background:rgba(246,237,231,.96);color:#241713;font-weight:600}
+.pic-tile .heart{filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
+.pic-tile .check,.ptile .check{color:#241713;background:rgba(246,237,231,.96)}
+.pic-tile.on .check,.ptile.on .check{background:var(--gold);color:#241713;border-color:var(--gold)}
+.tick{color:#241713}
+.item.have .tick{color:#fff}
