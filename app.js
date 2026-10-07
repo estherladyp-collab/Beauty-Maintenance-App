@@ -7,7 +7,7 @@ const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const DAYFULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const CATS = [
   ['top','Tops'],['bottom','Bottoms'],['dress','Dresses'],['outer','Outerwear'],
-  ['shoes','Shoes'],['bag','Bags'],['jewel','Jewelry']
+  ['shoes','Shoes'],['bag','Bags'],['belt','Belts'],['scarf','Scarves'],['jewel','Jewelry']
 ];
 const LCATS = [['church','Church',['Sunday service','Tuesday service','Friday service']],['work','Work appointments',['Client meeting','Office']],['casual','Casual days',['At home','Kita','Doctor']],['special','Special occasions',['Wedding','Birthday','Dedication','Other']]];
 const lcatName = c => (LCATS.find(x=>x[0]===c)||[0,''])[1];
@@ -34,8 +34,8 @@ function lookFor(a){
   if(a.nails!==undefined||a.nailPic!==undefined){ pics=pics.filter(id=>!nailIds.has(id)); if(a.nailPic) pics.push(a.nailPic); if(a.nails) b.nails=a.nails; }
   return Object.assign({},l,{pics,beauty:b});
 }
-const WCATS = [['top','Tops'],['pants','Pants'],['skirts','Skirts'],['dress','Dresses'],['outer','Outerwear'],['shoes','Shoes'],['bag','Bags'],['jewel','Jewelry']];
-const SLOT_LABEL = {top:'Top',bottom:'Bottom',dress:'Dress',outer:'Outerwear',shoes:'Shoes',bag:'Bag',jewel:'Jewelry'};
+const WCATS = [['top','Tops'],['pants','Pants'],['skirts','Skirts'],['dress','Dresses'],['outer','Outerwear'],['shoes','Shoes'],['bag','Bags'],['belt','Belts'],['scarf','Scarves'],['jewel','Jewelry']];
+const SLOT_LABEL = {top:'Top',bottom:'Bottom',dress:'Dress',outer:'Outerwear',shoes:'Shoes',bag:'Bag',belt:'Belt',scarf:'Scarf',jewel:'Jewelry'};
 // pos = balances an inverted triangle, neg = adds width up top or narrows the hip
 const STYLES = {
   top:[['V-neck','pos'],['Wrap top','pos'],['Scoop neck','pos'],['Fitted knit','ok'],['Bodysuit','ok'],['Boat neck','neg'],['Puff sleeve','neg'],['Halter','neg'],['Off-shoulder','neg']],
@@ -44,6 +44,8 @@ const STYLES = {
   outer:[['Longline coat','pos'],['Belted trench','pos'],['Soft blazer','ok'],['Structured-shoulder blazer','neg'],['Cropped puffer','neg']],
   shoes:[['Heeled sandal','ok'],['Pointed pump','ok'],['Block heel','ok'],['Clean sneaker','ok'],['Ankle boot','ok']],
   bag:[['Shoulder bag','ok'],['Mini bag','ok'],['Tote','ok']],
+  belt:[['Slim belt','ok'],['Wide belt','ok']],
+  scarf:[['Silk scarf','ok'],['Neck scarf','ok'],['Head scarf','ok']],
   jewel:[['Gold hoops','ok'],['Statement earrings','ok'],['Layered chains','ok'],['Watch','ok']]
 };
 // w: 1 warm, 2 neutral, 0 cool
@@ -110,7 +112,7 @@ const SHOPS = [
 ];
 const COLOR_DE = {'Chocolate':'Schokobraun','Espresso':'Dunkelbraun','Camel':'Camel','Caramel':'Karamell','Rust':'Rostrot','Terracotta':'Terrakotta','Coral':'Koralle','Mustard':'Senfgelb','Gold':'Gold','Olive':'Oliv','Forest':'Waldgrün','Burgundy':'Bordeaux','Blush nude':'Nude','Warm cream':'Creme','Ivory':'Elfenbein','Black':'Schwarz','White':'Weiß','Denim':'Jeansblau','Navy':'Marineblau','Icy pink':'Rosa','Lavender':'Lavendel','Silver grey':'Grau','Charcoal':'Anthrazit','Champagne':'Champagner','Mocha brown':'Braun'};
 const STYLE_DE = {'V-neck':'V-Ausschnitt Bluse','Wrap top':'Wickelbluse','Scoop neck':'Top mit rundem Ausschnitt','Fitted knit':'Feinstrickpullover','Bodysuit':'Body','Wide-leg trousers':'Hose mit weitem Bein','A-line skirt':'A-Linie Rock','Flared jeans':'Schlaghose Jeans','Pleated skirt':'Plisseerock','Wrap skirt':'Wickelrock','Pencil skirt':'Bleistiftrock','Straight jeans':'Straight Jeans','Tailored trousers':'Anzughose','Pants':'Hose','Skirt':'Rock','Wrap dress':'Wickelkleid','A-line dress':'A-Linien Kleid','Longline coat':'Langer Mantel','Belted trench':'Trenchcoat','Soft blazer':'Blazer','Heeled sandal':'Sandalen mit Absatz','Pointed pump':'Pumps','Ankle boot':'Stiefeletten','Clean sneaker':'Sneaker','Shoulder bag':'Umhängetasche','Mini bag':'Mini Tasche','Tote':'Shopper'};
-const NOUN_DE = {top:'Bluse',bottom:'Hose',dress:'Kleid',outer:'Jacke',shoes:'Schuhe',bag:'Tasche',jewel:'Schmuck'};
+const NOUN_DE = {top:'Bluse',bottom:'Hose',dress:'Kleid',outer:'Jacke',shoes:'Schuhe',bag:'Tasche',belt:'Gürtel',scarf:'Tuch',jewel:'Schmuck'};
 function shopQuery(it, v, lang){
   const cn = colorName(v.color);
   if(lang==='de') return ((COLOR_DE[cn]||cn)+' '+(STYLE_DE[it.style]||NOUN_DE[it.cat]||it.name)+' Damen').trim();
@@ -161,7 +163,7 @@ const HCATS = [['Wigs','Wigs'],['Braids','Braids'],['Natural','Natural & blowout
 const hcatName = c => (HCATS.find(x=>x[0]===c)||['','Natural & blowout'])[1];
 const HCOLORS = [['Jet black','#141010'],['Soft black','#2a1d1a'],['Dark brown','#3d2618'],['Chestnut','#5b3a24'],['Auburn','#7a3b22'],['Honey blonde','#b88a4a'],['Blonde','#d8bc84'],['Burgundy','#5a1f2b'],['Silver grey','#9a9a9a']];
 const bottomGroup = it => /skirt/i.test(it.style) ? 'Skirts' : 'Pants';
-const NOUN = {top:'top',dress:'dress',outer:'jacket',shoes:'shoes',bag:'bag',jewel:'jewelry'};
+const NOUN = {top:'top',dress:'dress',outer:'jacket',shoes:'shoes',bag:'bag',belt:'belt',scarf:'scarf',jewel:'jewelry'};
 function catActive(f,c){ return c==='pants' ? f.cat==='bottom' && f.kind==='pants' : c==='skirts' ? f.cat==='bottom' && f.kind==='skirt' : f.cat===c; }
 function applyCat(f,c){ if(c==='pants'){ f.cat='bottom'; f.kind='pants'; } else if(c==='skirts'){ f.cat='bottom'; f.kind='skirt'; } else f.cat=c; }
 function autoName(f){ const kind = f.kind || 'pants'; const noun = f.cat==='bottom' ? (kind==='skirt'?'skirt':'pants') : (NOUN[f.cat]||'piece'); return colorName(f.hex)+' '+noun; }
@@ -347,7 +349,7 @@ const PATHS = {
 let gid = 0;
 function shapeFor(cat, style){
   if (cat==='bottom') return /skirt/i.test(style) ? 'skirt' : 'pants';
-  return {top:'top',dress:'dress',outer:'coat',shoes:'shoe',bag:'bag',jewel:'hoop'}[cat];
+  return {top:'top',dress:'dress',outer:'coat',shoes:'shoe',bag:'bag',belt:'hoop',scarf:'top',jewel:'hoop'}[cat];
 }
 function garment(cat, style, color){
   const id = 'g'+(gid++), shape = shapeFor(cat, style);
@@ -366,7 +368,7 @@ const rating = it => (STYLES[it.cat].find(s => s[0]===it.style)||[])[1] || 'ok';
 
 /* ---------- look board ---------- */
 function boardParts(look){
-  const order = look.slots.dress ? ['outer','dress','jewel','bag','shoes'] : ['outer','top','bottom','jewel','bag','shoes'];
+  const order = look.slots.dress ? ['outer','dress','scarf','belt','jewel','bag','shoes'] : ['outer','top','bottom','scarf','belt','jewel','bag','shoes'];
   const cells = order.map(s => {
     const it = state.items.find(i => i.id===look.slots[s]);
     return it ? `<div class="slot s-${s}">${pic(it, vOf(it, look.vars&&look.vars[s]))}</div>` : `<div class="slot s-${s} empty">${SLOT_LABEL[s]}</div>`;
@@ -515,7 +517,7 @@ function lookLine(l){ const b = l && l.beauty; if(!b) return ''; const sc = scen
 function lookThumbs(l){ const ps = ((l&&l.pics)||[]).map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean).slice(0,2);
   return ps.length ? `<span class="gpics">${ps.map(p=>`<img src="${p.src}" alt="">`).join('')}</span>` : ''; }
 function lookPlanArt(l, extra){
-  const order = l.slots.dress ? ['outer','dress','jewel','bag','shoes'] : ['outer','top','bottom','jewel','bag','shoes'];
+  const order = l.slots.dress ? ['outer','dress','scarf','belt','jewel','bag','shoes'] : ['outer','top','bottom','scarf','belt','jewel','bag','shoes'];
   const pieces = order.map(sl => { const it = state.items.find(i => i.id===l.slots[sl]); return it && `<span class="gc-p">${pic(it, vOf(it, l.vars&&l.vars[sl]))}</span>`; }).filter(Boolean);
   const pics = [...new Set([...(l.pics||[]), ...(extra||[])])].map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean);
   const phIds = new Set(planHairPics().map(x=>x.id)), pnIds = new Set(planNailPics().map(x=>x.id)), hp = pics.find(x => x.tag==='Hair') || pics.find(x => phIds.has(x.id)), np = pics.find(x => x.tag==='Nails') || pics.find(x => pnIds.has(x.id)), b = l.beauty || {}, nc = NAILS.find(x => x[0]===b.nails);
@@ -827,7 +829,7 @@ function lookCover(l){
   if (Object.keys(l.slots||{}).length){ const comp = lookPlanArt(l); if(comp) return `<div class="lk-img lk-comp">${comp}</div>`; }
   const pics = (l.pics||[]).map(id => (state.pics||[]).find(p => p.id===id)).filter(Boolean).slice(0,4);
   if (pics.length) return `<div class="lk-img ph n${pics.length}">${pics.map(p=>`<img src="${p.src}" alt="">`).join('')}</div>`;
-  const order = l.slots.dress ? ['outer','dress','jewel','bag','shoes'] : ['outer','top','bottom','jewel','bag','shoes'];
+  const order = l.slots.dress ? ['outer','dress','scarf','belt','jewel','bag','shoes'] : ['outer','top','bottom','scarf','belt','jewel','bag','shoes'];
   const its = order.map(sl => { const it = state.items.find(i => i.id===l.slots[sl]); return it && `<div class="lk-p">${pic(it, vOf(it, l.vars&&l.vars[sl]))}</div>`; }).filter(Boolean);
   if (its.length) return `<div class="lk-img pc n${Math.min(its.length,6)}">${its.join('')}</div>`;
   return `<div class="lk-img lk-empty"><span>Add pieces</span></div>`;
@@ -887,7 +889,7 @@ function builder(){
     body = `<div class="brow"><div class="eyebrow">Your scent</div>${sc.length?`<div class="hscroll">${sc.map(p=>`<div class="tile ${d.beauty.scent===p.id?'on':''}"><button class="tp" data-act="beauty" data-k="scent" data-v="${p.id}" aria-pressed="${d.beauty.scent===p.id}" aria-label="${esc(p.name)}">${p.photo?`<img src="${p.photo}" alt="">`:ticon('scent',false)}</button><span class="tn">${esc(scentShort(p))}</span></div>`).join('')}</div>`:'<p class="status">No perfume saved yet.</p>'}
       <div style="margin-top:12px"><button class="btn small ghost" data-act="addscent">＋ Add a perfume</button></div></div>`;
   } else {
-    body = `${itemRow('Bag','bag',d)}${itemRow('Jewelry','jewel',d)}${picsRow('Accessories',d,'Accessories inspiration')}`;
+    body = `${itemRow('Bag','bag',d)}${itemRow('Belt','belt',d)}${itemRow('Scarf','scarf',d)}${itemRow('Jewelry','jewel',d)}${picsRow('Accessories',d,'Accessories inspiration')}`;
   }
   return `<button class="back" data-act="cancel">← Back</button>
   <h1 class="page-title" style="margin-bottom:12px">${ui.assignDay!==null?`Plan <em>${DAYFULL[ui.assignDay]}</em>`:`${d.id?'Edit':'Create a'} <em>look</em>`}</h1>
@@ -1264,7 +1266,7 @@ const actions = {
   tsrc(v){ ui.tsrc=v; },
   newtoday(){ actions.newlook(); ui.assignDay=dow(); },
   startward(v){ const [id,vid]=v.split(':'), it=state.items.find(i=>i.id===id); actions.newlook(); ui.assignDay=dow();
-    ui.draft.slots[it.cat]=id; ui.draft.vars={[it.cat]:vid}; ui.vsel[id]=vid; if(it.cat==='dress') ui.omode='dress'; ui.btab=['bag','jewel'].includes(it.cat)?'acc':'outfit'; },
+    ui.draft.slots[it.cat]=id; ui.draft.vars={[it.cat]:vid}; ui.vsel[id]=vid; if(it.cat==='dress') ui.omode='dress'; ui.btab=['bag','jewel','belt','scarf'].includes(it.cat)?'acc':'outfit'; },
   startpic(v){ const [id,src]=v.split(':'); actions.newlook(); ui.assignDay=dow(); ui.draft.pics=[id]; ui.btab=src==='nails'?'nails':'hair'; },
   cfil(v){ ui.cfil=v; },
   applook(v){ const a=ui.adraft; a.lookId = a.lookId===v ? null : v; const l=state.looks.find(x=>x.id===v);
@@ -1346,7 +1348,7 @@ const actions = {
   lightbox(v){ const it=state.items.find(i=>i.id===v), c=vOf(it,ui.vsel[v]); ui.lightbox=c.photo; },
   lbclose(){ ui.lightbox=null; },
   pdplook(v){ const it=state.items.find(i=>i.id===v), c=vOf(it,ui.vsel[v]); ui.sheet=null; actions.newlook();
-    ui.draft.slots[it.cat]=v; ui.draft.vars={[it.cat]:c.id}; if(it.cat==='dress') ui.omode='dress'; ui.btab=['bag','jewel'].includes(it.cat)?'acc':'outfit'; },
+    ui.draft.slots[it.cat]=v; ui.draft.vars={[it.cat]:c.id}; if(it.cat==='dress') ui.omode='dress'; ui.btab=['bag','jewel','belt','scarf'].includes(it.cat)?'acc':'outfit'; },
   wore(){ const look = todayLook(); state.wears = state.wears || {};
     if(look) Object.entries(look.slots).forEach(([slot,id]) => { const it = state.items.find(i => i.id===id); if(!it) return;
       const vv = vOf(it, look.vars && look.vars[slot]), w = state.wears[vv.id] = state.wears[vv.id] || {n:0,last:null};
