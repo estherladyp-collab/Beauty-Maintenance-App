@@ -41,3 +41,4 @@ Maintaining You ist Esthers visueller Garderoben- und Beauty-Planer (Körperform
 - Looks-Seite neu (`lookCover`, `lookMeta`, Klassen `.lk-*`): Foto- oder Teile-Cover, Beauty als kleine Chips.
 - Neuer Care-Bereich "Choose your scent" (`scent`, Produkte unter "Fragrance") mit 4 Zara-Parfüms als Seed (`seed-products.js`), Icon in `icons-img.js`.
 - Offen wie vorher: Überschriften-Schrift, Look-Builder/Produktansicht angleichen, Shop-Links.
+- Home = Kalender (früher Plan-Tab) mit eingeklappten Bereichen (Tag, Coming up, 'What would you like to do?' mit Kacheln); Plan-Tab entfernt, `tab('calendar')` führt auf Home.

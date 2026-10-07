@@ -387,9 +387,8 @@ function lookNotes(look){
 /* ---------- views ---------- */
 const HOME_SVG = '<path d="M4 11.2 12 4l8 7.2V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/>';
 const NAV = [
-  ['home','Home',['home'],HOME_SVG],
+  ['home','Home',['home','calendar'],HOME_SVG],
   ['today','Today',['today'],'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/>'],
-  ['plan','Plan',['calendar'],'<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8 3v4M16 3v4"/>'],
   ['care','Care',['beauty','mood'],'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 16.5v3M17 18h3"/>'],
   ['looks','Looks',['looks','snaps'],'<path d="M12 7.5a2.3 2.3 0 1 0-2.3-2.3M12 7.5V10l8 5.2a1 1 0 0 1-.6 1.8H4.6a1 1 0 0 1-.6-1.8L12 10"/>'],
   ['wardrobe','Wardrobe',['wardrobe','closet'],'<path d="M8.5 4L3 7l2 4 3-1.5V20h8v-10.5l3 1.5 2-4-5.5-3a3.5 3.5 0 0 1-7 0z"/>']
@@ -398,7 +397,7 @@ const SUBS = {care:[['beauty','Routine'],['mood','Inspiration']], wardrobe:[['wa
 function seg(tab){ const g = NAV.find(n => n[2].includes(tab)); const subs = g && SUBS[g[0]]; if(!subs) return '';
   return `<div class="segc" role="tablist">${subs.map(x=>`<button role="tab" aria-selected="${tab===x[0]}" data-act="tab" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`; }
 function view(){
-  const body = ui.draft ? builder() : seg(ui.tab) + {home,today,wardrobe,closet,looks,snaps,mood,calendar,beauty}[ui.tab]();
+  const body = ui.draft ? builder() : seg(ui.tab) + {home,calendar:home,today,wardrobe,closet,looks,snaps,mood,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true"><img class="medal d" src="${(window.MUSE_LOGO||{}).medal||''}" alt=""><img class="medal g" src="${(window.MUSE_LOGO||{}).gold||''}" alt="">Maintaining You</div>
   <main class="shell ${ui.enter?'enter':''}"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${NAV.map(g=>`<button data-act="tab" data-v="${(ui.last&&ui.last[g[0]])||g[2][0]}" ${g[2].includes(ui.tab)&&!ui.draft?'aria-current="page"':''}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${g[3]}</svg><span>${g[1]}</span></button>`).join('')}</div></nav>
@@ -451,23 +450,20 @@ function weekStrip(){
   return `<div class="weekbar"><button class="wnav" data-act="weekshift" data-v="-7" aria-label="Previous week">‹</button><span class="eyebrow">${m}</span><button class="wnav" data-act="weekshift" data-v="7" aria-label="Next week">›</button></div><div class="wstrip">${days}</div>`;
 }
 const navIcon = id => (NAV.find(n => n[0]===id)||[])[3] || '';
-function home(){
-  const td = isoDay(), n = state.appts.filter(a => a.date===td && !a.done).length;
-  const h = new Date().getHours(), greet = h<12 ? 'Good morning' : h<18 ? 'Good afternoon' : 'Good evening';
+function homeTiles(){
   const svg = d => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const tiles = [
+    ['Today','Plans and routine for today','tab','today',navIcon('today')],
     ['Plan an outing','Outfit, hair and nails for the day','newappt','outfit','<path d="M12 21s-6.5-5.6-6.5-10.2A6.5 6.5 0 0 1 12 4.3a6.5 6.5 0 0 1 6.5 6.5C18.5 15.400 12 21 12 21z"/><circle cx="12" cy="10.800" r="2.300"/>'],
     ['Wardrobe','Wishlist and what you own','tab','wardrobe',navIcon('wardrobe')],
     ['Create a look','Outfit, hair, nails and scent','newlook','',navIcon('looks')],
     ['Care routine','Nails, lashes, skin and scent','tab','beauty',navIcon('care')],
-    ['Calendar','All your plans at a glance','tab','calendar',navIcon('plan')],
     ['Snap a look','Save your best looks','tab','snaps','<path d="M4 8.500a2 2 0 0 1 2-2h2l1.200-1.800h5.600L16 6.500h2a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.500" r="3.200"/>'],
     ['Inspiration','Pictures to plan from','tab','mood','<rect x="4" y="5" width="16" height="14" rx="2.500"/><circle cx="9" cy="10" r="1.600"/><path d="M4.500 17l4.500-4.500 3.500 3.500 2.500-2.500 4.500 4"/>']
   ];
-  return `<header class="dayhead"><span class="eyebrow">${greet}</span><h1 class="page-title">What would you like <em>to do?</em></h1></header>
-  <button class="hm-today" data-act="tab" data-v="today"><span class="hm-ic">${svg(navIcon('today'))}</span><span class="hm-t"><b>Today</b><small>${n?`${n} plan${n===1?'':'s'} for today`:'Nothing planned yet'}</small></span><span class="hm-go" aria-hidden="true">›</span></button>
-  <div class="hm-grid">${tiles.map(t=>`<button class="hm-tile" data-act="${t[2]}"${t[3]?` data-v="${t[3]}"`:''}${t[2]==='newappt'?' data-today="1"':''}><span class="hm-ic">${svg(t[4])}</span><b>${t[0]}</b><small>${t[1]}</small></button>`).join('')}</div>`;
+  return `<div class="hm-grid">${tiles.map(t=>`<button class="hm-tile" data-act="${t[2]}"${t[3]?` data-v="${t[3]}"`:''}${t[2]==='newappt'?' data-today="1"':''}><span class="hm-ic">${svg(t[4])}</span><b>${t[0]}</b><small>${t[1]}</small></button>`).join('')}</div>`;
 }
+function home(){ return calendar(true); }
 function today(){
   const td = isoDay(), sel = ui.calSel || td, isToday = sel===td;
   const dt = new Date(sel+'T12:00:00');
@@ -879,7 +875,7 @@ function apptCard(a){
     <span class="grow"><b>${esc(a.title)}</b><span class="status">${fmtDate(a.date)}${a.time?' · '+esc(a.time):''}${a.where==='home'?' · At home':''}${a.done?' · Done':''}</span></span>
     <span class="status">${n?`${prepDone(a)} of ${n} prepped`:''}</span></button>`;
 }
-function calendar(){
+function calendar(isHome){
   const {y,m} = ui.cal, first = new Date(y,m,1), off = (first.getDay()+6)%7, dim = new Date(y,m+1,0).getDate();
   const due = dueDates(), td = isoDay();
   let cells = '';
@@ -896,11 +892,21 @@ function calendar(){
   return `<header class="dayhead"><span class="eyebrow">${y}</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">${mname}</h1><div class="row" style="gap:4px;flex-wrap:nowrap"><button class="roundbtn ghost" data-act="calprev" aria-label="Previous month">‹</button><button class="roundbtn ghost" data-act="calnext" aria-label="Next month">›</button></div></div></header>
   <div class="chips catrow" role="group" aria-label="Category">${CFIL.map(c=>`<button class="chip" aria-pressed="${ui.cfil===c[0]}" data-act="cfil" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
   <div class="cal" style="margin-top:18px"><div class="cal-h">${DAYS.map(d=>`<span>${d[0]}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
-  <section class="plans"><div class="row between"><h2>${fmtDate(sel)}</h2><div class="row" style="gap:8px;flex-wrap:nowrap">${dayAppts.length>1?`<button class="btn small ghost" data-act="arrange">${ui.arrange?'Done':'Arrange'}</button>`:''}<button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div></div>
+  ${isHome?homeFolds(sel,dayAppts,dayDue,upcoming):`  <section class="plans"><div class="row between"><h2>${fmtDate(sel)}</h2><div class="row" style="gap:8px;flex-wrap:nowrap">${dayAppts.length>1?`<button class="btn small ghost" data-act="arrange">${ui.arrange?'Done':'Arrange'}</button>`:''}<button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div></div>
   ${dayAppts.length?`<div class="gallery big" style="margin-top:16px">${dayAppts.map(apptGCard).join('')}</div>`:''}
   <div class="list" style="margin-top:14px">${dayDue.map(x=>`<div class="task">${ticon(TYPE_ICON[x.t]||'other', true)}<div class="grow"><h3>${esc(x.r[1])}</h3><div class="status">Due on this day</div></div><button class="btn small ghost" data-act="newappt" data-v="${x.t}">Book</button></div>`).join('')}</div>
   ${!dayAppts.length&&!dayDue.length?quickPlan('Nothing planned for this day.'):''}</section>
-  ${upcoming.length?`<section><h2>Coming up</h2><div class="list" style="margin-top:14px">${upcoming.map(apptCard).join('')}</div></section>`:''}`;
+  ${upcoming.length?`<section><h2>Coming up</h2><div class="list" style="margin-top:14px">${upcoming.map(apptCard).join('')}</div></section>`:''}`}`;
+}
+function homeFolds(sel,dayAppts,dayDue,upcoming){
+  const n = dayAppts.length + dayDue.length;
+  const dayBody = `<div class="row" style="gap:8px;flex-wrap:nowrap;justify-content:flex-end">${dayAppts.length>1?`<button class="btn small ghost" data-act="arrange">${ui.arrange?'Done':'Arrange'}</button>`:''}<button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div>
+  ${dayAppts.length?`<div class="gallery big" style="margin-top:14px">${dayAppts.map(apptGCard).join('')}</div>`:''}
+  <div class="list" style="margin-top:14px">${dayDue.map(x=>`<div class="task">${ticon(TYPE_ICON[x.t]||'other', true)}<div class="grow"><h3>${esc(x.r[1])}</h3><div class="status">Due on this day</div></div><button class="btn small ghost" data-act="newappt" data-v="${x.t}">Book</button></div>`).join('')}</div>
+  ${!dayAppts.length&&!dayDue.length?quickPlan('Nothing planned for this day.'):''}`;
+  return `<section class="folds" style="margin-top:18px">${foldBox('hday',`${esc(fmtDate(sel))}<small> ${n?n+' plan'+(n>1?'s':''):'nothing planned'}</small>`,dayBody)}
+  ${upcoming.length?foldBox('hup','Coming up',`<div class="list">${upcoming.map(apptCard).join('')}</div>`):''}
+  ${foldBox('hdo','What would you like to do?',homeTiles())}</section>`;
 }
 
 function beauty(){
@@ -1048,7 +1054,7 @@ function setToast(t){ toast=t; render(); setTimeout(()=>{toast='';render();},220
 function logToday(){ const t=isoDay(); if(!state.log.includes(t)) state.log.push(t); }
 
 const actions = {
-  tab(v){ ui.arrange=false; ui.enter=true; ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
+  tab(v){ if(v==='calendar') v='home'; ui.arrange=false; ui.enter=true; ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
   cat(v){ ui.cat=v; ui.sty='all'; ui.occ='all'; ui.bg='all'; },
   bg(v){ ui.bg=v; ui.sty='all'; },
   sty(v){ ui.sty=v; },
@@ -1138,7 +1144,7 @@ const actions = {
   togglepic(v){ const d=ui.draft; d.pics=d.pics||[]; const i=d.pics.indexOf(v); if(i>=0) d.pics.splice(i,1); else d.pics.push(v); },
   calprev(){ const c=ui.cal; c.m--; if(c.m<0){c.m=11;c.y--;} },
   calnext(){ const c=ui.cal; c.m++; if(c.m>11){c.m=0;c.y++;} },
-  calsel(v){ ui.calSel=v; ui.arrange=false; },
+  calsel(v){ ui.calSel=v; ui.arrange=false; if(ui.tab==='home'||ui.tab==='calendar') ui.fold.hday=true; },
   newappt(v,el){ const t=v||'hair'; ui.adraft={id:uid(),type:t,title:defTitle(t,'salon'),where:'salon',date:(el&&el.currentTarget&&el.currentTarget.dataset.today)?isoDay():(ui.calSel||isoDay()),time:'',notes:'',prep:prepFor(t,'salon'),pics:[],edited:false,done:false};
     ui.sheet={type:'appt',isNew:true}; },
   editappt(v){ ui.adraft=JSON.parse(JSON.stringify(state.appts.find(a=>a.id===v))); ui.sheet={type:'appt'}; },

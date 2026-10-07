@@ -994,3 +994,4 @@ h2{font-size:22px}
 .hm-tile:last-child:nth-child(odd){grid-column:1/3;min-height:0}
 :root[data-mode=dark] .hm-today,:root[data-mode=dark] .hm-tile{box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 14px 28px -14px rgba(0,0,0,.8)}
 .nav button{font-size:10.5px!important}
+.fold{box-shadow:none!important}
