@@ -646,7 +646,7 @@ const PROD_AREAS = [['lashes','Lashes'],['nails','Nails'],['brows','Brows'],['ha
 const areaName = id => (PROD_AREAS.find(a => a[0]===id)||[0,'Other'])[1];
 function prodCard(p){ return `<button class="prodc" data-act="editprod" data-v="${p.id}" aria-label="${esc(p.name)}">${p.photo?`<img src="${p.photo}" alt="">`:`<span class="prodph">${ticon(ROUTINE_ICON[p.area]||'other',false)}</span>`}<span class="prodt"><b>${esc(p.name)}</b><small>${p.price?eur(p.price)+' · ':''}${esc(p.shop||'')}</small></span></button>`; }
 function prodStrip(rid){ const l = (state.products||[]).filter(p => p.area===rid); return l.length ? `<div class="prodstrip">${l.map(prodCard).join('')}</div>` : ''; }
-function taskP(r){ return `<div class="taskw">${task(r)}${prodStrip(r[0])}</div>`; }
+function taskP(r){ return `<div class="taskw">${task(r)}</div>`; }
 function prodSheet(s){
   const p = ui.pdraft, isNew = !!s.isNew;
   return `<span class="eyebrow" style="color:var(--goldtxt)">${isNew?'New product':'Product'}</span><h2 style="margin-top:4px">${esc(areaName(p.area))}</h2><div class="apptform">
