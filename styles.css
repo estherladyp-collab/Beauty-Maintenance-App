@@ -996,3 +996,9 @@ h2{font-size:22px}
 .nav button{font-size:10.5px!important}
 .fold{box-shadow:none!important}
 .plannedl{display:block;text-align:left;font-size:13px;color:var(--goldtxt);font-weight:500;padding:2px 0}
+.catwrap{display:flex;align-items:center;gap:10px}
+.catwrap .catrow{flex:1;min-width:0;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+.catwrap .catrow::-webkit-scrollbar{display:none}
+.catwrap .catrow .chip{flex:none}
+.catplan{flex:none;white-space:nowrap}
+.catplan{margin-top:8px}
