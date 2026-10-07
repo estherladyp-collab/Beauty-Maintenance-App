@@ -296,7 +296,7 @@ async function boot(){
   if(fromLocal){ try { const chk = await idbGet(KEY); if(chk && chk.items && chk.items.length===state.items.length) localStorage.removeItem(KEY); } catch(e){} }
   try { if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
   let restored = false; try { restored = restoreDraft(await idbGet(DRAFT_KEY)); } catch(e){}
-  applyTheme(); booted = true; render();
+  applyTheme(); booted = true; render(); window.MUSE_BOOTED = true;
   if(restored) setToast('Picked up where you left off.');
 }
 document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); syncUp(); } });
