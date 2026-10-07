@@ -788,6 +788,7 @@ function closet(){
 }
 function foldBox(k,label,inner){ return `<div class="fold"><button class="foldh" data-act="fold" data-v="${k}" aria-expanded="${!!ui.fold[k]}"><span>${label}</span><i aria-hidden="true">${ui.fold[k]?'−':'+'}</i></button>${ui.fold[k]?`<div class="foldb">${inner}</div>`:''}</div>`; }
 function lookCover(l){
+  if (Object.keys(l.slots||{}).length){ const comp = lookPlanArt(l); if(comp) return `<div class="lk-img lk-comp">${comp}</div>`; }
   const pics = (l.pics||[]).map(id => (state.pics||[]).find(p => p.id===id)).filter(Boolean).slice(0,4);
   if (pics.length) return `<div class="lk-img ph n${pics.length}">${pics.map(p=>`<img src="${p.src}" alt="">`).join('')}</div>`;
   const order = l.slots.dress ? ['outer','dress','jewel','bag','shoes'] : ['outer','top','bottom','jewel','bag','shoes'];

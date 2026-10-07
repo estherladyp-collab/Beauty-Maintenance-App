@@ -1060,3 +1060,5 @@ h2{font-size:22px}
 .gc-p{overflow:hidden;min-height:0}
 .gc-p img,.gc-p svg{max-height:100%;max-width:100%;width:auto;height:auto;margin:auto;object-fit:contain}
 .gc-p svg{height:100%;width:100%}
+.lk-comp{position:relative;background:var(--card)}
+.lk-comp .gcomp{inset:10px}
