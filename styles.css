@@ -1040,3 +1040,23 @@ h2{font-size:22px}
 .gallery.big .gart.plain .gcomp+.gx,.gallery.big .gart .gcomp~.gcap{z-index:3}
 .gc-o.n3 .gc-p:first-child{grid-row:1/3}
 .gc-o.n3{grid-template-columns:1.1fr 1fr}
+/* v2: structured plan card, outfit row on top, hair + nails row below */
+.gcomp{grid-template-columns:1fr;grid-template-rows:minmax(0,1.55fr) minmax(0,1fr);gap:8px}
+.gcomp.solo{grid-template-rows:1fr}
+.gcomp.nt{grid-template-rows:1fr}
+.gc-o,.gc-o.n1,.gc-o.n2,.gc-o.n3,.gc-o.n4,.gc-o.n5,.gc-o.n6{display:grid;grid-auto-flow:row;grid-template-rows:1fr;gap:4px;padding:8px 6px;background:#e9dfd3;border-radius:14px;place-items:center;align-items:stretch}
+.gc-o.n1{grid-template-columns:1fr}
+.gc-o.n2{grid-template-columns:1fr 1fr}
+.gc-o.n3{grid-template-columns:1fr 1fr 1fr}
+.gc-o.n4{grid-template-columns:repeat(4,1fr)}
+.gc-o.n5,.gc-o.n6{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr}
+.gc-o.n3 .gc-p:first-child{grid-row:auto}
+.gc-p{width:100%;height:100%;min-height:0;display:grid;place-items:center}
+.gc-p img,.gc-p svg{width:100%;height:100%;object-fit:contain}
+.gc-r,.gc-r.n1,.gc-r.n2{display:grid;grid-template-rows:1fr;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
+.gc-r.n0{display:none}
+/* v2 fix: every piece stays inside its cell */
+.gc-o{overflow:hidden;min-height:0}
+.gc-p{overflow:hidden;min-height:0}
+.gc-p img,.gc-p svg{max-height:100%;max-width:100%;width:auto;height:auto;margin:auto;object-fit:contain}
+.gc-p svg{height:100%;width:100%}

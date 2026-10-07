@@ -492,7 +492,7 @@ function lookPlanArt(l){
   const other = pics.filter(x => x!==hp && x!==np);
   if(!pieces.length && !tiles.length) return '';
   const left = pieces.length ? `<span class="gc-o n${Math.min(pieces.length,6)}">${pieces.join('')}</span>` : (other.length ? `<span class="gc-o ph">${other.slice(0,2).map(x=>`<img src="${x.src}" alt="">`).join('')}</span>` : '');
-  return `<span class="gcomp ${left?'':'solo'}">${left}<span class="gc-r n${tiles.length}">${tiles.join('')}</span></span>`;
+  return `<span class="gcomp ${left?'':'solo'} ${tiles.length?'':'nt'}">${left}<span class="gc-r n${tiles.length}">${tiles.join('')}</span></span>`;
 }
 function apptGCard(a){
   const td = isoDay();
