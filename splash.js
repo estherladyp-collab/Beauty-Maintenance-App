@@ -8,7 +8,7 @@
   try { var tg = el.querySelector('.sw-tag'), last = parseInt(localStorage.getItem('muse.tag'), 10), i;
     do { i = Math.floor(Math.random() * LINES.length); } while (i === last && LINES.length > 1);
     tg.textContent = LINES[i]; localStorage.setItem('muse.tag', i); } catch(e){}
-  var t0 = Date.now(), tGo = 0, HOLD = 2800, MAX = 6500, gone = false;
+  var t0 = Date.now(), tGo = 0, HOLD = 3500, MAX = 7500, gone = false;
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function start(){ if(tGo) return; tGo = Date.now(); el.classList.add('go'); }
   var wait = new Promise(function(r){ setTimeout(r, 450); });
