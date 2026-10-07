@@ -483,7 +483,7 @@ function lookPlanArt(l, extra){
   const order = l.slots.dress ? ['outer','dress','jewel','bag','shoes'] : ['outer','top','bottom','jewel','bag','shoes'];
   const pieces = order.map(sl => { const it = state.items.find(i => i.id===l.slots[sl]); return it && `<span class="gc-p">${pic(it, vOf(it, l.vars&&l.vars[sl]))}</span>`; }).filter(Boolean);
   const pics = [...new Set([...(l.pics||[]), ...(extra||[])])].map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean);
-  const hp = pics.find(x => x.tag==='Hair'), np = pics.find(x => x.tag==='Nails'), b = l.beauty || {}, nc = NAILS.find(x => x[0]===b.nails);
+  const phIds = new Set(planHairPics().map(x=>x.id)), pnIds = new Set(planNailPics().map(x=>x.id)), hp = pics.find(x => x.tag==='Hair') || pics.find(x => phIds.has(x.id)), np = pics.find(x => x.tag==='Nails') || pics.find(x => pnIds.has(x.id)), b = l.beauty || {}, nc = NAILS.find(x => x[0]===b.nails);
   const tiles = [];
   if(hp) tiles.push(`<span class="gc-t"><img src="${hp.src}" alt=""><small>Hair${b.hair?' · '+esc(b.hair):''}</small></span>`);
   else if(b.hair) tiles.push(`<span class="gc-t txt"><b>${esc(b.hair)}</b><small>Hair</small></span>`);
