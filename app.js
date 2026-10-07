@@ -803,8 +803,8 @@ function lookMeta(l){
   return parts.length ? `<div class="lk-meta">${parts.join('')}</div>` : '';
 }
 function looks(){
-  return `<header class="dayhead"><span class="eyebrow">${state.looks.length} saved</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">Looks</h1><button class="roundbtn" data-act="newlook" aria-label="Create a look">＋</button></div></header>
-  ${state.looks.length?`<div class="lk-grid">${state.looks.map(l=>`<div class="lk-card"><button class="lk-open" data-act="editlook" data-v="${l.id}" aria-label="Edit ${esc(l.name)}">${lookCover(l)}</button>
+  return `<header class="dayhead"><span class="eyebrow">${state.looks.length} saved</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">Looks</h1><div class="row" style="gap:8px;flex-wrap:nowrap">${state.looks.length>1?`<button class="btn small ghost" data-act="larr">${ui.larr?'Done':'Arrange'}</button>`:''}<button class="roundbtn" data-act="newlook" aria-label="Create a look">＋</button></div></div></header>
+  ${state.looks.length?`<div class="lk-grid ${ui.larr?'arr':''}">${state.looks.map(l=>`<div class="lk-card" data-lid="${l.id}">${ui.larr?`<span class="lk-mv"><span role="button" tabindex="0" aria-label="Move earlier" data-act="mvlook" data-v="${l.id}:-1">‹</span><span role="button" tabindex="0" aria-label="Move later" data-act="mvlook" data-v="${l.id}:1">›</span></span>`:''}<button class="lk-open" data-act="editlook" data-v="${l.id}" aria-label="Edit ${esc(l.name)}">${lookCover(l)}</button>
     <div class="lk-row"><div class="lk-t"><h3 class="lname">${esc(l.name)}</h3>${l.occasion?`<span class="status">${esc(l.occasion)}</span>`:''}</div><div class="lk-act"><button class="iconb" data-act="shoplook" data-v="${l.id}" aria-label="Shop this look">${CART}</button><button class="iconb" data-act="dellook" data-v="${l.id}" aria-label="Delete ${esc(l.name)}">✕</button></div></div>${lookMeta(l)}</div>`).join('')}</div>`
   :`<button class="blank" data-act="newlook"><span>＋</span>Build your first look. Pick pieces, nails, lips and hair.</button>`}
   <section class="folds">${foldBox('rail','Start from a picture',startRail())}</section>`;
@@ -1250,6 +1250,8 @@ const actions = {
   autoweek(){ autoWeek(); },
   more(){ ui.more=!ui.more; },
   arrange(){ ui.arrange = !ui.arrange; },
+  larr(){ ui.larr = !ui.larr; },
+  mvlook(v){ const [id,d]=v.split(':'), a=state.looks, i=a.findIndex(l=>l.id===id), j=i+(+d); if(i<0||j<0||j>=a.length) return; [a[i],a[j]]=[a[j],a[i]]; save(); },
   mvplan(v){ const [id,d] = v.split(':'), ids = [...(ui.arr||[])], i = ids.indexOf(id), j = i + (+d); if(i<0 || j<0 || j>=ids.length) return;
     [ids[i], ids[j]] = [ids[j], ids[i]]; const date = (state.appts.find(a=>a.id===id)||{}).date; if(!date) return; state.order[date] = ids; save(); },
   mvapppic(v){ const [i,d] = v.split(':').map(Number), p = ui.adraft.pics, j = i + d; if(j<0 || j>=p.length) return; [p[i], p[j]] = [p[j], p[i]]; ui.adraft.edited = true; },
@@ -1315,6 +1317,65 @@ function syncDraft(){
   const n=document.getElementById('lname'), o=document.getElementById('locc');
   if(ui.draft && n){ ui.draft.name=n.value; ui.draft.occasion=o.value; }
 }
+
+/* ---------- looks: long-press a card, then drag it to a new place (like moving widgets) ---------- */
+(function(){
+  let t=null, st=null, drag=null, raf=0, pt={x:0,y:0}, blockClick=0;
+  const grid = () => document.querySelector('.lk-grid');
+  const reduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
+  function place(){
+    const c=drag.card; c.style.transform='none'; const r=c.getBoundingClientRect();
+    c.style.transform=`translate(${pt.x-drag.gx-r.left}px,${pt.y-drag.gy-r.top}px) scale(1.04)`;
+  }
+  function retarget(){
+    const g=grid(); if(!g) return;
+    const cards=[...g.children].filter(x=>x!==drag.card);
+    let hit=null; for(const x of cards){ const r=x.getBoundingClientRect(); if(pt.x>=r.left&&pt.x<=r.right&&pt.y>=r.top&&pt.y<=r.bottom){ hit=x; break; } }
+    if(!hit){ drag.lock=null; return; }
+    if(hit===drag.lock) return;
+    drag.lock=hit;
+    const all=[...g.children], from=all.indexOf(drag.card), to=all.indexOf(hit);
+    if(from===to) return;
+    const before=new Map(all.map(x=>[x,x.getBoundingClientRect()]));
+    if(from<to) hit.after(drag.card); else hit.before(drag.card);
+    if(!reduce()) cards.forEach(x=>{ const a=before.get(x), b=x.getBoundingClientRect(), dx=a.left-b.left, dy=a.top-b.top; if(dx||dy){ x.style.transition='none'; x.style.transform=`translate(${dx}px,${dy}px)`; x.getBoundingClientRect(); x.style.transition='transform .18s ease'; x.style.transform=''; } });
+    place();
+  }
+  function loop(){ if(!drag) return; const h=window.innerHeight; if(pt.y<90) window.scrollBy(0,-12); else if(pt.y>h-150) window.scrollBy(0,12); place(); raf=requestAnimationFrame(loop); }
+  function start(){
+    const card=st.card; const r=card.getBoundingClientRect();
+    drag={card, gx:pt.x-r.left, gy:pt.y-r.top};
+    card.classList.add('lift'); document.body.classList.add('dragging');
+    try{ navigator.vibrate&&navigator.vibrate(12); }catch(e){}
+    try{ card.setPointerCapture(st.id); }catch(e){}
+    place(); raf=requestAnimationFrame(loop);
+  }
+  function finish(commit){
+    clearTimeout(t); t=null;
+    if(!drag){ st=null; return; }
+    cancelAnimationFrame(raf);
+    const g=grid(), c=drag.card; drag=null; st=null; document.body.classList.remove('dragging'); blockClick=Date.now();
+    if(commit && g){ const ids=[...g.children].map(x=>x.dataset.lid), order=ids.map(id=>state.looks.find(l=>l.id===id)).filter(Boolean);
+      if(order.length===state.looks.length && order.some((l,i)=>l!==state.looks[i])){ state.looks=order; save(); } }
+    c.classList.remove('lift'); c.style.transform=''; render();
+  }
+  document.addEventListener('pointerdown', e => {
+    const card=e.target.closest&&e.target.closest('.lk-card'); if(!card||!card.dataset.lid||e.target.closest('.iconb,.lk-mv')||ui.larr) return;
+    if(e.pointerType==='mouse'&&e.button!==0) return;
+    pt={x:e.clientX,y:e.clientY}; st={card,id:e.pointerId,x:e.clientX,y:e.clientY};
+    clearTimeout(t); t=setTimeout(()=>{ if(st&&!drag) start(); },450);
+  });
+  document.addEventListener('pointermove', e => {
+    if(!st) return; pt={x:e.clientX,y:e.clientY};
+    if(!drag){ if(Math.hypot(pt.x-st.x,pt.y-st.y)>8){ clearTimeout(t); st=null; } return; }
+    retarget();
+  });
+  document.addEventListener('pointerup', () => { if(st||drag) finish(true); });
+  document.addEventListener('pointercancel', () => { if(drag) finish(true); else { clearTimeout(t); st=null; } });
+  document.addEventListener('touchmove', e => { if(drag) e.preventDefault(); }, {passive:false});
+  document.addEventListener('contextmenu', e => { if(e.target.closest&&e.target.closest('.lk-card')&&(drag||st)) e.preventDefault(); });
+  document.addEventListener('click', e => { if(Date.now()-blockClick<350){ e.stopPropagation(); e.preventDefault(); } }, true);
+})();
 
 let upTag = null;
 document.addEventListener('click', e => {
