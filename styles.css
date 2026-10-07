@@ -919,3 +919,35 @@ h2{font-size:22px}
 #splash .sw-medal.g{display:none;position:absolute}
 #splash.dark .sw-medal.d{display:none}
 #splash.dark .sw-medal.g{display:block;position:static}
+
+/* looks page v4 */
+.lk-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px 14px;align-items:start}
+@media(min-width:860px){.lk-grid{grid-template-columns:repeat(3,1fr)}}
+.lk-open{display:block;width:100%;text-align:left}
+.lk-img{aspect-ratio:4/5;border-radius:var(--r);overflow:hidden;background:var(--card);border:1px solid var(--line);display:grid;gap:3px;position:relative}
+.lk-img.ph{border:0;background:var(--blush)}
+.lk-img img{width:100%;height:100%;object-fit:cover;display:block;min-height:0}
+.lk-img.ph.n1{grid-template-columns:1fr}
+.lk-img.ph.n2{grid-template-columns:1fr 1fr}
+.lk-img.ph.n3{grid-template-columns:1.4fr 1fr;grid-template-rows:1fr 1fr}.lk-img.ph.n3 img:first-child{grid-row:1/3}
+.lk-img.ph.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.lk-img.pc{padding:12px;gap:8px;place-items:center}
+.lk-img.pc.n1{grid-template-columns:1fr}
+.lk-img.pc.n2{grid-template-columns:1fr 1fr}
+.lk-img.pc.n3,.lk-img.pc.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.lk-img.pc.n5,.lk-img.pc.n6{grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr)}
+.lk-p{width:100%;height:100%;min-height:0;display:grid;place-items:center;border-radius:12px;overflow:hidden}
+.lk-p svg{width:100%;height:100%;filter:drop-shadow(0 5px 7px rgba(0,0,0,.2))}
+.lk-p img{border-radius:12px}
+.lk-empty{place-items:center;color:var(--muted);font:500 10px "Hanken Grotesk",sans-serif;letter-spacing:.2em;text-transform:uppercase}
+.lk-row{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-top:12px}
+.lk-t{min-width:0}.lk-t .lname{overflow-wrap:anywhere}
+.lk-act{display:flex;gap:0;flex:none;margin:-4px -6px 0 0}
+.lk-meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:12px;color:var(--muted)}
+.lk-c{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.lk-c i{width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 1px var(--line)}
+.lk-c i.lp{border-radius:50% 50% 50% 50%/40% 40% 60% 60%}
+.lk-open{padding:0;margin:0;border:0;background:none}
+.lk-img.pc.n3 .lk-p:last-child,.lk-img.pc.n5 .lk-p:last-child{grid-column:1/3}
+.lk-meta{gap:3px 10px;font-size:11.5px}
+.lk-grid{margin-top:22px}

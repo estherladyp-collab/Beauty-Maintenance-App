@@ -746,10 +746,23 @@ function closet(){
       ${open?`<div class="grid accbody">${g.list.map(o=>`<button class="item" data-act="closetopen" data-v="${o.it.id}:${o.v.id}" aria-label="${esc(o.it.name)}, ${esc(colorName(o.v.color))}"><div class="pic">${pic(o.it,o.v)}</div><h3>${esc(o.it.name)}</h3><p>${esc(colorName(o.v.color))}${wearInfo(o.it,o.v)}</p></button>`).join('')}</div>`:''}</section>`; }).join('')}</div>`;
 }
 function foldBox(k,label,inner){ return `<div class="fold"><button class="foldh" data-act="fold" data-v="${k}" aria-expanded="${!!ui.fold[k]}"><span>${label}</span><i aria-hidden="true">${ui.fold[k]?'−':'+'}</i></button>${ui.fold[k]?`<div class="foldb">${inner}</div>`:''}</div>`; }
+function lookCover(l){
+  const pics = (l.pics||[]).map(id => (state.pics||[]).find(p => p.id===id)).filter(Boolean).slice(0,4);
+  if (pics.length) return `<div class="lk-img ph n${pics.length}">${pics.map(p=>`<img src="${p.src}" alt="">`).join('')}</div>`;
+  const order = l.slots.dress ? ['outer','dress','jewel','bag','shoes'] : ['outer','top','bottom','jewel','bag','shoes'];
+  const its = order.map(sl => { const it = state.items.find(i => i.id===l.slots[sl]); return it && `<div class="lk-p">${pic(it, vOf(it, l.vars&&l.vars[sl]))}</div>`; }).filter(Boolean);
+  if (its.length) return `<div class="lk-img pc n${Math.min(its.length,6)}">${its.join('')}</div>`;
+  return `<div class="lk-img lk-empty"><span>Add pieces</span></div>`;
+}
+function lookMeta(l){
+  const b = l.beauty || {}, n = NAILS.find(x => x[0]===b.nails), li = LIPS.find(x => x[0]===b.lips);
+  const parts = [n && `<span class="lk-c"><i style="background:${n[1]}"></i>${esc(n[0])}</span>`, li && `<span class="lk-c"><i class="lp" style="background:${li[1]}"></i>${esc(li[0])}</span>`, b.hair && `<span class="lk-c">${esc(b.hair)}</span>`].filter(Boolean);
+  return parts.length ? `<div class="lk-meta">${parts.join('')}</div>` : '';
+}
 function looks(){
   return `<header class="dayhead"><span class="eyebrow">${state.looks.length} saved</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">Looks</h1><button class="roundbtn" data-act="newlook" aria-label="Create a look">＋</button></div></header>
-  ${state.looks.length?`<div class="grid wgrid looksgrid">${state.looks.map(l=>`<div class="lookc"><button class="lookb" data-act="editlook" data-v="${l.id}" aria-label="Edit ${esc(l.name)}">${board(l)}</button>
-    <div class="row between" style="flex-wrap:nowrap;margin-top:12px;gap:6px"><div style="min-width:0"><h3 class="lname">${esc(l.name)}</h3>${l.occasion?`<span class="status">${esc(l.occasion)}</span>`:''}</div><div class="row" style="gap:2px;flex-wrap:nowrap"><button class="iconb" data-act="shoplook" data-v="${l.id}" aria-label="Shop this look">${CART}</button><button class="iconb" data-act="dellook" data-v="${l.id}" aria-label="Delete ${esc(l.name)}">✕</button></div></div></div>`).join('')}</div>`
+  ${state.looks.length?`<div class="lk-grid">${state.looks.map(l=>`<div class="lk-card"><button class="lk-open" data-act="editlook" data-v="${l.id}" aria-label="Edit ${esc(l.name)}">${lookCover(l)}</button>
+    <div class="lk-row"><div class="lk-t"><h3 class="lname">${esc(l.name)}</h3>${l.occasion?`<span class="status">${esc(l.occasion)}</span>`:''}</div><div class="lk-act"><button class="iconb" data-act="shoplook" data-v="${l.id}" aria-label="Shop this look">${CART}</button><button class="iconb" data-act="dellook" data-v="${l.id}" aria-label="Delete ${esc(l.name)}">✕</button></div></div>${lookMeta(l)}</div>`).join('')}</div>`
   :`<button class="blank" data-act="newlook"><span>＋</span>Build your first look. Pick pieces, nails, lips and hair.</button>`}
   <section class="folds">${foldBox('rail','Start from a picture',startRail())}</section>`;
 }
