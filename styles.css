@@ -955,8 +955,8 @@ h2{font-size:22px}
 
 /* ---------- metallic gold v1: same gold as the logo monogram, in every theme ---------- */
 :root{
-  --g-hi:color-mix(in srgb,var(--gold) 46%,#fff0b8);
-  --g-lo:color-mix(in srgb,var(--gold) 68%,#7a520c);
+  --g-hi:color-mix(in srgb,var(--gold) 52%,#fff7e0);
+  --g-lo:color-mix(in srgb,var(--gold) 76%,#5a3a14);
   --goldgrad:linear-gradient(155deg,var(--g-hi) 0%,var(--gold) 36%,var(--g-lo) 68%,color-mix(in srgb,var(--gold) 88%,#fff) 100%);
   --goldglow:color-mix(in srgb,var(--gold) 58%,transparent);
   --lift:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(60,32,8,.28),0 8px 18px -8px var(--goldglow),0 2px 4px rgba(0,0,0,.14);
