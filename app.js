@@ -181,7 +181,7 @@ function applyTheme(t){
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = bg;
 }
 /* ---------- cloud backup of plans/looks/status (private per person, survives cleared browser data) ---------- */
-const LIGHT = ['appts','looks','plan','routine','log','wears','theme','shops','snaps','products','series'];
+const LIGHT = ['order','appts','looks','plan','routine','log','wears','theme','shops','snaps','products','series'];
 let dbc = null, lastSent = {}, upTimer = null, cloudOk = false, assetsNs = null, dlNs = null;
 const withTimeout = (p,ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
 async function dbInit(){
@@ -213,10 +213,10 @@ async function syncUp(){
   for(const k of Object.keys(l)){ const str = JSON.stringify(l[k]); if(str===lastSent[k] || str.length>240000) continue;
     try { await dbc.doc('muse_'+k).set({j:str}); lastSent[k] = str; } catch(e){} }
 }
-let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[], snaps:[], products:[], series:{}};
+let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[], snaps:[], products:[], series:{}, order:{}};
 let booted = false;
 function init(){
-  state.appts = state.appts || []; state.snaps = state.snaps || []; state.products = state.products || []; state.series = state.series || {};
+  state.appts = state.appts || []; state.snaps = state.snaps || []; state.products = state.products || []; state.series = state.series || {}; state.order = state.order || {};
   if(window.MUSE_PRODUCTS){ state.seedProd = state.seedProd || {}; if(state.seedProd1) state.seedProd['prod-bq-venus'] = true; window.MUSE_PRODUCTS.forEach(p => { if(state.seedProd[p.id]) return; state.seedProd[p.id] = true; if(!state.products.some(x => x.id===p.id)) state.products.push({...p}); }); }
   if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
   state.seedAdded = state.seedAdded || {};
@@ -427,6 +427,13 @@ function extendSeries(){
     while(next <= limit && guard++ < 60){ if(!state.appts.some(a => a.seriesId===id && a.date===next)) state.appts.push(seriesOccurrence(sr, id, next)); sr.last = next; next = addDays(next, sr.every); added++; } });
   return added;
 }
+
+/* ---------- arrange plan cards of a day ---------- */
+function orderPlans(list, date){
+  const ord = (state.order||{})[date] || [];
+  return [...list].sort((x,y) => { const i = ord.indexOf(x.id), j = ord.indexOf(y.id);
+    if(i>=0 && j>=0) return i-j; if(i>=0) return -1; if(j>=0) return 1; return (x.time||'').localeCompare(y.time||''); });
+}
 function weekStrip(){
   const sel = ui.calSel || isoDay(), td = isoDay();
   const base = new Date(sel+'T12:00:00'); base.setDate(base.getDate() - ((base.getDay()+6)%7));
@@ -439,12 +446,12 @@ function weekStrip(){
 function today(){
   const td = isoDay(), sel = ui.calSel || td, isToday = sel===td;
   const dt = new Date(sel+'T12:00:00');
-  const plans = state.appts.filter(a => a.date===sel && !a.done).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
+  const plans = orderPlans(state.appts.filter(a => a.date===sel && !a.done), sel); ui.arr = plans.map(a=>a.id);
   return `
   <header class="dayhead"><span class="eyebrow">${isToday?'Today':dt.toLocaleDateString('en-GB',{weekday:'long'})}</span><h1 class="page-title">${dt.toLocaleDateString('en-GB',{day:'numeric'})} <em>${dt.toLocaleDateString('en-GB',{month:'long'})}</em></h1></header>
   <section class="tight">${weekStrip()}</section>
   ${isToday?snapPrompt():''}
-  <section class="plans"><div class="row between"><h2>${plans.length?(plans.length===1?'One plan':plans.length+' plans'):'Free day'}</h2><button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div>
+  <section class="plans"><div class="row between"><h2>${plans.length?(plans.length===1?'One plan':plans.length+' plans'):'Free day'}</h2><div class="row" style="gap:8px;flex-wrap:nowrap">${plans.length>1?`<button class="btn small ghost" data-act="arrange">${ui.arrange?'Done':'Arrange'}</button>`:''}<button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div></div>
     ${plans.length?`<div class="gallery big" style="margin-top:16px">${plans.map(apptGCard).join('')}</div>`:quickPlan('Nothing planned yet. What is next?')}
   </section>
   ${stayReady()}`;
@@ -456,7 +463,7 @@ function apptGCard(a){
   const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
   const when = a.date!==td && a.date!==ui.calSel ? fmtDate(a.date) : '';
   const meta = [when, a.time, a.seriesId?repeatLabel((state.series[a.seriesId]||{}).every):'', a.where==='home'?'At home':'', tot?(open?`${open} to prep`:'Prepped'):''].filter(Boolean).map(esc).join(' · ');
-  return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart ${p?'photo':'plain'}">${art}<span class="gx" role="button" aria-label="Delete this plan" data-act="delplan" data-v="${a.id}">✕</span><span class="gcap"><b>${esc(a.title)}</b>${meta?`<span class="status">${meta}</span>`:''}</span></span></button>`;
+  return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart ${p?'photo':'plain'}">${art}${ui.arrange?`<span class="mvb"><span class="mv" role="button" aria-label="Move earlier" data-act="mvplan" data-v="${a.id}:-1">‹</span><span class="mv" role="button" aria-label="Move later" data-act="mvplan" data-v="${a.id}:1">›</span></span>`:`<span class="gx" role="button" aria-label="Delete this plan" data-act="delplan" data-v="${a.id}">✕</span>`}<span class="gcap"><b>${esc(a.title)}</b>${meta?`<span class="status">${meta}</span>`:''}</span></span></button>`;
 }
 function prepToday(){
   const td = isoDay(), lim = addDays(td,14);
@@ -839,14 +846,14 @@ function calendar(){
     const dots = as.filter(inFil).slice(0,3).map(a=>`<i style="background:${typeInfo(a.type)[2]}"></i>`).join('');
     cells += `<button class="cd ${iso===td?'today':''} ${iso===ui.calSel?'sel':''} ${due[iso]?'due':''}" data-act="calsel" data-v="${iso}" aria-label="${fmtDate(iso)}${as.length?', '+as.length+' plan'+(as.length>1?'s':''):''}"><span>${d}</span><span class="dots">${dots}</span></button>`;
   }
-  const sel = ui.calSel, dayAppts = state.appts.filter(a=>a.date===sel && inFil(a)).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
+  const sel = ui.calSel, dayAppts = orderPlans(state.appts.filter(a=>a.date===sel && inFil(a)), sel); ui.arr = dayAppts.map(a=>a.id);
   const dayDue = due[sel] || [];
   const upcoming = state.appts.filter(a=>!a.done && a.date>=td && inFil(a)).sort((x,y)=>(x.date+(x.time||'')).localeCompare(y.date+(y.time||''))).slice(0,5);
   const mname = first.toLocaleDateString('en-GB',{month:'long'});
   return `<header class="dayhead"><span class="eyebrow">${y}</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">${mname}</h1><div class="row" style="gap:4px;flex-wrap:nowrap"><button class="roundbtn ghost" data-act="calprev" aria-label="Previous month">‹</button><button class="roundbtn ghost" data-act="calnext" aria-label="Next month">›</button></div></div></header>
   <div class="chips catrow" role="group" aria-label="Category">${CFIL.map(c=>`<button class="chip" aria-pressed="${ui.cfil===c[0]}" data-act="cfil" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
   <div class="cal" style="margin-top:18px"><div class="cal-h">${DAYS.map(d=>`<span>${d[0]}</span>`).join('')}</div><div class="cal-g">${cells}</div></div>
-  <section class="plans"><div class="row between"><h2>${fmtDate(sel)}</h2><button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div>
+  <section class="plans"><div class="row between"><h2>${fmtDate(sel)}</h2><div class="row" style="gap:8px;flex-wrap:nowrap">${dayAppts.length>1?`<button class="btn small ghost" data-act="arrange">${ui.arrange?'Done':'Arrange'}</button>`:''}<button class="btn small" data-act="newappt" data-v="">＋ Plan</button></div></div>
   ${dayAppts.length?`<div class="gallery big" style="margin-top:16px">${dayAppts.map(apptGCard).join('')}</div>`:''}
   <div class="list" style="margin-top:14px">${dayDue.map(x=>`<div class="task">${ticon(TYPE_ICON[x.t]||'other', true)}<div class="grow"><h3>${esc(x.r[1])}</h3><div class="status">Due on this day</div></div><button class="btn small ghost" data-act="newappt" data-v="${x.t}">Book</button></div>`).join('')}</div>
   ${!dayAppts.length&&!dayDue.length?quickPlan('Nothing planned for this day.'):''}</section>
@@ -937,7 +944,7 @@ function sheet(){
       <div class="folds" style="margin:6px 0 0">
       ${foldBox('ap_prep',`${a.where==='home'?'Get ready':'Prep list'}<small>${a.prep.length?` ${openN} to do`:''}</small>`,`<div class="prep">${a.prep.map((p,i)=>`<div class="chk"><input type="checkbox" id="pc${i}" data-act="preptoggle" data-v="${i}" ${p.done?'checked':''}><label for="pc${i}" style="display:block;text-transform:none;letter-spacing:0;font-size:14px;color:var(--espresso);flex:1"><span>${esc(p.t)}<small>${esc(p.when)}</small></span></label><button class="iconb" data-act="prepdel" data-v="${i}" aria-label="Remove ${esc(p.t)}">✕</button></div>`).join('')}</div>
       <div class="row" style="gap:8px;flex-wrap:nowrap;margin-top:10px"><input type="text" id="prepnew" placeholder="Add something to prep" maxlength="80" style="flex:1"><select id="prepwhen" style="width:auto"><option>Day before</option><option>Morning of</option><option>Bring</option></select><button class="btn small" data-act="prepadd">Add</button></div>`)}
-      ${foldBox('ap_pics',`Reference pictures<small>${pics.length?` ${pics.length}`:''}</small>`,`<div class="picked">${pics.map(p=>`<img src="${p.src}" alt="">`).join('')}<button class="slotbtn" style="width:auto;min-height:72px" data-act="apppics"><span class="thumb">＋</span><span><b>${pics.length?'Change pictures':'Choose pictures'}</b></span></button></div>`)}
+      ${foldBox('ap_pics',`Reference pictures<small>${pics.length?` ${pics.length}`:''}</small>`,`<div class="picked">${pics.map((p,i)=>`<span class="pk"><img src="${p.src}" alt="">${pics.length>1?`<span class="pkb"><button data-act="mvapppic" data-v="${i}:-1" aria-label="Move earlier" ${i===0?'disabled':''}>‹</button><button data-act="mvapppic" data-v="${i}:1" aria-label="Move later" ${i===pics.length-1?'disabled':''}>›</button></span>`:''}${i===0&&pics.length>1?'<small class="cover">Cover</small>':''}</span>`).join('')}<button class="slotbtn" style="width:auto;min-height:72px" data-act="apppics"><span class="thumb">＋</span><span><b>${pics.length?'Change pictures':'Choose pictures'}</b></span></button></div>`)}
       </div>
       <div class="row" style="margin-top:14px;gap:10px"><button class="btn" data-act="saveappt" style="flex:1">Save</button><button class="btn ghost" data-act="close">Cancel</button></div>
       ${s.isNew?'':`<div class="row" style="gap:18px"><button class="linkbtn" data-act="doneappt">${a.done?'Reopen':'Mark done'}</button><button class="linkbtn" data-act="delappt" style="color:#a4462b;border-color:rgba(164,70,43,.4)">Delete</button></div>`}</div>`;
@@ -998,7 +1005,7 @@ function setToast(t){ toast=t; render(); setTimeout(()=>{toast='';render();},220
 function logToday(){ const t=isoDay(); if(!state.log.includes(t)) state.log.push(t); }
 
 const actions = {
-  tab(v){ ui.enter=true; ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
+  tab(v){ ui.arrange=false; ui.enter=true; ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
   cat(v){ ui.cat=v; ui.sty='all'; ui.occ='all'; ui.bg='all'; },
   bg(v){ ui.bg=v; ui.sty='all'; },
   sty(v){ ui.sty=v; },
@@ -1087,7 +1094,7 @@ const actions = {
   togglepic(v){ const d=ui.draft; d.pics=d.pics||[]; const i=d.pics.indexOf(v); if(i>=0) d.pics.splice(i,1); else d.pics.push(v); },
   calprev(){ const c=ui.cal; c.m--; if(c.m<0){c.m=11;c.y--;} },
   calnext(){ const c=ui.cal; c.m++; if(c.m>11){c.m=0;c.y++;} },
-  calsel(v){ ui.calSel=v; },
+  calsel(v){ ui.calSel=v; ui.arrange=false; },
   newappt(v,el){ const t=v||'hair'; ui.adraft={id:uid(),type:t,title:defTitle(t,'salon'),where:'salon',date:(el&&el.currentTarget&&el.currentTarget.dataset.today)?isoDay():(ui.calSel||isoDay()),time:'',notes:'',prep:prepFor(t,'salon'),pics:[],edited:false,done:false};
     ui.sheet={type:'appt',isNew:true}; },
   editappt(v){ ui.adraft=JSON.parse(JSON.stringify(state.appts.find(a=>a.id===v))); ui.sheet={type:'appt'}; },
@@ -1164,6 +1171,11 @@ const actions = {
   stage(v){ ui.stage = ui.stage===v ? 'all' : v; },
   autoweek(){ autoWeek(); },
   more(){ ui.more=!ui.more; },
+  arrange(){ ui.arrange = !ui.arrange; },
+  mvplan(v){ const [id,d] = v.split(':'), ids = [...(ui.arr||[])], i = ids.indexOf(id), j = i + (+d); if(i<0 || j<0 || j>=ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]]; const date = (state.appts.find(a=>a.id===id)||{}).date; if(!date) return; state.order[date] = ids; save(); },
+  mvapppic(v){ const [i,d] = v.split(':').map(Number), p = ui.adraft.pics, j = i + d; if(j<0 || j>=p.length) return; [p[i], p[j]] = [p[j], p[i]]; ui.adraft.edited = true; },
+
   setrepeat(v){ ui.adraft.repeat = v; },
   stoprepeat(){ const a=ui.adraft, sid=a.seriesId; if(!sid) return; const sr=state.series[sid]; if(sr) sr.stopped = true;
     state.appts = state.appts.filter(x => !(x.seriesId===sid && x.date>a.date && !x.done)); save(); ui.sheet=null; ui.adraft=null; setToast('Stopped repeating.'); },
