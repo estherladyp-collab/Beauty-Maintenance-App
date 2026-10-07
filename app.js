@@ -479,10 +479,10 @@ function lookLine(l){ const b = l && l.beauty; if(!b) return ''; const sc = scen
   return [b.hair, b.nails, b.lips, sc && scentShort(sc)].filter(Boolean).map(esc).join(' · '); }
 function lookThumbs(l){ const ps = ((l&&l.pics)||[]).map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean).slice(0,2);
   return ps.length ? `<span class="gpics">${ps.map(p=>`<img src="${p.src}" alt="">`).join('')}</span>` : ''; }
-function lookPlanArt(l){
+function lookPlanArt(l, extra){
   const order = l.slots.dress ? ['outer','dress','jewel','bag','shoes'] : ['outer','top','bottom','jewel','bag','shoes'];
   const pieces = order.map(sl => { const it = state.items.find(i => i.id===l.slots[sl]); return it && `<span class="gc-p">${pic(it, vOf(it, l.vars&&l.vars[sl]))}</span>`; }).filter(Boolean);
-  const pics = (l.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean);
+  const pics = [...new Set([...(l.pics||[]), ...(extra||[])])].map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean);
   const hp = pics.find(x => x.tag==='Hair'), np = pics.find(x => x.tag==='Nails'), b = l.beauty || {}, nc = NAILS.find(x => x[0]===b.nails);
   const tiles = [];
   if(hp) tiles.push(`<span class="gc-t"><img src="${hp.src}" alt=""><small>Hair${b.hair?' · '+esc(b.hair):''}</small></span>`);
@@ -497,7 +497,7 @@ function lookPlanArt(l){
 function apptGCard(a){
   const td = isoDay();
   const l = a.lookId && state.looks.find(x => x.id===a.lookId), p = (a.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
-  const comp = l ? lookPlanArt(l) : '';
+  const comp = l ? lookPlanArt(l, a.pics) : '';
   const art = l ? (comp || `<div class="gboard thumbboard">${boardParts(l).core}</div>`) : p ? `<img src="${p.src}" alt="">` : `<div class="gico">${ticon(TYPE_ICON[a.type]||'other', false)}</div>`;
   const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
   const when = a.date!==td && a.date!==ui.calSel ? fmtDate(a.date) : '';
@@ -729,9 +729,10 @@ function wardrobe(){
   ${ui.wtools?`<div class="wtools"><div class="row" style="gap:8px"><button class="btn small ghost" data-act="add">Add a piece</button><button class="btn small ghost" data-act="smart">Smart merge</button><button class="btn small ghost" data-act="selmode">${ui.selMode?'Cancel':'Select'}</button></div>
     ${ui.cat!=='all'&&styles.length>1?chips('Style','sty',[['all','All styles'],...styles.map(s=>[s,s])],'sty'):''}
     ${occs.length?chips('Occasion','occ',[['all','Any occasion'],...occs.map(o=>[o,o])],'occ'):''}</div>`:''}
-  ${list.length?`<div class="grid wgrid">${list.map(itemCard).join('')}</div>`:`<div class="empty-state" style="margin-top:18px">${ui.stage==='all'?'Nothing here yet. Upload photos of your clothes to start.':'Nothing in this stage yet. Open a piece and move a color here.'}</div>`}
+  ${list.length?(ui.cat==='all'?WCATS.map(c=>{ const g=list.filter(i=>wcatOf(i)===c[0]); return g.length?`<h2 class="wsec">${c[1]}<small>${g.length}</small></h2><div class="grid wgrid">${g.map(itemCard).join('')}</div>`:''; }).join(''):`<div class="grid wgrid">${list.map(itemCard).join('')}</div>`):`<div class="empty-state" style="margin-top:18px">${ui.stage==='all'?'Nothing here yet. Upload photos of your clothes to start.':'Nothing in this stage yet. Open a piece and move a color here.'}</div>`}
   ${ui.selMode?`<div class="selbar"><span>${ui.sel.length} selected</span><button class="btn small" data-act="mergesel">Merge as colors</button></div>`:''}`;
 }
+function wcatOf(it){ return it.cat==='bottom' ? (bottomGroup(it)==='Skirts'?'skirts':'pants') : it.cat; }
 function itemCard(it){
   const v = stageVariant(it), on = ui.selMode && ui.sel.includes(it.id);
   const stl = (STAGES.find(s=>s[0]===v.status)||STAGES[0])[1];
