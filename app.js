@@ -304,7 +304,7 @@ async function boot(){
 document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); syncUp(); } });
 window.addEventListener('pagehide', () => { persist(); flushDraft(); syncUp(); });
 
-let ui = {fold:{}, tab:'today', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
+let ui = {fold:{}, tab:'home', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
 let toast = '';
 
 /* ---------- garments ---------- */
@@ -385,7 +385,9 @@ function lookNotes(look){
 }
 
 /* ---------- views ---------- */
+const HOME_SVG = '<path d="M4 11.2 12 4l8 7.2V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/>';
 const NAV = [
+  ['home','Home',['home'],HOME_SVG],
   ['today','Today',['today'],'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/>'],
   ['plan','Plan',['calendar'],'<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M8 3v4M16 3v4"/>'],
   ['care','Care',['beauty','mood'],'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 16.5v3M17 18h3"/>'],
@@ -396,7 +398,7 @@ const SUBS = {care:[['beauty','Routine'],['mood','Inspiration']], wardrobe:[['wa
 function seg(tab){ const g = NAV.find(n => n[2].includes(tab)); const subs = g && SUBS[g[0]]; if(!subs) return '';
   return `<div class="segc" role="tablist">${subs.map(x=>`<button role="tab" aria-selected="${tab===x[0]}" data-act="tab" data-v="${x[0]}">${x[1]}</button>`).join('')}</div>`; }
 function view(){
-  const body = ui.draft ? builder() : seg(ui.tab) + {today,wardrobe,closet,looks,snaps,mood,calendar,beauty}[ui.tab]();
+  const body = ui.draft ? builder() : seg(ui.tab) + {home,today,wardrobe,closet,looks,snaps,mood,calendar,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true"><img class="medal d" src="${(window.MUSE_LOGO||{}).medal||''}" alt=""><img class="medal g" src="${(window.MUSE_LOGO||{}).gold||''}" alt="">Maintaining You</div>
   <main class="shell ${ui.enter?'enter':''}"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${NAV.map(g=>`<button data-act="tab" data-v="${(ui.last&&ui.last[g[0]])||g[2][0]}" ${g[2].includes(ui.tab)&&!ui.draft?'aria-current="page"':''}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${g[3]}</svg><span>${g[1]}</span></button>`).join('')}</div></nav>
@@ -447,6 +449,24 @@ function weekStrip(){
     return `<button class="wd ${iso===sel?'sel':''} ${iso===td?'now':''}" data-act="calsel" data-v="${iso}" aria-label="${fmtDate(iso)}${as.length?', '+as.length+' plan'+(as.length>1?'s':''):''}" ${iso===sel?'aria-current="date"':''}><small>${n[0]}</small><b>${d.getDate()}</b><span class="dots">${dots}</span></button>`; }).join('');
   const m = base.toLocaleDateString('en-GB',{month:'long'});
   return `<div class="weekbar"><button class="wnav" data-act="weekshift" data-v="-7" aria-label="Previous week">‹</button><span class="eyebrow">${m}</span><button class="wnav" data-act="weekshift" data-v="7" aria-label="Next week">›</button></div><div class="wstrip">${days}</div>`;
+}
+const navIcon = id => (NAV.find(n => n[0]===id)||[])[3] || '';
+function home(){
+  const td = isoDay(), n = state.appts.filter(a => a.date===td && !a.done).length;
+  const h = new Date().getHours(), greet = h<12 ? 'Good morning' : h<18 ? 'Good afternoon' : 'Good evening';
+  const svg = d => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const tiles = [
+    ['Plan an outing','Outfit, hair and nails for the day','newappt','outfit','<path d="M12 21s-6.5-5.6-6.5-10.2A6.5 6.5 0 0 1 12 4.3a6.5 6.5 0 0 1 6.5 6.5C18.5 15.400 12 21 12 21z"/><circle cx="12" cy="10.800" r="2.300"/>'],
+    ['Wardrobe','Wishlist and what you own','tab','wardrobe',navIcon('wardrobe')],
+    ['Create a look','Outfit, hair, nails and scent','newlook','',navIcon('looks')],
+    ['Care routine','Nails, lashes, skin and scent','tab','beauty',navIcon('care')],
+    ['Calendar','All your plans at a glance','tab','calendar',navIcon('plan')],
+    ['Snap a look','Save your best looks','tab','snaps','<path d="M4 8.500a2 2 0 0 1 2-2h2l1.200-1.800h5.600L16 6.500h2a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.500" r="3.200"/>'],
+    ['Inspiration','Pictures to plan from','tab','mood','<rect x="4" y="5" width="16" height="14" rx="2.500"/><circle cx="9" cy="10" r="1.600"/><path d="M4.500 17l4.500-4.500 3.500 3.500 2.500-2.500 4.500 4"/>']
+  ];
+  return `<header class="dayhead"><span class="eyebrow">${greet}</span><h1 class="page-title">What would you like <em>to do?</em></h1></header>
+  <button class="hm-today" data-act="tab" data-v="today"><span class="hm-ic">${svg(navIcon('today'))}</span><span class="hm-t"><b>Today</b><small>${n?`${n} plan${n===1?'':'s'} for today`:'Nothing planned yet'}</small></span><span class="hm-go" aria-hidden="true">›</span></button>
+  <div class="hm-grid">${tiles.map(t=>`<button class="hm-tile" data-act="${t[2]}"${t[3]?` data-v="${t[3]}"`:''}${t[2]==='newappt'?' data-today="1"':''}><span class="hm-ic">${svg(t[4])}</span><b>${t[0]}</b><small>${t[1]}</small></button>`).join('')}</div>`;
 }
 function today(){
   const td = isoDay(), sel = ui.calSel || td, isToday = sel===td;
