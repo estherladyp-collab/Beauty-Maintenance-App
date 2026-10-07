@@ -1088,7 +1088,3 @@ h2{font-size:22px}
 .ls-m.has img{height:auto;object-fit:contain;object-position:top;border-radius:12px}
 .ls-m.has{display:block;align-self:start;background:none}
 .ls-m.has img{width:100%;height:auto;display:block}
-.ls-sw{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
-.ls-sw span{font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:5px 9px;border-radius:99px;border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);color:#3a2a22;background:transparent}
-.ls-sw span[aria-pressed=true]{background:var(--goldgrad);background-color:var(--gold);color:#241713;border-color:transparent}
-.ls-sw span{cursor:pointer}
