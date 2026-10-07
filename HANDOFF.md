@@ -35,3 +35,9 @@ Maintaining You ist Esthers visueller Garderoben- und Beauty-Planer (Körperform
 - Capabilities beim Veröffentlichen: db, user, downloads, assets.
 - Offen: Schrift der Überschriften (Vorschläge Cormorant Garamond, Playfair Display, Marcellus), Look-Builder und Produktansicht in Wardrobe angleichen, Shop-Links bei Produkten.
 - Netzwerk der Cloud-Umgebung ist für einige Seiten freigegeben (Referenzseiten ansehen geht).
+
+## Stand 7. Oktober 2026 (Ergänzung)
+- Start-Animation (`splash.js`, Markup in `index.html`, Farben folgen dem gewählten Theme über `localStorage 'muse.splash'`, wechselnde Zeile darunter).
+- Looks-Seite neu (`lookCover`, `lookMeta`, Klassen `.lk-*`): Foto- oder Teile-Cover, Beauty als kleine Chips.
+- Neuer Care-Bereich "Choose your scent" (`scent`, Produkte unter "Fragrance") mit 4 Zara-Parfüms als Seed (`seed-products.js`), Icon in `icons-img.js`.
+- Offen wie vorher: Überschriften-Schrift, Look-Builder/Produktansicht angleichen, Shop-Links.

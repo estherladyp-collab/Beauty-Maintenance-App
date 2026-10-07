@@ -58,7 +58,7 @@ const ART = {
   outfit: SV('<path d="M12.500 3.500c.5 2.700 2 4 3.500 4s3-1.300 3.500-4l3.200 2.800-2.600 5.700L23.500 28H8.500l2.900-16-2.600-5.700z" fill="url(#dr)"/><path d="M12.500 3.500c.5 2.700 2 4 3.500 4s3-1.300 3.500-4" stroke="#8d6a3a" stroke-width="1" fill="none"/><path d="M13 14.500c-.8 4-1 8-1.500 12" stroke="#fff" stroke-opacity=".55" stroke-width="1.400" fill="none" stroke-linecap="round"/><rect x="11.500" y="12.200" width="9" height="1.800" rx=".9" fill="#c79a4e"/>', G('dr','#ecd9bd','#c9a273')),
   other: SV('<path d="M16 3l3.200 9.300L28.500 16l-9.300 3.200L16 29l-3.200-9.800L3.500 16l9.300-3.700z" fill="url(#sp)"/><path d="M13.500 12.500 16 6" stroke="#fff" stroke-opacity=".6" stroke-width="1.400" stroke-linecap="round"/>', G('sp','#ecd08e','#b48a4c'))
 };
-const ROUTINE_ICON = {nails:'nails',lashes:'lashes',brows:'brows',hairwash:'wash',hairtrim:'scissors',face:'face',body:'body',lips:'lips',pedi:'polish'};
+const ROUTINE_ICON = {nails:'nails',lashes:'lashes',brows:'brows',hairwash:'wash',hairtrim:'scissors',face:'face',body:'body',lips:'lips',pedi:'polish',scent:'scent'};
 const TYPE_ICON = {hair:'hair',nails:'nails',lashes:'lashes',brows:'brows',skin:'face',pedi:'polish',outfit:'outfit',other:'other'};
 function ticon(name, ok){
   const IM = window.MUSE_ICONS||{}; if(IM[name]) return `<span class="ticon photo"><img src="${IM[name]}" alt=""></span>`;
@@ -145,7 +145,7 @@ const hairName = hex => (HCOLORS.find(c => c[1]===hex)||['Hair color'])[0];
 const ROUTINE = [
   ['nails','Nail fill or fresh set',21],['lashes','Lash lift or fill',28],['brows','Brow shaping',21],
   ['hairwash','Wash + deep condition',7],['hairtrim','Trim or hair treatment',56],
-  ['face','Exfoliate + face mask',7],['body','Body scrub + oil',7],['lips','Lip scrub + mask',7],['pedi','Pedicure',28]
+  ['face','Exfoliate + face mask',7],['body','Body scrub + oil',7],['lips','Lip scrub + mask',7],['pedi','Pedicure',28],['scent','Choose your scent',7]
 ];
 
 const PCHIPS = [['all','All'],['fav','Favorites'],...TAGS.map(t=>[t,t])];
@@ -621,7 +621,7 @@ function snapView(s){
   <div class="row" style="gap:18px;margin-top:14px"><button class="linkbtn" data-act="favsnap" data-v="${sn.id}">${sn.fav?'Not my pick':'Make it look of the week'}</button><button class="linkbtn" data-act="delsnap" data-v="${sn.id}" style="color:#a4462b;border-color:rgba(164,70,43,.4)">Delete</button><button class="linkbtn" data-act="close">Close</button></div></div>`;
 }
 const eur = n => Number(n).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
-const PROD_AREAS = [['lashes','Lashes'],['nails','Nails'],['brows','Brows'],['hairwash','Hair care'],['hairtrim','Hair trim'],['face','Skincare'],['body','Body care'],['lips','Lips'],['pedi','Feet']];
+const PROD_AREAS = [['lashes','Lashes'],['nails','Nails'],['brows','Brows'],['hairwash','Hair care'],['hairtrim','Hair trim'],['face','Skincare'],['body','Body care'],['lips','Lips'],['pedi','Feet'],['scent','Fragrance']];
 const areaName = id => (PROD_AREAS.find(a => a[0]===id)||[0,'Other'])[1];
 function prodCard(p){ return `<button class="prodc" data-act="editprod" data-v="${p.id}" aria-label="${esc(p.name)}">${p.photo?`<img src="${p.photo}" alt="">`:`<span class="prodph">${ticon(ROUTINE_ICON[p.area]||'other',false)}</span>`}<span class="prodt"><b>${esc(p.name)}</b><small>${p.price?eur(p.price)+' · ':''}${esc(p.shop||'')}</small></span></button>`; }
 function prodStrip(rid){ const l = (state.products||[]).filter(p => p.area===rid); return l.length ? `<div class="prodstrip">${l.map(prodCard).join('')}</div>` : ''; }
