@@ -1,6 +1,9 @@
 /* start animation: logo, "Maintaining" from the left, "You" from the right, tagline already there */
 (function(){
   var el = document.getElementById('splash'); if(!el) return;
+  function paint(c){ if(!c || !c.bg) return; el.style.background = c.bg; el.style.setProperty('--sp-ink', c.ink); el.style.setProperty('--sp-ac', c.ac); el.classList.toggle('dark', !!c.dark); }
+  window.MUSE_SPLASH = function(c){ paint(c); try { localStorage.setItem('muse.splash', JSON.stringify(c)); } catch(e){} };
+  try { paint(JSON.parse(localStorage.getItem('muse.splash'))); } catch(e){}
   var t0 = Date.now(), tGo = 0, HOLD = 1800, MAX = 5000, gone = false;
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function start(){ if(tGo) return; tGo = Date.now(); el.classList.add('go'); }

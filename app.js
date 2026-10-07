@@ -179,6 +179,7 @@ function applyTheme(t){
   set('--line',`rgba(${rgb(ink)},.16)`); set('--muted',`rgba(${rgb(ink)},.62)`); set('--navbg',`rgba(${rgb(bg)},.93)`);
   document.documentElement.dataset.mode = dark ? 'dark' : 'light';
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = bg;
+  if(window.MUSE_SPLASH) window.MUSE_SPLASH({bg, ink, ac, dark});
 }
 /* ---------- cloud backup of plans/looks/status (private per person, survives cleared browser data) ---------- */
 const LIGHT = ['order','appts','looks','plan','routine','log','wears','theme','shops','snaps','products','series'];
