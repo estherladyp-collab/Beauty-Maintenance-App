@@ -1003,3 +1003,5 @@ h2{font-size:22px}
 .catwrap .catrow .chip{flex:none}
 .catplan{flex:none;white-space:nowrap}
 .catplan{margin-top:8px}
+/* one shared photo background for all garments (matches the cut-out pictures) */
+.item .pic,.tile .tp,.gart,.accbody .item .pic,.gart .gboard .board{background:#e9dfd3}
