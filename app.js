@@ -252,6 +252,7 @@ if(window.MUSE_SEED){
   state.seeded = true;
 }
   (state.pics||[]).forEach(p => { if(p.tag==='Hair' && !p.style){ p.style = p.id==='seed4' ? 'Blowout' : 'Other'; } if(p.tag==='Hair' && !p.hcolor) p.hcolor = '#141010'; if(p.tag==='Hair' && !p.hcat){ p.hcat = p.style==='Braids' ? 'Braids' : ['seed10','seed11','seed12'].includes(p.id) ? 'Wigs' : 'Natural'; } });
+  hairFromPlan();
 }
 
 /* ---------- storage: IndexedDB (big photos fit), autosave, and unfinished-work drafts ---------- */
@@ -1142,7 +1143,7 @@ const actions = {
     if(every && !a.seriesId){ const sid = uid(); a.seriesId = sid; state.series[sid] = {every, last:a.date, stopped:false, tpl:{type:a.type, title:a.title, where:a.where, time:a.time, notes:a.notes, prep:a.prep.map(p=>({t:p.t,when:p.when})), lookId:a.lookId}}; }
     const i=state.appts.findIndex(x=>x.id===a.id); if(i>=0) state.appts[i]=a; else state.appts.push(a);
     if(every) extendSeries();
-    const p=a.date.split('-'); ui.cal={y:+p[0],m:+p[1]-1}; ui.calSel=a.date; save(); ui.sheet=null; ui.adraft=null; },
+    hairFromPlan(); const p=a.date.split('-'); ui.cal={y:+p[0],m:+p[1]-1}; ui.calSel=a.date; save(); ui.sheet=null; ui.adraft=null; },
   doneappt(){ syncAppt(); const a=ui.adraft; a.done=!a.done;
     if(a.done && ROUTINE_OF[a.type]){ state.routine[ROUTINE_OF[a.type]]=a.date; }
     if(a.done){ logToday(); }
@@ -1340,6 +1341,11 @@ function sim(a, b){
   let i=0, u=0; for(let k=0; k<sa.length; k++){ const p=sa[k]==='1', q=sb[k]==='1'; if(p&&q) i++; if(p||q) u++; }
   return u ? i/u : 0;
 }
+function hairFromPlan(){
+  const ids = new Set(); (state.appts||[]).forEach(a => { if(a.type==='hair') (a.pics||[]).forEach(id => ids.add(id)); });
+  let n = 0; (state.pics||[]).forEach(p => { if(ids.has(p.id) && p.tag!=='Hair'){ p.tag='Hair'; p.style=p.style||'Other'; p.hcolor=p.hcolor||'#141010'; p.hcat=p.hcat||'Natural'; n++; } });
+  return n;
+}
 function hairGroups(cat){
   const map = new Map();
   (state.pics||[]).filter(p => p.tag==='Hair' && (!cat || cat==='all' || (p.hcat||'Natural')===cat)).forEach(p => { const k = (p.hcat||'Natural')+'|'+(p.style||'Other'); if(!map.has(k)) map.set(k,[]); map.get(k).push(p); });
@@ -1437,6 +1443,7 @@ async function addFiles(files, mode){
   const inSheet=ui.sheet && (ui.sheet.type==='pics'||ui.sheet.type==='apppics'), tgt=ui.sheet&&ui.sheet.type==='apppics'?ui.adraft:ui.draft;
   if(!inSheet && !(ui.draft && !ui.sheet)) return startSort(files, mode || (ui.tab==='wardrobe'?'ward':'insp'));
   let tag = inSheet ? ui.sheet.tag : (ui.draft && upTag) ? upTag : ui.ptag;
+  if(ui.sheet && ui.sheet.type==='apppics' && ui.adraft && ui.adraft.type==='hair' && !TAGS.includes(tag)) tag = 'Hair';
   if(!TAGS.includes(tag)) tag=TAGS[0];
   state.pics = state.pics||[]; let n=0;
   for (const f of files){ const pr=await prepare(f); if(!pr) continue; const src=pr.src;
