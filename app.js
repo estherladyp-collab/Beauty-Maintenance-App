@@ -164,7 +164,7 @@ const money = n => n ? Number(n).toLocaleString('de-DE',{style:'currency',curren
 function setSt(v, st){ v.status = st; v.have = st==='own'; }
 function migrate(it){ it.occasions = it.occasions || []; (it.variants||[]).forEach(v => { if(!v.status) v.status = v.have ? 'own' : 'wish'; v.have = v.status==='own'; }); if(!it.variants) it.variants=[{id:uid(),color:it.color,photo:it.photo||null,have:!!it.have}]; syncHave(it); }
 /* ---------- colors / themes ---------- */
-const THEMES = [['cream','Cream & gold','#f4ece0','#b48a4c'],['champagne','Champagne','#f5efe4','#b9976a','#2b211b'],['creamgreen','Cream & green','#f2eee3','#b9976a','#1f2e27'],['blush','Blush & rosé gold','#f6e9e4','#b98a78','#3a2622'],['taupe','Greige & bronze','#e9e1d6','#a9825a','#2b2420'],['logo','Logo brown','#25130c','#d7a862','#f5ebdf'],['coffee','Coffee & gold','#2a1b16','#b48a4c'],['forest','Forest & champagne','#1f2e27','#c8a97a'],['noir','Noir & champagne','#151413','#c9a97c'],['midnight','Midnight','#1b2233','#c9a45c']];
+const THEMES = [['cream','Cream & gold','#f4ece0','#c4932a'],['champagne','Champagne','#f5efe4','#c8a04a','#2b211b'],['creamgreen','Cream & green','#f2eee3','#c8a04a','#1f2e27'],['blush','Blush & rosé gold','#f6e9e4','#b98a78','#3a2622'],['taupe','Greige & bronze','#e9e1d6','#b98a35','#2b2420'],['logo','Logo brown','#25130c','#dcae4a','#f5ebdf'],['coffee','Coffee & gold','#2a1b16','#c4932a'],['forest','Forest & champagne','#1f2e27','#d2aa52'],['noir','Noir & champagne','#151413','#d9ad3f'],['midnight','Midnight','#1b2233','#d9ad3f']];
 const hx = h => [1,3,5].map(i => parseInt(h.slice(i,i+2),16));
 const mixc = (a,b,t) => '#'+hx(a).map((v,i)=>Math.round(v+(hx(b)[i]-v)*t).toString(16).padStart(2,'0')).join('');
 function themeNow(){ const t = (state && state.theme) || {}; const p = THEMES.find(x => x[0]===t.id) || THEMES[0];
@@ -173,7 +173,7 @@ function applyTheme(t){
   t = t || themeNow(); const bg = /^#[0-9a-f]{6}$/i.test(t.bg) ? t.bg : '#f4ece0', ac = /^#[0-9a-f]{6}$/i.test(t.accent) ? t.accent : '#b48a4c';
   const [r,g,b] = hx(bg), dark = (0.299*r+0.587*g+0.114*b) < 120, ink = /^#[0-9a-f]{6}$/i.test(t.ink) ? t.ink : dark ? '#f3e8df' : '#241713', R = document.documentElement.style;
   const set = (k,v) => R.setProperty(k,v), rgb = h => hx(h).join(',');
-  set('--milk',bg); set('--espresso',ink); set('--gold',ac); set('--goldtxt', dark ? ac : mixc(ac,'#241713',.32));
+  set('--milk',bg); set('--espresso',ink); set('--gold',ac); set('--goldtxt', dark ? ac : mixc(ac,'#241713',.24));
   if(dark){ set('--card',mixc(bg,'#ffffff',.06)); set('--blush',mixc(bg,'#ffffff',.14)); set('--mocha',mixc(ink,bg,.18)); set('--cocoa',mixc(ink,bg,.35)); set('--hero',mixc(bg,'#ffffff',.07)); }
   else { set('--card',mixc(bg,'#ffffff',.5)); set('--blush',mixc(bg,'#7a5240',.14)); set('--mocha','#4a3128'); set('--cocoa','#7a5240'); set('--hero','#241713'); }
   set('--line',`rgba(${rgb(ink)},.16)`); set('--muted',`rgba(${rgb(ink)},.62)`); set('--navbg',`rgba(${rgb(bg)},.93)`);
