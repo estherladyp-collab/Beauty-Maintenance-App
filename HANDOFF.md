@@ -44,4 +44,3 @@ Maintaining You ist Esthers visueller Garderoben- und Beauty-Planer (Körperform
 - Home = Kalender (früher Plan-Tab) mit eingeklappten Bereichen (Tag, Coming up, 'What would you like to do?' mit Kacheln); Plan-Tab entfernt, `tab('calendar')` führt auf Home.
 - Today-Seite entfernt (Home ist der Kalender). Bilder an Terminen werden nach Terminart getaggt (`picsFromPlan`), Care-Karten zeigen den nächsten geplanten Termin (`plannedFor`).
 - Kleidungsfotos (seed-items.js) freigestellt (rembg birefnet-general-lite) auf einheitlichem Hintergrund #e9dfd3, rev 3; Blazer als Item x9.
-- Look-Blatt (`lookSheet`): Model links, Teile mit Namen, Haar/Nägel/Duft rechts (wie Lookbook-Vorlage). `look.model` = Model-Bild (Upload im Builder). Higgsfield-Rezept für Modelbilder: gpt_image_2_5, quality medium (0,5 Credits), beiger Hintergrund #e9dfd3, Garment-Referenzen.
