@@ -798,7 +798,7 @@ function lookSheet(l, compact){
   if(sc) tiles.push({cap:esc(scentShort(sc)), kind:'Scent', html: sc.photo ? `<img src="${sc.photo}" alt="">` : ticon('scent',false), photo:!!sc.photo});
   const ms = l.models || (l.model ? {long:l.model} : {}), keys = MODEL_KEYS.filter(k => ms[k[0]]), pk = (ms[l.mpick] ? l.mpick : (keys[0]||[])[0]), msrc = pk && ms[pk];
   const sw = keys.length>1 ? `<span class="ls-sw">${keys.map(k=>`<span role="button" tabindex="0" data-act="mpick" data-v="${l.id||'draft'}:${k[0]}" aria-pressed="${pk===k[0]}">${k[1]}</span>`).join('')}</span>` : '';
-  const model = msrc ? `<img src="${msrc}" alt="">${sw}` : `<span class="ls-ph"><svg viewBox="0 0 40 80" aria-hidden="true"><circle cx="20" cy="12" r="8"/><path d="M8 78c0-30 4-44 12-44s12 14 12 44z"/></svg><small>Model</small></span>`;
+  const model = msrc ? `<img src="${msrc}" alt="">${sw}` : `<span class="ls-ph" role="button" tabindex="0" data-act="genmodel" data-v="${l.id||'draft'}"><svg viewBox="0 0 40 80" aria-hidden="true"><circle cx="20" cy="12" r="8"/><path d="M8 78c0-30 4-44 12-44s12 14 12 44z"/></svg><small>Create model</small><small class="ls-sub">AI, about 1 credit</small></span>`;
   return `<div class="ls ${compact?'sm':''}"><div class="ls-m ${msrc?'has':''}">${model}</div><div class="ls-g">${tiles.map(t=>`<figure class="ls-p"><div class="ls-i ${t.photo?'ph':''}">${t.html}</div><figcaption><small>${t.kind}</small>${t.cap}</figcaption></figure>`).join('')}</div></div>`;
 }
 function lookCover(l){
@@ -958,10 +958,87 @@ function beauty(){
   ${open('backup','Backup',`<p class="lede" style="margin-bottom:14px">Your plans are saved to your account. This file is an extra copy, or a way to move to another device.</p><div class="row"><button class="btn small" data-act="export">Save backup</button><label class="btn small ghost" style="cursor:pointer">Load backup<input type="file" id="import" accept="application/json" hidden></label></div>`)}</section>`;
 }
 
+
+/* ---------- AI model pictures through the viewer's Higgsfield connector ---------- */
+const HF = 'Higgsfield';
+const HF_COST = 0.5;
+const hasClaude = () => !!(window.claude && claude.use);
+async function hfCall(tool, input){
+  const mcp = hasClaude() ? await claude.use('mcp') : null;
+  if(!mcp) throw {code:'unavailable', message:'This view cannot reach your Higgsfield connector.'};
+  const r = await mcp.callTool(HF, tool, input);
+  return r.payload !== undefined ? r.payload : r;
+}
+async function hfUpload(blob, name){
+  const up = await hfCall('media_upload', {files:[{filename:name, content_type:blob.type||'image/jpeg'}]});
+  const u = (up.uploads||[])[0]; if(!u) throw {code:'upload_failed', message:'Higgsfield gave no upload address.'};
+  let res; try { res = await fetch(u.upload_url, {method:'PUT', headers:{'Content-Type':blob.type||'image/jpeg','If-None-Match':'*'}, body:blob}); }
+  catch(e){ throw {code:'upload_blocked', message:'The picture could not be sent from this view.'}; }
+  if(!res.ok) throw {code:'upload_failed', message:'Upload failed ('+res.status+').'};
+  await hfCall('media_confirm', {type:'image', media_id:u.media_id});
+  return u.media_id;
+}
+const dataBlob = async src => (await fetch(src)).blob();
+function hfRefs(){ try { return JSON.parse(localStorage.getItem('muse.hfrefs')) || {}; } catch(e){ return {}; } }
+function lookParts(l){
+  const out = [];
+  SHEET_ORDER.forEach(sl => { const it = state.items.find(i => i.id===(l.slots||{})[sl]); if(!it) return; const v = vOf(it, l.vars&&l.vars[sl]); out.push({slot:sl, name:it.name, color:colorName(v.color), photo:v.photo||null}); });
+  return out;
+}
+function genPrompt(l, key, parts, hasNailRef){
+  const b = l.beauty||{}, hair = key==='long' ? 'long voluminous curly hair worn down' : 'a sleek low bun with a center part and polished edges';
+  const list = parts.map((p,i) => `${p.name} (${p.color}) from reference ${i+2}`).join(', ');
+  return `Fashion lookbook photo. Recreate the AI fashion model from reference 1: same woman, ${hair}, same makeup, skin tone and body type, elegant standing pose. Full body, head to toe, standing against a seamless plain warm beige studio backdrop (color around #e9dfd3), soft even light, nothing else in the scene. She wears exactly these garments from the other references: ${list}. ${hasNailRef?'Nails exactly like the last reference (hands only).':(b.nails?'Nails: '+b.nails+' polish, short square shape.':'')} Small gold hoop earrings. Realistic, editorial, no text, no logos.`;
+}
+function genRequestText(l){
+  const parts = lookParts(l), b = l.beauty||{};
+  return `Please create two AI model pictures for my look "${l.name||'My look'}" (long curls and sleek bun), full body on a beige background. Pieces: ${parts.map(p=>p.name+' ('+p.color+')').join(', ')||'-'}. Hair: ${b.hair||'-'}. Nails: ${b.nails||'-'}.`;
+}
+async function runGen(look){
+  const g = ui.gen = {id:look.id||'draft', step:'Checking your pieces', err:null, done:false};
+  const upd = (m) => { g.step = m; if(ui.sheet && ui.sheet.type==='genmodel') render(); };
+  try {
+    const parts = lookParts(look).filter(p => p.photo);
+    if(!parts.length) throw {code:'no_photos', message:'Your pieces need photos. Add a photo to at least one piece.'};
+    const use = parts.slice(0,5);
+    if(!window.MUSE_MODELS) throw {code:'no_models', message:'Model pictures are missing in this version.'};
+    const refs = hfRefs();
+    for(const k of ['long','bun']){ if(!refs[k]){ upd('Preparing model '+k); refs[k] = await hfUpload(await dataBlob(window.MUSE_MODELS[k]), 'model-'+k+'.jpg'); try { localStorage.setItem('muse.hfrefs', JSON.stringify(refs)); } catch(e){} } }
+    upd('Sending your pieces');
+    const ids = []; for(let i=0;i<use.length;i++){ ids.push(await hfUpload(await dataBlob(use[i].photo), 'piece-'+i+'.jpg')); }
+    const nail = (look.pics||[]).map(id => (state.pics||[]).find(x=>x.id===id)).find(x => x && x.tag==='Nails');
+    let nid = null; if(nail){ nid = await hfUpload(await dataBlob(nail.src), 'nails.jpg'); }
+    upd('Creating both pictures');
+    const jobs = {};
+    for(const k of ['long','bun']){
+      const medias = [{value:refs[k], role:'image_references'}, ...ids.map(v => ({value:v, role:'image_references'}))]; if(nid) medias.push({value:nid, role:'image_references'});
+      const r = await hfCall('generate_image', {model:'gpt_image_2_5', aspect_ratio:'2:3', quality:'medium', count:1, prompt:genPrompt(look,k,use,!!nid), medias});
+      jobs[k] = ((r.results||[])[0]||{}).id; if(!jobs[k]) throw {code:'generate_failed', message:'Higgsfield did not start the picture.'};
+    }
+    const urls = {};
+    for(let n=0;n<40 && Object.keys(urls).length<2;n++){
+      const w = await hfCall('jobs_wait', {jobs:Object.keys(jobs).filter(k=>!urls[k]).map((k,i)=>({index:i, job_id:jobs[k]})), timeout_seconds:15});
+      (w.jobs||[]).forEach(j => { const k = Object.keys(jobs).find(x => jobs[x]===j.job_id); if(k && j.status==='completed' && j.result_url) urls[k] = j.result_url; if(j.status==='failed') throw {code:'generate_failed', message:'Higgsfield could not create the picture.'}; });
+      upd('Creating both pictures ('+Object.keys(urls).length+' of 2 done)');
+    }
+    if(Object.keys(urls).length<2) throw {code:'timeout', message:'This is taking too long. Check Higgsfield and try again.'};
+    const target = look.id ? state.looks.find(x => x.id===look.id) : ui.draft; (target||look).models = {...((target||look).models||{}), ...urls}; (target||look).mpick = (target||look).mpick || 'long';
+    g.done = true; upd('Done'); save();
+  } catch(e){ g.err = e; g.step = ''; if(ui.sheet && ui.sheet.type==='genmodel') render(); }
+}
 function sheet(){
   const s = ui.sheet;
   let inner = '';
-  if (s.type==='pick'){
+  if (s.type==='genmodel'){
+    const l = s.id==='draft' ? ui.draft : state.looks.find(x=>x.id===s.id), g = ui.gen && ui.gen.id===s.id ? ui.gen : null;
+    if(!l){ inner=''; }
+    else if(g && !g.err && !g.done){ inner = `<h2>Creating your models</h2><p class="status">${esc(g.step)}<br>This takes about a minute. You can keep this window open.</p>`; }
+    else if(g && g.done){ inner = `<h2>Done</h2><p class="status">Both model pictures are saved with this look.</p><div class="row" style="margin-top:16px"><button class="btn" data-act="close">Show my look</button></div>`; }
+    else { const e = g && g.err;
+      inner = `<h2>Create model pictures</h2><p class="lede">Two AI models wear your look: long curls and sleek bun. It uses your Higgsfield credits, about ${(HF_COST*2).toFixed(1)} credits in total.</p>
+      ${e?`<div class="repnote" style="display:block"><p class="status" style="color:#a4462b">${esc(e.message||'Something went wrong.')}</p><p class="status">If it keeps failing, copy this and send it to Claude in the chat:</p><textarea readonly rows="4" style="width:100%" onclick="this.select()">${esc(genRequestText(l))}</textarea></div>`:''}
+      <div class="row" style="margin-top:16px;gap:10px"><button class="btn" data-act="startgen" data-v="${s.id}" style="flex:1">${e?'Try again':'Create for about '+(HF_COST*2).toFixed(1)+' credits'}</button><button class="btn ghost" data-act="close">Not now</button></div>`; }
+  } else if (s.type==='pick'){
     const opts = state.items.filter(i => i.cat===s.slot);
     inner = `<h2>Choose ${SLOT_LABEL[s.slot].toLowerCase()}</h2>${opts.length?`<div class="grid">${opts.map(it=>`<button class="item ${it.have?'have':'need'}" data-act="set" data-v="${it.id}"><div class="pic">${pic(it)}</div><h3>${esc(it.name)}</h3><p>${it.have?esc(colorName(it.color)):'On your list'}</p></button>`).join('')}</div>`:`<div class="empty-state">No ${SLOT_LABEL[s.slot].toLowerCase()} in your wardrobe yet.</div>`}
       <div class="row" style="margin-top:16px"><button class="btn ghost small" data-act="clear" data-v="${s.slot}">Clear</button><button class="btn ghost small" data-act="close">Close</button></div>`;
@@ -1112,6 +1189,8 @@ const actions = {
   delitem(){ const id=ui.sheet.item.id; state.items=state.items.filter(i=>i.id!==id);
     state.looks.forEach(l=>{ for(const k in l.slots) if(l.slots[k]===id) delete l.slots[k]; }); save(); ui.sheet=null; },
   close(){ ui.sheet=null; ui.adraft=null; },
+  genmodel(v){ if(v==='draft') syncDraft(); ui.gen = null; ui.sheet = {type:'genmodel', id:v}; },
+  startgen(v){ const l = v==='draft' ? ui.draft : state.looks.find(x=>x.id===v); if(l) runGen(l); },
   overlay(v,e){ if(e.target.classList.contains('overlay')){ ui.sheet=null; ui.adraft=null; } },
   btab(v){ ui.btab=v; },
   setmode(v){ syncDraft(); ui.omode=v; if(v==='dress'){ delete ui.draft.slots.top; delete ui.draft.slots.bottom; } else delete ui.draft.slots.dress; },

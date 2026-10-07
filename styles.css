@@ -1092,3 +1092,6 @@ h2{font-size:22px}
 .ls-sw span{font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:5px 9px;border-radius:99px;border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);color:#3a2a22;background:transparent}
 .ls-sw span[aria-pressed=true]{background:var(--goldgrad);background-color:var(--gold);color:#241713;border-color:transparent}
 .ls-sw span{cursor:pointer}
+.ls-ph{cursor:pointer;text-align:center}
+.ls-ph .ls-sub{opacity:.55;text-transform:none;letter-spacing:.02em;font-size:10px}
+.ls-ph small:first-of-type{color:#3a2a22;opacity:1;font-weight:600}
