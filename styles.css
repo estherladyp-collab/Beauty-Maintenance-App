@@ -908,10 +908,10 @@ h2{font-size:22px}
 #splash .sw-name{display:flex;gap:.28em;white-space:nowrap;font:italic 400 clamp(34px,11vw,46px)/1.15 "Bodoni Moda",Didot,serif;color:var(--sp-ink,#f5ebdf)}
 #splash .sw-a{--x:-56px;opacity:0;transform:translateX(var(--x))}
 #splash .sw-b{--x:56px;color:var(--sp-ac,#d7a862);opacity:0;transform:translateX(var(--x))}
-#splash .sw-tag{font:500 11px "Hanken Grotesk",system-ui,sans-serif;letter-spacing:.34em;padding-left:.34em;color:var(--sp-ac,#d7a862);text-transform:uppercase}
-#splash.go .sw-medal{animation:swm .55s cubic-bezier(.2,.8,.2,1) both}
-#splash.go .sw-a{animation:swa .7s cubic-bezier(.2,.8,.2,1) .3s both}
-#splash.go .sw-b{animation:swa .7s cubic-bezier(.2,.8,.2,1) .38s both}
+#splash .sw-tag{text-align:center;max-width:300px;line-height:1.7;font:500 11px "Hanken Grotesk",system-ui,sans-serif;letter-spacing:.34em;padding-left:.34em;color:var(--sp-ac,#d7a862);text-transform:uppercase}
+#splash.go .sw-medal{animation:swm .9s cubic-bezier(.2,.8,.2,1) both}
+#splash.go .sw-a{animation:swa 1.25s cubic-bezier(.2,.7,.2,1) .55s both}
+#splash.go .sw-b{animation:swa 1.25s cubic-bezier(.2,.7,.2,1) .7s both}
 @keyframes swm{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
 @keyframes swa{from{opacity:0;transform:translateX(var(--x))}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){#splash .sw-medal,#splash .sw-a,#splash .sw-b{opacity:1!important;transform:none!important;animation:none!important}}
