@@ -282,7 +282,7 @@ async function flushDraft(){
 function saveDraftSoon(){ clearTimeout(draftTimer); draftTimer = setTimeout(flushDraft, 400); }
 function restoreDraft(d){
   if(!d) return false;
-  ui.tab = d.tab || ui.tab; ui.draft = d.draft || null; ui.btab = d.btab || 'outfit'; ui.omode = d.omode || 'split';
+  ui.tab = (d.tab==='today'||d.tab==='calendar') ? 'home' : (d.tab || ui.tab); ui.draft = d.draft || null; ui.btab = d.btab || 'outfit'; ui.omode = d.omode || 'split';
   ui.assignDay = d.assignDay ?? null; ui.adraft = d.adraft || null; ui.sheet = d.sheet || null;
   if(ui.sheet && ui.sheet.type==='appt' && !ui.adraft) ui.sheet = null;
   if(d.calSel) ui.calSel = d.calSel; if(d.cal) ui.cal = d.cal;
@@ -388,7 +388,6 @@ function lookNotes(look){
 const HOME_SVG = '<path d="M4 11.2 12 4l8 7.2V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/>';
 const NAV = [
   ['home','Home',['home','calendar'],HOME_SVG],
-  ['today','Today',['today'],'<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/>'],
   ['care','Care',['beauty','mood'],'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 16.5v3M17 18h3"/>'],
   ['looks','Looks',['looks','snaps'],'<path d="M12 7.5a2.3 2.3 0 1 0-2.3-2.3M12 7.5V10l8 5.2a1 1 0 0 1-.6 1.8H4.6a1 1 0 0 1-.6-1.8L12 10"/>'],
   ['wardrobe','Wardrobe',['wardrobe','closet'],'<path d="M8.5 4L3 7l2 4 3-1.5V20h8v-10.5l3 1.5 2-4-5.5-3a3.5 3.5 0 0 1-7 0z"/>']
@@ -453,7 +452,6 @@ const navIcon = id => (NAV.find(n => n[0]===id)||[])[3] || '';
 function homeTiles(){
   const svg = d => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
   const tiles = [
-    ['Today','Plans and routine for today','tab','today',navIcon('today')],
     ['Plan an outing','Outfit, hair and nails for the day','newappt','outfit','<path d="M12 21s-6.5-5.6-6.5-10.2A6.5 6.5 0 0 1 12 4.3a6.5 6.5 0 0 1 6.5 6.5C18.5 15.400 12 21 12 21z"/><circle cx="12" cy="10.800" r="2.300"/>'],
     ['Wardrobe','Wishlist and what you own','tab','wardrobe',navIcon('wardrobe')],
     ['Create a look','Outfit, hair, nails and scent','newlook','',navIcon('looks')],
@@ -528,11 +526,14 @@ function careState(r){ const last = state.routine[r[0]], left = last ? r[2]-days
   const pct = left===null ? 0 : Math.max(0, Math.min(1, (r[2]-left)/r[2]));
   return {left, txt, pct, over: left!==null && left<0, soon: left!==null && left<=7}; }
 function ringIcon(r,c){ return `<span class="ringw ${c.over?'over':''} ${c.left===null?'idle':''}" style="--p:${Math.round((c.over?1:c.pct)*100)}">${ticon(ROUTINE_ICON[r[0]]||'other', false)}</span>`; }
+function plannedFor(rid){ const t = TYPE_OF_ROUTINE[rid]; if(!t) return null; const td = isoDay();
+  return (state.appts||[]).filter(a => a.type===t && !a.done && a.date>=td).sort((x,y) => (x.date+(x.time||'')).localeCompare(y.date+(y.time||'')))[0] || null; }
 function task(r){
-  const c = careState(r), t = TYPE_OF_ROUTINE[r[0]];
+  const c = careState(r), t = TYPE_OF_ROUTINE[r[0]], pl = plannedFor(r[0]);
+  const stat = pl ? `<button class="plannedl" data-act="editappt" data-v="${pl.id}">Planned ${esc(fmtDate(pl.date))}${pl.time?' · '+esc(pl.time):''}</button>` : `<div class="status ${c.over?'over':''}">${c.txt}</div>`;
   return `<div class="task">${ringIcon(r,c)}
-    <div class="grow"><h3>${esc(r[1])}</h3><div class="status ${c.over?'over':''}">${c.txt}</div></div>
-    <div class="row" style="gap:14px;flex-wrap:nowrap">${t?`<button class="linkbtn" data-act="newappt" data-v="${t}">Plan</button>`:''}<button class="btn small ${c.soon?'':'ghost'}" data-act="done" data-v="${r[0]}">Done</button></div></div>`;
+    <div class="grow"><h3>${esc(r[1])}</h3>${stat}${pl?`<div class="status ${c.over?'over':''}" style="font-size:11px">${c.txt}</div>`:''}</div>
+    <div class="row" style="gap:14px;flex-wrap:nowrap">${t?`<button class="linkbtn" data-act="${pl?'editappt':'newappt'}" data-v="${pl?pl.id:t}">${pl?'Change':'Plan'}</button>`:''}<button class="btn small ${c.soon?'':'ghost'}" data-act="done" data-v="${r[0]}">Done</button></div></div>`;
 }
 function stayReady(){
   const rows = ROUTINE.map(r => ({r, c: careState(r)})).filter(x => x.c.soon).sort((a,b) => a.c.left-b.c.left).slice(0,3);
@@ -796,8 +797,8 @@ function itemRow(title, slot, d, flt){
   const items = state.items.filter(i => i.cat===slot && (!flt || flt(i))).sort((a,b) => (b.have?1:0)-(a.have?1:0));
   return `<div class="brow"><div class="eyebrow">${title}</div>${items.length?`<div class="hscroll">${items.map(i=>tile(i,d.slots[slot]===i.id,slot,d)).join('')}</div>`:`<p class="status">Nothing here yet. Add pieces in Wardrobe.</p>`}</div>`;
 }
-function picsRow(tag, d, label){
-  const ps = (state.pics||[]).filter(p => p.tag===tag), sel = d.pics||[];
+function picsRow(tag, d, label, extra){
+  const ps = (state.pics||[]).filter(p => p.tag===tag).concat(extra||[]), sel = d.pics||[];
   return `<div class="brow"><div class="eyebrow">${label}</div><div class="hscroll">${ps.map(p=>`<button class="ptile ${sel.includes(p.id)?'on':''}" data-act="ptoggle" data-v="${p.id}" aria-pressed="${sel.includes(p.id)}" aria-label="${esc(tag)} picture"><img src="${p.src}" alt=""><span class="check">${sel.includes(p.id)?'✓':''}</span></button>`).join('')}
     <label class="ptile addp" data-tag="${tag}"><span>＋</span><span>Upload</span><input type="file" id="picup" accept="image/*" multiple hidden></label></div></div>`;
 }
@@ -820,7 +821,7 @@ function builder(){
       <label class="ptile addp" data-tag="Hair"><span>＋</span><span>Upload</span><input type="file" id="picup" accept="image/*" multiple hidden></label></div></div>`;
   } else if (ui.btab==='nails'){
     body = `<div class="brow"><div class="eyebrow">Nails</div><div class="pick">${NAILS.map(n=>`<figure><button class="nail lg" style="background:${n[1]}" data-act="beauty" data-k="nails" data-v="${esc(n[0])}" aria-pressed="${d.beauty.nails===n[0]}" aria-label="${esc(n[0])}"></button>${esc(n[0])}</figure>`).join('')}</div></div>
-      ${picsRow('Nails',d,'Nail inspiration')}
+      ${picsRow('Nails',d,'Nail inspiration',planNailPics())}
       <div class="brow"><div class="eyebrow">Lips</div>${LIP_GROUPS.map(g => `<div class="lipgrp"><small>${g==='Colour'?'Lipstick and stain':g==='Gloss'?'Lip gloss':'Lip balm'}</small><div class="pick">${LIPS.filter(n=>(n[2]||'Colour')===g).map(n=>`<figure><button class="nail lg lip-${g.toLowerCase()}" style="background:${n[1]};border-radius:50%;height:44px" data-act="beauty" data-k="lips" data-v="${esc(n[0])}" aria-pressed="${d.beauty.lips===n[0]}" aria-label="${esc(n[0])}"></button>${esc(n[0])}</figure>`).join('')}</div></div>`).join('')}</div>
       ${picsRow('Makeup',d,'Makeup inspiration')}`;
   } else if (ui.btab==='scent'){
@@ -1054,7 +1055,7 @@ function setToast(t){ toast=t; render(); setTimeout(()=>{toast='';render();},220
 function logToday(){ const t=isoDay(); if(!state.log.includes(t)) state.log.push(t); }
 
 const actions = {
-  tab(v){ if(v==='calendar') v='home'; ui.arrange=false; ui.enter=true; ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
+  tab(v){ if(v==='calendar'||v==='today') v='home'; ui.arrange=false; ui.enter=true; ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
   cat(v){ ui.cat=v; ui.sty='all'; ui.occ='all'; ui.bg='all'; },
   bg(v){ ui.bg=v; ui.sty='all'; },
   sty(v){ ui.sty=v; },
@@ -1105,7 +1106,7 @@ const actions = {
     if(ui.assignDay!==null) d.forDay=ui.assignDay;
     if(!d.name.trim()) d.name=ui.assignDay!==null ? DAYFULL[ui.assignDay]+' look' : 'Look '+(state.looks.length+1);
     if(d.id){ const i=state.looks.findIndex(l=>l.id===d.id); state.looks[i]=d; } else { d.id=uid(); state.looks.push(d); }
-    if(ui.assignDay!==null){ state.plan[ui.assignDay]=d.id; ui.tab='today'; } else ui.tab='looks';
+    if(ui.assignDay!==null){ state.plan[ui.assignDay]=d.id; ui.tab='home'; } else ui.tab='looks';
     ui.assignDay=null; save(); ui.draft=null; window.scrollTo(0,0); },
   assign(v){ const day=+v, cur=state.looks.find(l=>l.id===state.plan[day]);
     actions.newlook(); ui.assignDay=day;
@@ -1238,7 +1239,7 @@ const actions = {
   delprod(){ state.products = state.products.filter(p=>p.id!==ui.pdraft.id); save(); ui.sheet=null; ui.pdraft=null; },
 
   opensnap(v){ ui.sheet = {type:'snap', date: v||isoDay(), photo:null, sel:null, note:''}; },
-  newapptday(v){ ui.calSel = v; ui.tab='today'; },
+  newapptday(v){ ui.calSel = v; ui.tab='home'; ui.fold.hday=true; },
   snapplan(v){ const s=ui.sheet, day=s.date, plans=state.appts.filter(a=>a.date===day&&LOOK_TYPES.includes(a.type)); const cur = s.sel || plans.map(a=>a.id); s.sel = cur.includes(v) ? cur.filter(x=>x!==v) : [...cur, v]; },
   viewsnap(v){ ui.sheet = {type:'snapview', id:v}; },
   favsnap(v){ const sn=state.snaps.find(x=>x.id===v), m=mondayOf(sn.date), on=!sn.fav; state.snaps.forEach(x => { if(mondayOf(x.date)===m) x.fav=false; }); sn.fav=on; save(); },
@@ -1368,10 +1369,18 @@ function sim(a, b){
   let i=0, u=0; for(let k=0; k<sa.length; k++){ const p=sa[k]==='1', q=sb[k]==='1'; if(p&&q) i++; if(p||q) u++; }
   return u ? i/u : 0;
 }
-function hairFromPlan(){
-  const ids = new Set(); (state.appts||[]).forEach(a => { if(a.type==='hair') (a.pics||[]).forEach(id => ids.add(id)); });
-  let n = 0; (state.pics||[]).forEach(p => { if(ids.has(p.id) && p.tag!=='Hair'){ p.tag='Hair'; p.style=p.style||'Other'; p.hcolor=p.hcolor||'#141010'; p.hcat=p.hcat||'Natural'; n++; } });
+const PIC_TAG_OF = {hair:'Hair',nails:'Nails',lashes:'Makeup',brows:'Makeup',skin:'Skincare',outfit:'Outfit'};
+function picsFromPlan(){
+  const want = new Map(); (state.appts||[]).forEach(a => { const tg = PIC_TAG_OF[a.type]; if(tg) (a.pics||[]).forEach(id => { if(!want.has(id)) want.set(id, tg); }); });
+  let n = 0; (state.pics||[]).forEach(p => { const tg = want.get(p.id); if(!tg) return;
+    if(p.tag!=='Outfit' || tg==='Outfit') return;
+    p.tag = tg; if(tg==='Hair'){ p.style=p.style||'Other'; p.hcolor=p.hcolor||'#141010'; p.hcat=p.hcat||'Natural'; } n++; });
   return n;
+}
+const hairFromPlan = picsFromPlan;
+function planNailPics(){
+  const ids = new Set(); (state.appts||[]).forEach(a => { if(a.type!=='nails') return; const l = a.lookId && state.looks.find(x => x.id===a.lookId); if(l) (l.pics||[]).forEach(id => ids.add(id)); });
+  return (state.pics||[]).filter(p => ids.has(p.id) && p.tag!=='Nails');
 }
 function planHairPics(){
   const ids = new Set(); (state.appts||[]).forEach(a => { if(a.type!=='hair') return; (a.pics||[]).forEach(id => ids.add(id)); const l = a.lookId && state.looks.find(x => x.id===a.lookId); if(l) (l.pics||[]).forEach(id => ids.add(id)); });
@@ -1474,7 +1483,7 @@ async function addFiles(files, mode){
   const inSheet=ui.sheet && (ui.sheet.type==='pics'||ui.sheet.type==='apppics'), tgt=ui.sheet&&ui.sheet.type==='apppics'?ui.adraft:ui.draft;
   if(!inSheet && !(ui.draft && !ui.sheet)) return startSort(files, mode || (ui.tab==='wardrobe'?'ward':'insp'));
   let tag = inSheet ? ui.sheet.tag : (ui.draft && upTag) ? upTag : ui.ptag;
-  if(ui.sheet && ui.sheet.type==='apppics' && ui.adraft && ui.adraft.type==='hair' && !TAGS.includes(tag)) tag = 'Hair';
+  if(ui.sheet && ui.sheet.type==='apppics' && ui.adraft && PIC_TAG_OF[ui.adraft.type] && !TAGS.includes(tag)) tag = PIC_TAG_OF[ui.adraft.type];
   if(!TAGS.includes(tag)) tag=TAGS[0];
   state.pics = state.pics||[]; let n=0;
   for (const f of files){ const pr=await prepare(f); if(!pr) continue; const src=pr.src;
