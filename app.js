@@ -479,14 +479,30 @@ function lookLine(l){ const b = l && l.beauty; if(!b) return ''; const sc = scen
   return [b.hair, b.nails, b.lips, sc && scentShort(sc)].filter(Boolean).map(esc).join(' · '); }
 function lookThumbs(l){ const ps = ((l&&l.pics)||[]).map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean).slice(0,2);
   return ps.length ? `<span class="gpics">${ps.map(p=>`<img src="${p.src}" alt="">`).join('')}</span>` : ''; }
+function lookPlanArt(l){
+  const order = l.slots.dress ? ['outer','dress','jewel','bag','shoes'] : ['outer','top','bottom','jewel','bag','shoes'];
+  const pieces = order.map(sl => { const it = state.items.find(i => i.id===l.slots[sl]); return it && `<span class="gc-p">${pic(it, vOf(it, l.vars&&l.vars[sl]))}</span>`; }).filter(Boolean);
+  const pics = (l.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean);
+  const hp = pics.find(x => x.tag==='Hair'), np = pics.find(x => x.tag==='Nails'), b = l.beauty || {}, nc = NAILS.find(x => x[0]===b.nails);
+  const tiles = [];
+  if(hp) tiles.push(`<span class="gc-t"><img src="${hp.src}" alt=""><small>Hair${b.hair?' · '+esc(b.hair):''}</small></span>`);
+  else if(b.hair) tiles.push(`<span class="gc-t txt"><b>${esc(b.hair)}</b><small>Hair</small></span>`);
+  if(np) tiles.push(`<span class="gc-t"><img src="${np.src}" alt=""><small>Nails${b.nails?' · '+esc(b.nails):''}</small></span>`);
+  else if(nc) tiles.push(`<span class="gc-t swt"><i class="nail" style="background:${nc[1]}"></i><small>Nails · ${esc(nc[0])}</small></span>`);
+  const other = pics.filter(x => x!==hp && x!==np);
+  if(!pieces.length && !tiles.length) return '';
+  const left = pieces.length ? `<span class="gc-o n${Math.min(pieces.length,6)}">${pieces.join('')}</span>` : (other.length ? `<span class="gc-o ph">${other.slice(0,2).map(x=>`<img src="${x.src}" alt="">`).join('')}</span>` : '');
+  return `<span class="gcomp ${left?'':'solo'}">${left}<span class="gc-r n${tiles.length}">${tiles.join('')}</span></span>`;
+}
 function apptGCard(a){
   const td = isoDay();
   const l = a.lookId && state.looks.find(x => x.id===a.lookId), p = (a.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
-  const art = l ? `<div class="gboard thumbboard">${boardParts(l).core}</div>` : p ? `<img src="${p.src}" alt="">` : `<div class="gico">${ticon(TYPE_ICON[a.type]||'other', false)}</div>`;
+  const comp = l ? lookPlanArt(l) : '';
+  const art = l ? (comp || `<div class="gboard thumbboard">${boardParts(l).core}</div>`) : p ? `<img src="${p.src}" alt="">` : `<div class="gico">${ticon(TYPE_ICON[a.type]||'other', false)}</div>`;
   const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
   const when = a.date!==td && a.date!==ui.calSel ? fmtDate(a.date) : '';
   const meta = [when, a.time, a.seriesId?repeatLabel((state.series[a.seriesId]||{}).every):'', a.where==='home'?'At home':'', tot?(open?`${open} to prep`:'Prepped'):''].filter(Boolean).map(esc).join(' · ');
-  return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart ${p?'photo':'plain'}">${art}${ui.arrange?`<span class="mvb"><span class="mv" role="button" aria-label="Move earlier" data-act="mvplan" data-v="${a.id}:-1">‹</span><span class="mv" role="button" aria-label="Move later" data-act="mvplan" data-v="${a.id}:1">›</span></span>`:`<span class="gx" role="button" aria-label="Delete this plan" data-act="delplan" data-v="${a.id}">✕</span>`}${l?lookThumbs(l):''}<span class="gcap"><b>${esc(a.title)}</b>${meta?`<span class="status">${meta}</span>`:''}${l&&lookLine(l)?`<span class="status gbl">${lookLine(l)}</span>`:''}</span></span></button>`;
+  return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart ${p&&!l?'photo':'plain'}">${art}${ui.arrange?`<span class="mvb"><span class="mv" role="button" aria-label="Move earlier" data-act="mvplan" data-v="${a.id}:-1">‹</span><span class="mv" role="button" aria-label="Move later" data-act="mvplan" data-v="${a.id}:1">›</span></span>`:`<span class="gx" role="button" aria-label="Delete this plan" data-act="delplan" data-v="${a.id}">✕</span>`}<span class="gcap"><b>${esc(a.title)}</b>${meta?`<span class="status">${meta}</span>`:''}${l&&lookLine(l)?`<span class="status gbl">${lookLine(l)}</span>`:''}</span></span></button>`;
 }
 function prepToday(){
   const td = isoDay(), lim = addDays(td,14);

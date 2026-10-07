@@ -1012,3 +1012,31 @@ h2{font-size:22px}
 .lksum{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px}
 .lksum .gpics{position:static}
 .lksum .beauty-strip{margin:0;justify-content:flex-start;gap:12px}
+/* plan card: whole look at a glance (outfit pieces + hair + nails) */
+.gcomp{position:absolute;inset:12px 12px 78px;display:grid;grid-template-columns:1.2fr 1fr;gap:8px;z-index:1}
+.gcomp.solo{grid-template-columns:1fr}
+.gc-o{display:grid;gap:6px;min-height:0;background:#e9dfd3;border-radius:14px;padding:8px;place-items:center}
+.gc-o.n1{grid-template-columns:1fr}
+.gc-o.n2{grid-template-rows:1fr 1fr}
+.gc-o.n3,.gc-o.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.gc-o.n5,.gc-o.n6{grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr)}
+.gc-o.ph{padding:0;overflow:hidden;gap:3px}
+.gc-o.ph img{width:100%;height:100%;object-fit:cover}
+.gc-p{display:grid;place-items:center;width:100%;height:100%;min-height:0}
+.gc-p svg{width:100%;height:100%;filter:drop-shadow(0 3px 5px rgba(0,0,0,.2))}
+.gc-p img{width:100%;height:100%;object-fit:contain;position:static!important;border-radius:6px}
+.gc-r{display:grid;gap:8px;min-height:0;grid-template-rows:1fr}
+.gc-r.n2{grid-template-rows:1fr 1fr}
+.gc-r.n0{display:none}
+.gc-t{position:relative;display:block;border-radius:14px;overflow:hidden;min-height:0;background:#e9dfd3}
+.gc-t img{position:absolute!important;inset:0;width:100%;height:100%;object-fit:cover}
+.gc-t small{position:absolute;left:0;right:0;bottom:0;padding:14px 8px 6px;font-size:10px;letter-spacing:.04em;color:#fff;background:linear-gradient(transparent,rgba(20,12,9,.72));text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc-t.swt{display:grid;place-items:center}
+.gc-t.swt .nail{width:34px;height:48px;margin-bottom:10px}
+.gc-t.txt{display:grid;align-content:center;justify-items:center;text-align:center;padding:8px}
+.gc-t.txt b{font:400 17px/1.15 var(--display);color:var(--espresso)}
+.gc-t.txt small{position:static;background:none;color:var(--muted);padding:2px 0 0}
+.gc-t.swt small{color:#fff}
+.gallery.big .gart.plain .gcomp+.gx,.gallery.big .gart .gcomp~.gcap{z-index:3}
+.gc-o.n3 .gc-p:first-child{grid-row:1/3}
+.gc-o.n3{grid-template-columns:1.1fr 1fr}
