@@ -352,6 +352,8 @@ function boardParts(look){
   return {core:`<div class="board" role="img" aria-label="Look board">${cells}</div>`, mood, strip};
 }
 function board(look){ const p = boardParts(look); return p.core + p.mood + p.strip; }
+const scentOf = b => b && b.scent && (state.products||[]).find(p => p.id===b.scent && p.area==='scent');
+const scentShort = p => p.name.replace(/^Zara\s+/i,'');
 function beautyStrip(b){
   if (!b) return '';
   const n = NAILS.find(x => x[0]===b.nails), l = LIPS.find(x => x[0]===b.lips);
@@ -359,6 +361,7 @@ function beautyStrip(b){
     ${n?`<div class="bs"><i class="nail" style="background:${n[1]}"></i><span><small>Nails</small>${esc(n[0])}</span></div>`:''}
     ${l?`<div class="bs"><i class="nail" style="background:${l[1]};border-radius:50% 50% 50% 50%/40% 40% 60% 60%;height:26px"></i><span><small>Lips</small>${esc(l[0])}</span></div>`:''}
     ${b.hair?`<div class="bs"><span><small>Hair</small>${esc(b.hair)}</span></div>`:''}
+    ${scentOf(b)?`<div class="bs"><span><small>Scent</small>${esc(scentShort(scentOf(b)))}</span></div>`:''}
   </div>`;
 }
 function lookNotes(look){
@@ -756,7 +759,7 @@ function lookCover(l){
 }
 function lookMeta(l){
   const b = l.beauty || {}, n = NAILS.find(x => x[0]===b.nails), li = LIPS.find(x => x[0]===b.lips);
-  const parts = [n && `<span class="lk-c"><i style="background:${n[1]}"></i>${esc(n[0])}</span>`, li && `<span class="lk-c"><i class="lp" style="background:${li[1]}"></i>${esc(li[0])}</span>`, b.hair && `<span class="lk-c">${esc(b.hair)}</span>`].filter(Boolean);
+  const parts = [n && `<span class="lk-c"><i style="background:${n[1]}"></i>${esc(n[0])}</span>`, li && `<span class="lk-c"><i class="lp" style="background:${li[1]}"></i>${esc(li[0])}</span>`, b.hair && `<span class="lk-c">${esc(b.hair)}</span>`, scentOf(b) && `<span class="lk-c">${esc(scentShort(scentOf(b)))}</span>`].filter(Boolean);
   return parts.length ? `<div class="lk-meta">${parts.join('')}</div>` : '';
 }
 function looks(){
@@ -767,7 +770,7 @@ function looks(){
   <section class="folds">${foldBox('rail','Start from a picture',startRail())}</section>`;
 }
 
-const BTABS = [['outfit','Outfit'],['hair','Hair'],['nails','Nails & lips'],['acc','Accessories']];
+const BTABS = [['outfit','Outfit'],['hair','Hair'],['nails','Nails & lips'],['scent','Scent'],['acc','Accessories']];
 function tile(it, sel, slot, d){
   const cur = vOf(it, sel ? (d.vars&&d.vars[slot]) : ui.vsel[it.id]);
   return `<div class="tile ${sel?'on':''} ${cur.have?'':'need'}"><button class="tp" data-act="seti" data-v="${slot}:${it.id}:${cur.id}" aria-pressed="${sel}" aria-label="${esc(it.name)}, ${esc(colorName(cur.color))}">${pic(it,cur)}</button><span class="tn">${esc(it.name)}</span>${dots(it,cur.id,'seti',slot+':'+it.id)}${cur.have?'':'<span class="tl">On list</span>'}</div>`;
@@ -802,6 +805,10 @@ function builder(){
       ${picsRow('Nails',d,'Nail inspiration')}
       <div class="brow"><div class="eyebrow">Lips</div>${LIP_GROUPS.map(g => `<div class="lipgrp"><small>${g==='Colour'?'Lipstick and stain':g==='Gloss'?'Lip gloss':'Lip balm'}</small><div class="pick">${LIPS.filter(n=>(n[2]||'Colour')===g).map(n=>`<figure><button class="nail lg lip-${g.toLowerCase()}" style="background:${n[1]};border-radius:50%;height:44px" data-act="beauty" data-k="lips" data-v="${esc(n[0])}" aria-pressed="${d.beauty.lips===n[0]}" aria-label="${esc(n[0])}"></button>${esc(n[0])}</figure>`).join('')}</div></div>`).join('')}</div>
       ${picsRow('Makeup',d,'Makeup inspiration')}`;
+  } else if (ui.btab==='scent'){
+    const sc = (state.products||[]).filter(p => p.area==='scent');
+    body = `<div class="brow"><div class="eyebrow">Your scent</div>${sc.length?`<div class="hscroll">${sc.map(p=>`<div class="tile ${d.beauty.scent===p.id?'on':''}"><button class="tp" data-act="beauty" data-k="scent" data-v="${p.id}" aria-pressed="${d.beauty.scent===p.id}" aria-label="${esc(p.name)}">${p.photo?`<img src="${p.photo}" alt="">`:ticon('scent',false)}</button><span class="tn">${esc(scentShort(p))}</span></div>`).join('')}</div>`:'<p class="status">No perfume saved yet.</p>'}
+      <div style="margin-top:12px"><button class="btn small ghost" data-act="addscent">＋ Add a perfume</button></div></div>`;
   } else {
     body = `${itemRow('Bag','bag',d)}${itemRow('Jewelry','jewel',d)}${picsRow('Accessories',d,'Accessories inspiration')}`;
   }
@@ -1063,7 +1070,8 @@ const actions = {
     if(s==='top'||s==='bottom') delete ui.draft.slots.dress; ui.sheet=null; },
   clear(v){ delete ui.draft.slots[v]; ui.sheet=null; },
   nodress(){ syncDraft(); delete ui.draft.slots.dress; },
-  beauty(v,e){ syncDraft(); ui.draft.beauty[e.currentTarget.dataset.k]=v; },
+  beauty(v,e){ syncDraft(); const k=e.currentTarget.dataset.k; if(k==='scent' && ui.draft.beauty.scent===v) delete ui.draft.beauty.scent; else ui.draft.beauty[k]=v; },
+  addscent(){ syncDraft(); ui.pdraft = {id:uid(), area:'scent', name:'', price:0, shop:'', note:'', photo:null}; ui.sheet = {type:'prod', isNew:true}; },
   savelook(){ syncDraft(); const d=ui.draft;
     if(!Object.keys(d.slots).length && !(d.pics||[]).length){ return setToast('Pick at least one piece or picture before saving.'); }
     if(ui.assignDay!==null) d.forDay=ui.assignDay;
