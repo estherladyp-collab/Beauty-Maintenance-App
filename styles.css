@@ -1062,3 +1062,11 @@ h2{font-size:22px}
 .gc-p svg{height:100%;width:100%}
 .lk-comp{position:relative;background:var(--card)}
 .lk-comp .gcomp{inset:10px}
+
+/* look builder: preview scrolls away on phones so the pickers get the whole screen; room under the floating nav */
+@media(max-width:799px){
+  .pv{position:static;grid-template-columns:140px minmax(0,1fr);padding:4px 16px 10px}
+  .builder{padding-bottom:130px}
+  .bsave2{margin-top:18px;width:100%}
+}
+@media(min-width:800px){.bsave2{display:none}}

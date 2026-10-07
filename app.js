@@ -860,6 +860,7 @@ function builder(){
     <button class="btn" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>${Object.keys(d.slots).length?`<button class="btn small ghost" data-act="shoplook" data-v="draft">${CART} Shop this look</button>`:''}${ui.assignDay!==null&&state.plan[ui.assignDay]?'<button class="btn small ghost" data-act="clearday">Clear this day</button>':''}${d.id?'<button class="btn small ghost" data-act="delcur">Delete this look</button>':''}${parts.strip}${parts.mood}</div></div>
   <div class="bmain">${ui.assignDay!==null&&state.looks.length?`<div class="brow"><div class="eyebrow">Or start from a saved look</div><div class="hscroll">${state.looks.map(l=>`<button class="tile" data-act="uselook" data-v="${l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div></div>`:''}<div class="chips" role="tablist" aria-label="Look parts">${BTABS.map(t=>`<button class="chip" role="tab" aria-selected="${ui.btab===t[0]}" aria-pressed="${ui.btab===t[0]}" data-act="btab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
     <div class="bbody">${body}</div>
+    <button class="btn bsave2" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>
     ${notes.length?`<div class="eyebrow" style="margin-top:14px">Style check</div><div class="slots" style="margin-top:8px">${notes.map(n=>`<div class="note ${n.warn?'warn':''}">${esc(n.t)}</div>`).join('')}</div>`:''}
   </div></div>`;
 }
