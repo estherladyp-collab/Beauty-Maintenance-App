@@ -909,10 +909,11 @@ h2{font-size:22px}
 #splash .sw-a{--x:-56px;opacity:0;transform:translateX(var(--x))}
 #splash .sw-b{--x:56px;color:var(--sp-ac,#d7a862);opacity:0;transform:translateX(var(--x))}
 #splash .sw-tag{text-align:center;max-width:300px;line-height:1.7;font:500 11px "Hanken Grotesk",system-ui,sans-serif;letter-spacing:.34em;padding-left:.34em;color:var(--sp-ac,#d7a862);text-transform:uppercase}
-#splash.go .sw-medal{animation:swm 1.7s cubic-bezier(.3,.45,.25,1) both;backface-visibility:visible;will-change:transform}
-#splash.go .sw-a{animation:swa 1.25s cubic-bezier(.2,.7,.2,1) 1.5s both}
-#splash.go .sw-b{animation:swa 1.25s cubic-bezier(.2,.7,.2,1) 1.65s both}
-@keyframes swm{0%{opacity:1;transform:perspective(700px) rotateY(0) scale(.9)}85%{transform:perspective(700px) rotateY(2160deg) scale(1.06)}100%{opacity:1;transform:perspective(700px) rotateY(2160deg) scale(1)}}
+#splash.go .sw-medal{animation:swm 1s cubic-bezier(.2,.8,.2,1) both,swf 3.4s ease-in-out 1s infinite;will-change:transform;filter:drop-shadow(0 14px 18px rgba(0,0,0,.28))}
+#splash.go .sw-a{animation:swa 1.25s cubic-bezier(.2,.7,.2,1) .7s both}
+#splash.go .sw-b{animation:swa 1.25s cubic-bezier(.2,.7,.2,1) .85s both}
+@keyframes swm{from{opacity:0;transform:translateY(22px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes swf{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
 @keyframes swa{from{opacity:0;transform:translateX(var(--x))}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){#splash .sw-medal,#splash .sw-a,#splash .sw-b{opacity:1!important;transform:none!important;animation:none!important}}
 
