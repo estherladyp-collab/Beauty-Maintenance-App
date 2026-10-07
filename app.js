@@ -1154,7 +1154,9 @@ const actions = {
   hairopen(v){ ui.sheet={type:'hair',key:v}; },
   hc(v){ ui.hc=v; },
   hstyleall(){ ui.hstyle=null; },
-  hairstyle(v){ syncDraft(); ui.hstyle=v; ui.draft.beauty.hair=v; },
+  hairstyle(v){ syncDraft(); const d=ui.draft; ui.hstyle=v; d.beauty.hair=v;
+    const hairIds=[...(state.pics||[]).filter(x=>x.tag==='Hair'),...planHairPics()].map(x=>x.id);
+    d.pics=d.pics||[]; if(!d.pics.some(id=>hairIds.includes(id))){ const g=hairGroups(ui.hc,v)[0]; if(g) d.pics.push(g.pics[0].id); } },
   phcat(v){ state.pics.find(x=>x.id===ui.sheet.id).hcat=v; save(); },
   sorthcat(v){ const [i,h]=v.split(':'); ui.sheet.items[+i].hcat=h; },
   hcatall(v){ ui.sheet.items.forEach(f=>{ if(f.cat==='Hair') f.hcat=v; }); },

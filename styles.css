@@ -1074,3 +1074,6 @@ h2{font-size:22px}
 .wsec{font-size:26px;margin:30px 0 0;display:flex;align-items:baseline;gap:10px}
 .wsec small{font-family:'Hanken Grotesk',sans-serif;font-size:12px;letter-spacing:.14em;color:var(--mute,#8a7a6a)}
 .wsec+.wgrid{margin-top:14px}
+
+.gc-t.txt b{color:#2b211b}
+.gc-t.txt small{color:#7a6a5a}
