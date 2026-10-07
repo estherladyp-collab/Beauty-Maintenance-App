@@ -9,6 +9,31 @@ const CATS = [
   ['top','Tops'],['bottom','Bottoms'],['dress','Dresses'],['outer','Outerwear'],
   ['shoes','Shoes'],['bag','Bags'],['jewel','Jewelry']
 ];
+const LCATS = [['church','Church',['Sunday service','Tuesday service','Friday service']],['work','Work appointments',['Client meeting','Office']],['casual','Casual days',['At home','Kita','Doctor']],['special','Special occasions',['Wedding','Birthday','Dedication','Other']]];
+const lcatName = c => (LCATS.find(x=>x[0]===c)||[0,''])[1];
+function lookGuess(l){
+  const t=((l.name||'')+' '+(l.occasion||'')).toLowerCase(), out={};
+  if(/church|sunday|service|prayer/.test(t)){ out.cat='church'; out.sub=/tuesday/.test(t)?'Tuesday service':/friday/.test(t)?'Friday service':/sunday/.test(t)?'Sunday service':''; }
+  else if(/wedding|birthday|dedication|special|party/.test(t)){ out.cat='special'; out.sub=/wedding/.test(t)?'Wedding':/birthday/.test(t)?'Birthday':/dedication/.test(t)?'Dedication':''; }
+  else if(/work|client|office|meeting/.test(t)){ out.cat='work'; out.sub=/client/.test(t)?'Client meeting':/office/.test(t)?'Office':''; }
+  else if(/casual|home|kita|doctor|arzt/.test(t)){ out.cat='casual'; out.sub=/kita/.test(t)?'Kita':/doctor|arzt/.test(t)?'Doctor':/home/.test(t)?'At home':''; }
+  return out;
+}
+const lfil = (l,c,sb) => (!c||c==='all'||l.cat===c) && (!sb||sb==='all'||l.sub===sb);
+function catChips(cat, sub, aC, aS, withAll){
+  const row=(items,cur,act,all)=>`<div class="chips" style="flex-wrap:wrap" role="group">${all?`<button class="chip s" aria-pressed="${!cur||cur==='all'}" data-act="${act}" data-v="all">All</button>`:''}${items.map(x=>`<button class="chip s" aria-pressed="${cur===x[0]}" data-act="${act}" data-v="${esc(x[0])}">${esc(x[1])}</button>`).join('')}</div>`;
+  const subs=(LCATS.find(x=>x[0]===cat)||[0,0,[]])[2];
+  return row(LCATS,cat,aC,withAll)+(subs.length&&cat&&cat!=='all'?row(subs.map(x=>[x,x]),sub,aS,withAll):'');
+}
+function lookFor(a){
+  const l=a.lookId&&state.looks.find(x=>x.id===a.lookId); if(!l) return null;
+  if(a.hairPic===undefined&&a.nails===undefined&&a.nailPic===undefined) return l;
+  const hairIds=new Set([...(state.pics||[]).filter(x=>x.tag==='Hair'),...planHairPics()].map(x=>x.id)), nailIds=new Set([...(state.pics||[]).filter(x=>x.tag==='Nails'),...planNailPics()].map(x=>x.id));
+  let pics=[...(l.pics||[])]; const b=Object.assign({},l.beauty);
+  if(a.hairPic){ pics=pics.filter(id=>!hairIds.has(id)); pics.push(a.hairPic); if(a.hairStyle) b.hair=a.hairStyle; }
+  if(a.nails!==undefined||a.nailPic!==undefined){ pics=pics.filter(id=>!nailIds.has(id)); if(a.nailPic) pics.push(a.nailPic); if(a.nails) b.nails=a.nails; }
+  return Object.assign({},l,{pics,beauty:b});
+}
 const WCATS = [['top','Tops'],['pants','Pants'],['skirts','Skirts'],['dress','Dresses'],['outer','Outerwear'],['shoes','Shoes'],['bag','Bags'],['jewel','Jewelry']];
 const SLOT_LABEL = {top:'Top',bottom:'Bottom',dress:'Dress',outer:'Outerwear',shoes:'Shoes',bag:'Bag',jewel:'Jewelry'};
 // pos = balances an inverted triangle, neg = adds width up top or narrows the hip
@@ -253,6 +278,7 @@ if(window.MUSE_SEED){
 }
   (state.pics||[]).forEach(p => { if(p.tag==='Hair' && !p.style){ p.style = p.id==='seed4' ? 'Blowout' : 'Other'; } if(p.tag==='Hair' && !p.hcolor) p.hcolor = '#141010'; if(p.tag==='Hair' && !p.hcat){ p.hcat = p.style==='Braids' ? 'Braids' : ['seed10','seed11','seed12'].includes(p.id) ? 'Wigs' : 'Natural'; } });
   hairFromPlan();
+  (state.looks||[]).forEach(l => { if(!l.catd){ l.catd=true; if(!l.cat){ const g=lookGuess(l); if(g.cat){ l.cat=g.cat; l.sub=g.sub||''; } } } });
 }
 
 /* ---------- storage: IndexedDB (big photos fit), autosave, and unfinished-work drafts ---------- */
@@ -304,7 +330,7 @@ async function boot(){
 document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); syncUp(); } });
 window.addEventListener('pagehide', () => { persist(); flushDraft(); syncUp(); });
 
-let ui = {fold:{}, tab:'home', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
+let ui = {fold:{}, tab:'home', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', lcat:'all', lsub:'all', pcat:'all', psub:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
 let toast = '';
 
 /* ---------- garments ---------- */
@@ -475,6 +501,15 @@ function today(){
   </section>
   ${stayReady()}`;
 }
+function apptBeautyEdit(a){
+  const hs=[...hairGroups().map(g=>({g,cur:g.pics.find(p=>p.id===a.hairPic)||g.pics[0]})), ...planHairPics().map(p=>({g:null,cur:p}))];
+  const hair=hs.map(({g,cur})=>`<div class="tile ${(g?g.pics.some(p=>p.id===a.hairPic):cur.id===a.hairPic)?'on':''}"><button class="tp hairtp" data-act="ahair" data-v="${cur.id}" aria-label="${esc(g?g.style:'From your plan')}"><img src="${cur.src}" alt=""></button><span class="tn">${esc(g?g.style:'From your plan')}</span>${g?hdots(g,cur.id,'ahair'):''}</div>`).join('');
+  const nps=[...(state.pics||[]).filter(p=>p.tag==='Nails'),...planNailPics()];
+  const nails=NAILS.map(n=>`<figure><button class="nail lg" style="background:${n[1]}" data-act="anail" data-v="${esc(n[0])}" aria-pressed="${a.nails===n[0]}" aria-label="${esc(n[0])}"></button>${esc(n[0])}</figure>`).join('');
+  const npics=nps.map(p=>`<button class="ptile ${a.nailPic===p.id?'on':''}" data-act="anailpic" data-v="${p.id}" aria-pressed="${a.nailPic===p.id}" aria-label="Nail picture"><img src="${p.src}" alt=""></button>`).join('');
+  return `<div class="brow"><div class="row between"><div class="eyebrow">Hair for this day</div>${a.hairPic?'<button class="btn small ghost" data-act="ahair" data-v="">Same as look</button>':''}</div><div class="hscroll">${hair||'<p class="status">No hair pictures yet.</p>'}</div></div>
+  <div class="brow"><div class="row between"><div class="eyebrow">Nails for this day</div>${(a.nails!==undefined||a.nailPic!==undefined)?'<button class="btn small ghost" data-act="anailreset">Same as look</button>':''}</div><div class="pick">${nails}</div>${npics?`<div class="hscroll" style="margin-top:8px">${npics}</div>`:''}</div>`;
+}
 function lookLine(l){ const b = l && l.beauty; if(!b) return ''; const sc = scentOf(b);
   return [b.hair, b.nails, b.lips, sc && scentShort(sc)].filter(Boolean).map(esc).join(' · '); }
 function lookThumbs(l){ const ps = ((l&&l.pics)||[]).map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean).slice(0,2);
@@ -496,7 +531,7 @@ function lookPlanArt(l, extra){
 }
 function apptGCard(a){
   const td = isoDay();
-  const l = a.lookId && state.looks.find(x => x.id===a.lookId), p = (a.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
+  const l = lookFor(a), p = (a.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
   const comp = l ? lookPlanArt(l, a.pics) : '';
   const art = l ? (comp || `<div class="gboard thumbboard">${boardParts(l).core}</div>`) : p ? `<img src="${p.src}" alt="">` : `<div class="gico">${ticon(TYPE_ICON[a.type]||'other', false)}</div>`;
   const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
@@ -803,9 +838,10 @@ function lookMeta(l){
   return parts.length ? `<div class="lk-meta">${parts.join('')}</div>` : '';
 }
 function looks(){
-  return `<header class="dayhead"><span class="eyebrow">${state.looks.length} saved</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">Looks</h1><div class="row" style="gap:8px;flex-wrap:nowrap">${state.looks.length>1?`<button class="btn small ghost" data-act="larr">${ui.larr?'Done':'Arrange'}</button>`:''}<button class="roundbtn" data-act="newlook" aria-label="Create a look">＋</button></div></div></header>
-  ${state.looks.length?`<div class="lk-grid ${ui.larr?'arr':''}">${state.looks.map(l=>`<div class="lk-card" data-lid="${l.id}">${ui.larr?`<span class="lk-mv"><span role="button" tabindex="0" aria-label="Move earlier" data-act="mvlook" data-v="${l.id}:-1">‹</span><span role="button" tabindex="0" aria-label="Move later" data-act="mvlook" data-v="${l.id}:1">›</span></span>`:''}<button class="lk-open" data-act="editlook" data-v="${l.id}" aria-label="Edit ${esc(l.name)}">${lookCover(l)}</button>
-    <div class="lk-row"><div class="lk-t"><h3 class="lname">${esc(l.name)}</h3>${l.occasion?`<span class="status">${esc(l.occasion)}</span>`:''}</div><div class="lk-act"><button class="iconb" data-act="shoplook" data-v="${l.id}" aria-label="Shop this look">${CART}</button><button class="iconb" data-act="dellook" data-v="${l.id}" aria-label="Delete ${esc(l.name)}">✕</button></div></div>${lookMeta(l)}</div>`).join('')}</div>`
+  return `<header class="dayhead"><span class="eyebrow">${state.looks.length} saved</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">Looks</h1><div class="row" style="gap:8px;flex-wrap:nowrap">${state.looks.length>1&&ui.lcat==='all'?`<button class="btn small ghost" data-act="larr">${ui.larr?'Done':'Arrange'}</button>`:''}<button class="roundbtn" data-act="newlook" aria-label="Create a look">＋</button></div></div></header>
+  ${state.looks.length?`<div class="lk-filter">${catChips(ui.lcat,ui.lsub,'lcat','lsub',true)}</div>`:''}
+  ${state.looks.length?`<div class="lk-grid ${ui.larr?'arr':''}" ${ui.lcat!=='all'?'data-nodrag="1"':''}>${state.looks.filter(l=>lfil(l,ui.lcat,ui.lsub)).map(l=>`<div class="lk-card" data-lid="${l.id}">${ui.larr?`<span class="lk-mv"><span role="button" tabindex="0" aria-label="Move earlier" data-act="mvlook" data-v="${l.id}:-1">‹</span><span role="button" tabindex="0" aria-label="Move later" data-act="mvlook" data-v="${l.id}:1">›</span></span>`:''}<button class="lk-open" data-act="editlook" data-v="${l.id}" aria-label="Edit ${esc(l.name)}">${lookCover(l)}</button>
+    <div class="lk-row"><div class="lk-t"><h3 class="lname">${esc(l.name)}</h3>${l.occasion?`<span class="status">${esc(l.occasion)}</span>`:''}${l.cat?`<span class="lk-cat">${esc(lcatName(l.cat))}${l.sub?' · '+esc(l.sub):''}</span>`:''}</div><div class="lk-act"><button class="iconb" data-act="shoplook" data-v="${l.id}" aria-label="Shop this look">${CART}</button><button class="iconb" data-act="dellook" data-v="${l.id}" aria-label="Delete ${esc(l.name)}">✕</button></div></div>${lookMeta(l)}</div>`).join('')}</div>`
   :`<button class="blank" data-act="newlook"><span>＋</span>Build your first look. Pick pieces, nails, lips and hair.</button>`}
   <section class="folds">${foldBox('rail','Start from a picture',startRail())}</section>`;
 }
@@ -859,7 +895,7 @@ function builder(){
     <input type="text" id="lname" value="${esc(d.name)}" placeholder="Name this look" maxlength="40" aria-label="Look name">
     <input type="text" id="locc" value="${esc(d.occasion)}" placeholder="Occasion" maxlength="50" aria-label="Occasion">
     <button class="btn" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>${Object.keys(d.slots).length?`<button class="btn small ghost" data-act="shoplook" data-v="draft">${CART} Shop this look</button>`:''}${ui.assignDay!==null&&state.plan[ui.assignDay]?'<button class="btn small ghost" data-act="clearday">Clear this day</button>':''}${d.id?'<button class="btn small ghost" data-act="delcur">Delete this look</button>':''}${parts.strip}${parts.mood}</div></div>
-  <div class="bmain">${ui.assignDay!==null&&state.looks.length?`<div class="brow"><div class="eyebrow">Or start from a saved look</div><div class="hscroll">${state.looks.map(l=>`<button class="tile" data-act="uselook" data-v="${l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div></div>`:''}<div class="chips" role="tablist" aria-label="Look parts">${BTABS.map(t=>`<button class="chip" role="tab" aria-selected="${ui.btab===t[0]}" aria-pressed="${ui.btab===t[0]}" data-act="btab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
+  <div class="bmain">${ui.assignDay!==null&&state.looks.length?`<div class="brow"><div class="eyebrow">Or start from a saved look</div><div class="hscroll">${state.looks.map(l=>`<button class="tile" data-act="uselook" data-v="${l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div></div>`:''}<div class="brow"><div class="eyebrow">Category</div>${catChips(d.cat,d.sub,'dcat','dsub',false)}</div><div class="chips" role="tablist" aria-label="Look parts">${BTABS.map(t=>`<button class="chip" role="tab" aria-selected="${ui.btab===t[0]}" aria-pressed="${ui.btab===t[0]}" data-act="btab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
     <div class="bbody">${body}</div>
     <button class="btn bsave2" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>
     ${notes.length?`<div class="eyebrow" style="margin-top:14px">Style check</div><div class="slots" style="margin-top:8px">${notes.map(n=>`<div class="note ${n.warn?'warn':''}">${esc(n.t)}</div>`).join('')}</div>`:''}
@@ -896,7 +932,7 @@ const inFil = a => ui.cfil==='all' || (ui.cfil==='other' ? !['hair','nails','out
 function apptCard(a){
   const ti = typeInfo(a.type), n = a.prep.length;
   return `<button class="appt ${a.done?'done':''}" data-act="editappt" data-v="${a.id}">${apptLead(a)}
-    <span class="grow"><b>${esc(a.title)}</b><span class="status">${fmtDate(a.date)}${a.time?' · '+esc(a.time):''}${a.where==='home'?' · At home':''}${a.done?' · Done':''}</span>${(()=>{ const l=a.lookId&&state.looks.find(x=>x.id===a.lookId); return l&&lookLine(l)?`<span class="status">${lookLine(l)}</span>`:''; })()}</span>
+    <span class="grow"><b>${esc(a.title)}</b><span class="status">${fmtDate(a.date)}${a.time?' · '+esc(a.time):''}${a.where==='home'?' · At home':''}${a.done?' · Done':''}</span>${(()=>{ const l=lookFor(a); return l&&lookLine(l)?`<span class="status">${lookLine(l)}</span>`:''; })()}</span>
     <span class="status">${n?`${prepDone(a)} of ${n} prepped`:''}</span></button>`;
 }
 function calendar(isHome){
@@ -1008,7 +1044,7 @@ function sheet(){
     inner = `<span class="eyebrow" style="color:var(--goldtxt)">${s.isNew?'New plan':'Your plan'}</span><h2 style="margin-top:4px">${esc(ti[1])}</h2><div class="slots apptform">
       <div class="typerow" role="group" aria-label="Type">${APPT_TYPES.map(t=>`<button class="typeb" aria-pressed="${a.type===t[0]}" data-act="settype" data-v="${t[0]}">${ticon(TYPE_ICON[t[0]]||'other', false)}<span>${t[1]}</span></button>`).join('')}</div>
       ${a.type==='outfit'?'':`<div class="segc" role="group" aria-label="Where" style="margin:0"><button aria-selected="${a.where!=='home'}" data-act="setwhere" data-v="salon">At a salon</button><button aria-selected="${a.where==='home'}" data-act="setwhere" data-v="home">At home, DIY</button></div>`}
-      ${a.type==='outfit'?`<div><div class="eyebrow" style="margin-bottom:8px">Look for this day</div>${state.looks.length?`<div class="hscroll">${state.looks.map(l=>`<button class="tile ${a.lookId===l.id?'on':''}" data-act="applook" data-v="${l.id}" aria-pressed="${a.lookId===l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div>`:'<p class="status">No saved looks yet. Build one on the Looks tab first.</p>'}${a.lookId&&state.looks.find(x=>x.id===a.lookId)?`<div class="lksum">${lookThumbs(state.looks.find(x=>x.id===a.lookId))}${beautyStrip(state.looks.find(x=>x.id===a.lookId).beauty)}</div>`:''}</div>`:''}
+      ${a.type==='outfit'?`<div><div class="eyebrow" style="margin-bottom:8px">Look for this day</div>${state.looks.length?`${catChips(ui.pcat,ui.psub,'pcat','psub',true)}<div class="hscroll">${state.looks.filter(l=>lfil(l,ui.pcat,ui.psub)).map(l=>`<button class="tile ${a.lookId===l.id?'on':''}" data-act="applook" data-v="${l.id}" aria-pressed="${a.lookId===l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div>`:'<p class="status">No saved looks yet. Build one on the Looks tab first.</p>'}${lookFor(a)?`<div class="lksum">${lookThumbs(lookFor(a))}${beautyStrip(lookFor(a).beauty)}</div>${apptBeautyEdit(a)}`:''}</div>`:''}
       <label>Title<input type="text" id="aname" value="${esc(a.title)}" maxlength="50"></label>
       <div class="row" style="gap:10px;flex-wrap:nowrap"><label style="flex:1;min-width:0">Date<input type="date" id="adate" value="${a.date}"></label><label style="flex:1;min-width:0">Time<input type="time" id="atime" value="${esc(a.time)}"></label></div>
       ${a.seriesId?`<div class="repnote"><span class="status">Repeats ${esc((repeatLabel((state.series[a.seriesId]||{}).every)||'').toLowerCase())}</span><button class="linkbtn" data-act="stoprepeat">Stop repeating</button></div>`
@@ -1111,7 +1147,7 @@ const actions = {
     const dress = ui.omode==='dress'; const want = dress ? ['dress','outer','shoes'] : ['top','bottom','outer','shoes'];
     ['top','bottom','dress','outer','shoes'].forEach(c=>{ if(!want.includes(c)) delete s[c]; });
     ui.draft.vars=ui.draft.vars||{}; want.forEach(c=>{ const it=pick(c); if(it){ s[c]=it.id; const vs=it.variants.filter(x=>x.have); const pool=vs.length?vs:it.variants; ui.draft.vars[c]=pool[Math.floor(Math.random()*pool.length)].id; } }); },
-  newlook(){ ui.btab='outfit'; ui.omode='split'; ui.assignDay=null; ui.draft={name:'',occasion:'',slots:{},vars:{},pics:[],beauty:{nails:NAILS[0][0],lips:LIPS[0][0],hair:HAIR[0]}}; window.scrollTo(0,0); },
+  newlook(){ ui.btab='outfit'; ui.omode='split'; ui.assignDay=null; ui.draft={name:'',occasion:'',cat:'',sub:'',catd:true,slots:{},vars:{},pics:[],beauty:{nails:NAILS[0][0],lips:LIPS[0][0],hair:HAIR[0]}}; window.scrollTo(0,0); },
   editlook(v){ ui.btab='outfit'; ui.draft=JSON.parse(JSON.stringify(state.looks.find(l=>l.id===v))); ui.omode=ui.draft.slots.dress?'dress':'split'; window.scrollTo(0,0); },
   cancel(){ ui.draft=null; ui.hstyle=null; ui.assignDay=null; },
   dellook(v){ if(!confirm('Delete this look?')) return; state.looks=state.looks.filter(l=>l.id!==v);
@@ -1154,6 +1190,16 @@ const actions = {
   hairopen(v){ ui.sheet={type:'hair',key:v}; },
   hc(v){ ui.hc=v; },
   hstyleall(){ ui.hstyle=null; },
+  dcat(v){ syncDraft(); const d=ui.draft; d.cat = d.cat===v ? '' : v; d.sub=''; },
+  dsub(v){ syncDraft(); const d=ui.draft; d.sub = d.sub===v ? '' : v; },
+  lcat(v){ ui.lcat=v; ui.lsub='all'; ui.larr=false; },
+  lsub(v){ ui.lsub=v; },
+  pcat(v){ ui.pcat=v; ui.psub='all'; },
+  psub(v){ ui.psub=v; },
+  ahair(v){ const a=ui.adraft; if(!v||a.hairPic===v){ delete a.hairPic; delete a.hairStyle; return; } const p=(state.pics||[]).find(x=>x.id===v); a.hairPic=v; a.hairStyle=(p&&p.style)||'Other'; },
+  anail(v){ const a=ui.adraft; if(a.nails===v&&!a.nailPic){ delete a.nails; delete a.nailPic; return; } a.nails=v; a.nailPic=''; },
+  anailpic(v){ const a=ui.adraft; if(a.nailPic===v){ delete a.nailPic; delete a.nails; return; } a.nailPic=v; },
+  anailreset(){ const a=ui.adraft; delete a.nails; delete a.nailPic; },
   hairstyle(v){ syncDraft(); const d=ui.draft; ui.hstyle=v; d.beauty.hair=v;
     const hairIds=[...(state.pics||[]).filter(x=>x.tag==='Hair'),...planHairPics()].map(x=>x.id);
     d.pics=d.pics||[]; if(!d.pics.some(id=>hairIds.includes(id))){ const g=hairGroups(ui.hc,v)[0]; if(g) d.pics.push(g.pics[0].id); } },
@@ -1360,7 +1406,7 @@ function syncDraft(){
     c.classList.remove('lift'); c.style.transform=''; render();
   }
   document.addEventListener('pointerdown', e => {
-    const card=e.target.closest&&e.target.closest('.lk-card'); if(!card||!card.dataset.lid||e.target.closest('.iconb,.lk-mv')||ui.larr) return;
+    const card=e.target.closest&&e.target.closest('.lk-card'); if(!card||!card.dataset.lid||card.closest('[data-nodrag]')||e.target.closest('.iconb,.lk-mv')||ui.larr) return;
     if(e.pointerType==='mouse'&&e.button!==0) return;
     pt={x:e.clientX,y:e.clientY}; st={card,id:e.pointerId,x:e.clientX,y:e.clientY};
     clearTimeout(t); t=setTimeout(()=>{ if(st&&!drag) start(); },450);
