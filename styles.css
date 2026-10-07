@@ -951,3 +951,30 @@ h2{font-size:22px}
 .lk-img.pc.n3 .lk-p:last-child,.lk-img.pc.n5 .lk-p:last-child{grid-column:1/3}
 .lk-meta{gap:3px 10px;font-size:11.5px}
 .lk-grid{margin-top:22px}
+
+/* ---------- metallic gold v1: same gold as the logo monogram, in every theme ---------- */
+:root{
+  --g-hi:color-mix(in srgb,var(--gold) 52%,#fff7e0);
+  --g-lo:color-mix(in srgb,var(--gold) 76%,#5a3a14);
+  --goldgrad:linear-gradient(155deg,var(--g-hi) 0%,var(--gold) 36%,var(--g-lo) 68%,color-mix(in srgb,var(--gold) 88%,#fff) 100%);
+  --goldglow:color-mix(in srgb,var(--gold) 58%,transparent);
+  --lift:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(60,32,8,.28),0 8px 18px -8px var(--goldglow),0 2px 4px rgba(0,0,0,.14);
+}
+:root .btn:not(.ghost),:root .roundbtn:not(.ghost),:root .fab,:root .snapcta-i,:root .streak,:root .snapbtn.gold,:root .sfav,:root .cd.sel,:root .wd.sel,:root .segb.on:nth-child(2),:root .badge.on .bi,:root .pic-tile.on .check,:root .ptile.on .check,:root .pic-tile .new,:root .cover,:root .selbar{
+  background-image:var(--goldgrad)!important;background-color:var(--gold);text-shadow:0 1px 0 rgba(255,255,255,.28)}
+:root .btn:not(.ghost),:root .roundbtn:not(.ghost),:root .fab,:root .snapcta-i,:root .snapbtn.gold{box-shadow:var(--lift)}
+:root .btn:not(.ghost):active,:root .roundbtn:not(.ghost):active{box-shadow:inset 0 2px 4px rgba(60,32,8,.35),0 2px 6px -2px var(--goldglow)}
+:root .selbar .btn{background-image:none!important;background:#241713}
+/* gold text on headings accent */
+.page-title em,.dayhead em,h1 em,h2 em{background:var(--goldgrad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;padding-right:.06em}
+/* nav indicator and progress */
+.nav button[aria-current=page]::before{background:var(--goldgrad);height:3px;border-radius:0 0 3px 3px;box-shadow:0 2px 8px var(--goldglow)}
+.ringw{background:conic-gradient(var(--g-hi),var(--gold) calc(var(--p) * .5%),var(--g-lo) calc(var(--p) * 1%),color-mix(in srgb,var(--espresso) 12%,transparent) 0)}
+.ringw.over{background:conic-gradient(#a4462b 0 100%)}
+.linkbtn{border-bottom-color:var(--gold)}
+/* depth on cards: soft light edge on top, shadow below, so surfaces lift off the page */
+.gcard,.card,.prodc,.lk-img,.rcard,.fold,.tile,.item,.blank,.snapcard,.scard{box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 1px 2px rgba(40,24,10,.08),0 12px 26px -16px rgba(40,24,10,.38)}
+:root[data-mode=dark] .gcard,:root[data-mode=dark] .card,:root[data-mode=dark] .prodc,:root[data-mode=dark] .lk-img,:root[data-mode=dark] .rcard,:root[data-mode=dark] .fold,:root[data-mode=dark] .tile,:root[data-mode=dark] .item,:root[data-mode=dark] .blank{box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 0 1px color-mix(in srgb,var(--gold) 14%,transparent),0 14px 28px -14px rgba(0,0,0,.8)}
+.gcard,.lk-img,.prodc{border-color:color-mix(in srgb,var(--gold) 26%,var(--line))}
+:root .cd.sel,:root .cd.sel *,:root .wd.sel,:root .wd.sel *{color:#241713!important;text-shadow:none}
+:root .cd.sel .dots i{background:#241713}

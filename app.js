@@ -800,6 +800,7 @@ function builder(){
     <div class="brow"><div class="eyebrow">Hairstyle</div><div class="chips" style="flex-wrap:wrap">${HAIR.map(h=>`<button class="chip" data-act="beauty" data-k="hair" data-v="${esc(h)}" aria-pressed="${d.beauty.hair===h}">${esc(h)}</button>`).join('')}</div></div>
     <div class="brow"><div class="eyebrow">Your hair pictures</div><div class="hscroll">${groups.map(g=>{ const cur = g.pics.find(p=>sel.includes(p.id)) || g.pics.find(p=>p.id===ui.hsel[g.key]) || g.pics[0], on = g.pics.some(p=>sel.includes(p.id));
       return `<div class="tile ${on?'on':''}"><button class="tp hairtp" data-act="hairsel" data-v="${cur.id}" aria-pressed="${on}" aria-label="${esc(g.style)}, ${esc(hairName(cur.hcolor))}"><img src="${cur.src}" alt=""></button><span class="tn">${esc(g.style)}</span><span class="tl">${esc(hcatName(g.hcat))}</span>${hdots(g,cur.id,'hairsel')}</div>`; }).join('')}
+      ${planHairPics().map(p=>`<div class="tile ${sel.includes(p.id)?'on':''}"><button class="tp hairtp" data-act="hairsel" data-v="${p.id}" aria-pressed="${sel.includes(p.id)}" aria-label="From your plan"><img src="${p.src}" alt=""></button><span class="tn">From your plan</span></div>`).join('')}
       <label class="ptile addp" data-tag="Hair"><span>＋</span><span>Upload</span><input type="file" id="picup" accept="image/*" multiple hidden></label></div></div>`;
   } else if (ui.btab==='nails'){
     body = `<div class="brow"><div class="eyebrow">Nails</div><div class="pick">${NAILS.map(n=>`<figure><button class="nail lg" style="background:${n[1]}" data-act="beauty" data-k="nails" data-v="${esc(n[0])}" aria-pressed="${d.beauty.nails===n[0]}" aria-label="${esc(n[0])}"></button>${esc(n[0])}</figure>`).join('')}</div></div>
@@ -1108,7 +1109,7 @@ const actions = {
   hairpick(v){ const [st,id]=v.split(/:(.+)/); ui.hsel[st]=id; },
   lbsrc(v){ ui.lightbox=state.pics.find(p=>p.id===v).src; },
   hairlook(v){ const p=state.pics.find(x=>x.id===v); ui.sheet=null; actions.newlook(); ui.draft.pics=[v]; ui.draft.beauty.hair=p.style||'Other'; ui.btab='hair'; },
-  hairsel(v){ const p=state.pics.find(x=>x.id===v), d=ui.draft, hairIds=(state.pics||[]).filter(x=>x.tag==='Hair').map(x=>x.id);
+  hairsel(v){ const p=state.pics.find(x=>x.id===v), d=ui.draft, hairIds=[...(state.pics||[]).filter(x=>x.tag==='Hair'),...planHairPics()].map(x=>x.id);
     d.pics=d.pics||[]; const had=d.pics.includes(v); d.pics=d.pics.filter(id=>!hairIds.includes(id));
     if(!had){ d.pics.push(v); d.beauty.hair=p.style||'Other'; } ui.hsel[(p.hcat||'Natural')+'|'+(p.style||'Other')]=v; },
   delpic(){ const id=ui.sheet.id; state.pics=state.pics.filter(p=>p.id!==id);
@@ -1345,6 +1346,10 @@ function hairFromPlan(){
   const ids = new Set(); (state.appts||[]).forEach(a => { if(a.type==='hair') (a.pics||[]).forEach(id => ids.add(id)); });
   let n = 0; (state.pics||[]).forEach(p => { if(ids.has(p.id) && p.tag!=='Hair'){ p.tag='Hair'; p.style=p.style||'Other'; p.hcolor=p.hcolor||'#141010'; p.hcat=p.hcat||'Natural'; n++; } });
   return n;
+}
+function planHairPics(){
+  const ids = new Set(); (state.appts||[]).forEach(a => { if(a.type!=='hair') return; (a.pics||[]).forEach(id => ids.add(id)); const l = a.lookId && state.looks.find(x => x.id===a.lookId); if(l) (l.pics||[]).forEach(id => ids.add(id)); });
+  return (state.pics||[]).filter(p => ids.has(p.id) && p.tag!=='Hair');
 }
 function hairGroups(cat){
   const map = new Map();
