@@ -475,6 +475,10 @@ function today(){
   </section>
   ${stayReady()}`;
 }
+function lookLine(l){ const b = l && l.beauty; if(!b) return ''; const sc = scentOf(b);
+  return [b.hair, b.nails, b.lips, sc && scentShort(sc)].filter(Boolean).map(esc).join(' · '); }
+function lookThumbs(l){ const ps = ((l&&l.pics)||[]).map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean).slice(0,2);
+  return ps.length ? `<span class="gpics">${ps.map(p=>`<img src="${p.src}" alt="">`).join('')}</span>` : ''; }
 function apptGCard(a){
   const td = isoDay();
   const l = a.lookId && state.looks.find(x => x.id===a.lookId), p = (a.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).find(Boolean);
@@ -482,7 +486,7 @@ function apptGCard(a){
   const open = (a.prep||[]).filter(x=>!x.done).length, tot = (a.prep||[]).length;
   const when = a.date!==td && a.date!==ui.calSel ? fmtDate(a.date) : '';
   const meta = [when, a.time, a.seriesId?repeatLabel((state.series[a.seriesId]||{}).every):'', a.where==='home'?'At home':'', tot?(open?`${open} to prep`:'Prepped'):''].filter(Boolean).map(esc).join(' · ');
-  return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart ${p?'photo':'plain'}">${art}${ui.arrange?`<span class="mvb"><span class="mv" role="button" aria-label="Move earlier" data-act="mvplan" data-v="${a.id}:-1">‹</span><span class="mv" role="button" aria-label="Move later" data-act="mvplan" data-v="${a.id}:1">›</span></span>`:`<span class="gx" role="button" aria-label="Delete this plan" data-act="delplan" data-v="${a.id}">✕</span>`}<span class="gcap"><b>${esc(a.title)}</b>${meta?`<span class="status">${meta}</span>`:''}</span></span></button>`;
+  return `<button class="gcard" data-act="editappt" data-v="${a.id}"><span class="gart ${p?'photo':'plain'}">${art}${ui.arrange?`<span class="mvb"><span class="mv" role="button" aria-label="Move earlier" data-act="mvplan" data-v="${a.id}:-1">‹</span><span class="mv" role="button" aria-label="Move later" data-act="mvplan" data-v="${a.id}:1">›</span></span>`:`<span class="gx" role="button" aria-label="Delete this plan" data-act="delplan" data-v="${a.id}">✕</span>`}${l?lookThumbs(l):''}<span class="gcap"><b>${esc(a.title)}</b>${meta?`<span class="status">${meta}</span>`:''}${l&&lookLine(l)?`<span class="status gbl">${lookLine(l)}</span>`:''}</span></span></button>`;
 }
 function prepToday(){
   const td = isoDay(), lim = addDays(td,14);
@@ -873,7 +877,7 @@ const inFil = a => ui.cfil==='all' || (ui.cfil==='other' ? !['hair','nails','out
 function apptCard(a){
   const ti = typeInfo(a.type), n = a.prep.length;
   return `<button class="appt ${a.done?'done':''}" data-act="editappt" data-v="${a.id}">${apptLead(a)}
-    <span class="grow"><b>${esc(a.title)}</b><span class="status">${fmtDate(a.date)}${a.time?' · '+esc(a.time):''}${a.where==='home'?' · At home':''}${a.done?' · Done':''}</span></span>
+    <span class="grow"><b>${esc(a.title)}</b><span class="status">${fmtDate(a.date)}${a.time?' · '+esc(a.time):''}${a.where==='home'?' · At home':''}${a.done?' · Done':''}</span>${(()=>{ const l=a.lookId&&state.looks.find(x=>x.id===a.lookId); return l&&lookLine(l)?`<span class="status">${lookLine(l)}</span>`:''; })()}</span>
     <span class="status">${n?`${prepDone(a)} of ${n} prepped`:''}</span></button>`;
 }
 function calendar(isHome){
@@ -985,7 +989,7 @@ function sheet(){
     inner = `<span class="eyebrow" style="color:var(--goldtxt)">${s.isNew?'New plan':'Your plan'}</span><h2 style="margin-top:4px">${esc(ti[1])}</h2><div class="slots apptform">
       <div class="typerow" role="group" aria-label="Type">${APPT_TYPES.map(t=>`<button class="typeb" aria-pressed="${a.type===t[0]}" data-act="settype" data-v="${t[0]}">${ticon(TYPE_ICON[t[0]]||'other', false)}<span>${t[1]}</span></button>`).join('')}</div>
       ${a.type==='outfit'?'':`<div class="segc" role="group" aria-label="Where" style="margin:0"><button aria-selected="${a.where!=='home'}" data-act="setwhere" data-v="salon">At a salon</button><button aria-selected="${a.where==='home'}" data-act="setwhere" data-v="home">At home, DIY</button></div>`}
-      ${a.type==='outfit'?`<div><div class="eyebrow" style="margin-bottom:8px">Look for this day</div>${state.looks.length?`<div class="hscroll">${state.looks.map(l=>`<button class="tile ${a.lookId===l.id?'on':''}" data-act="applook" data-v="${l.id}" aria-pressed="${a.lookId===l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div>`:'<p class="status">No saved looks yet. Build one on the Looks tab first.</p>'}</div>`:''}
+      ${a.type==='outfit'?`<div><div class="eyebrow" style="margin-bottom:8px">Look for this day</div>${state.looks.length?`<div class="hscroll">${state.looks.map(l=>`<button class="tile ${a.lookId===l.id?'on':''}" data-act="applook" data-v="${l.id}" aria-pressed="${a.lookId===l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div>`:'<p class="status">No saved looks yet. Build one on the Looks tab first.</p>'}${a.lookId&&state.looks.find(x=>x.id===a.lookId)?`<div class="lksum">${lookThumbs(state.looks.find(x=>x.id===a.lookId))}${beautyStrip(state.looks.find(x=>x.id===a.lookId).beauty)}</div>`:''}</div>`:''}
       <label>Title<input type="text" id="aname" value="${esc(a.title)}" maxlength="50"></label>
       <div class="row" style="gap:10px;flex-wrap:nowrap"><label style="flex:1;min-width:0">Date<input type="date" id="adate" value="${a.date}"></label><label style="flex:1;min-width:0">Time<input type="time" id="atime" value="${esc(a.time)}"></label></div>
       ${a.seriesId?`<div class="repnote"><span class="status">Repeats ${esc((repeatLabel((state.series[a.seriesId]||{}).every)||'').toLowerCase())}</span><button class="linkbtn" data-act="stoprepeat">Stop repeating</button></div>`
