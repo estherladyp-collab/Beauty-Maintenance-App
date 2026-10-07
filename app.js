@@ -892,14 +892,14 @@ function builder(){
     body = `${itemRow('Bag','bag',d)}${itemRow('Belt','belt',d)}${itemRow('Scarf','scarf',d)}${itemRow('Jewelry','jewel',d)}${picsRow('Accessories',d,'Accessories inspiration')}`;
   }
   return `<button class="back" data-act="cancel">← Back</button>
-  <h1 class="page-title" style="margin-bottom:12px">${ui.assignDay!==null?`Plan <em>${DAYFULL[ui.assignDay]}</em>`:`${d.id?'Edit':'Create a'} <em>look</em>`}</h1>
+  <h1 class="page-title" style="margin-bottom:12px">${ui.fromAppt?`Look for <em>${esc((ui.adraft&&ui.adraft.title)||'this plan')}</em>`:ui.assignDay!==null?`Plan <em>${DAYFULL[ui.assignDay]}</em>`:`${d.id?'Edit':'Create a'} <em>look</em>`}</h1>
   <div class="builder"><div class="pv">${parts.core}<div class="pvside">
     <input type="text" id="lname" value="${esc(d.name)}" placeholder="Name this look" maxlength="40" aria-label="Look name">
     <input type="text" id="locc" value="${esc(d.occasion)}" placeholder="Occasion" maxlength="50" aria-label="Occasion">
-    <button class="btn" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>${Object.keys(d.slots).length?`<button class="btn small ghost" data-act="shoplook" data-v="draft">${CART} Shop this look</button>`:''}${ui.assignDay!==null&&state.plan[ui.assignDay]?'<button class="btn small ghost" data-act="clearday">Clear this day</button>':''}${d.id?'<button class="btn small ghost" data-act="delcur">Delete this look</button>':''}${parts.strip}${parts.mood}</div></div>
+    <button class="btn" data-act="savelook">${ui.fromAppt?'Save and use for this plan':ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>${Object.keys(d.slots).length?`<button class="btn small ghost" data-act="shoplook" data-v="draft">${CART} Shop this look</button>`:''}${ui.assignDay!==null&&state.plan[ui.assignDay]?'<button class="btn small ghost" data-act="clearday">Clear this day</button>':''}${d.id?'<button class="btn small ghost" data-act="delcur">Delete this look</button>':''}${parts.strip}${parts.mood}</div></div>
   <div class="bmain">${ui.assignDay!==null&&state.looks.length?`<div class="brow"><div class="eyebrow">Or start from a saved look</div><div class="hscroll">${state.looks.map(l=>`<button class="tile" data-act="uselook" data-v="${l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div></div>`:''}<div class="brow"><div class="eyebrow">Category</div>${catChips(d.cat,d.sub,'dcat','dsub',false)}</div><div class="chips" role="tablist" aria-label="Look parts">${BTABS.map(t=>`<button class="chip" role="tab" aria-selected="${ui.btab===t[0]}" aria-pressed="${ui.btab===t[0]}" data-act="btab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
     <div class="bbody">${body}</div>
-    <button class="btn bsave2" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>
+    <button class="btn bsave2" data-act="savelook">${ui.fromAppt?'Save and use for this plan':ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>
     ${notes.length?`<div class="eyebrow" style="margin-top:14px">Style check</div><div class="slots" style="margin-top:8px">${notes.map(n=>`<div class="note ${n.warn?'warn':''}">${esc(n.t)}</div>`).join('')}</div>`:''}
   </div></div>`;
 }
@@ -1046,7 +1046,7 @@ function sheet(){
     inner = `<span class="eyebrow" style="color:var(--goldtxt)">${s.isNew?'New plan':'Your plan'}</span><h2 style="margin-top:4px">${esc(ti[1])}</h2><div class="slots apptform">
       <div class="typerow" role="group" aria-label="Type">${APPT_TYPES.map(t=>`<button class="typeb" aria-pressed="${a.type===t[0]}" data-act="settype" data-v="${t[0]}">${ticon(TYPE_ICON[t[0]]||'other', false)}<span>${t[1]}</span></button>`).join('')}</div>
       ${a.type==='outfit'?'':`<div class="segc" role="group" aria-label="Where" style="margin:0"><button aria-selected="${a.where!=='home'}" data-act="setwhere" data-v="salon">At a salon</button><button aria-selected="${a.where==='home'}" data-act="setwhere" data-v="home">At home, DIY</button></div>`}
-      ${a.type==='outfit'?`<div><div class="eyebrow" style="margin-bottom:8px">Look for this day</div>${state.looks.length?`${catChips(ui.pcat,ui.psub,'pcat','psub',true)}<div class="hscroll">${state.looks.filter(l=>lfil(l,ui.pcat,ui.psub)).map(l=>`<button class="tile ${a.lookId===l.id?'on':''}" data-act="applook" data-v="${l.id}" aria-pressed="${a.lookId===l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div>`:'<p class="status">No saved looks yet. Build one on the Looks tab first.</p>'}${lookFor(a)?`<div class="lksum">${lookThumbs(lookFor(a))}${beautyStrip(lookFor(a).beauty)}</div>${apptBeautyEdit(a)}`:''}</div>`:''}
+      ${a.type==='outfit'?`<div><div class="eyebrow" style="margin-bottom:8px">Look for this day</div>${state.looks.length?`${catChips(ui.pcat,ui.psub,'pcat','psub',true)}<div class="hscroll">${state.looks.filter(l=>lfil(l,ui.pcat,ui.psub)).map(l=>`<button class="tile ${a.lookId===l.id?'on':''}" data-act="applook" data-v="${l.id}" aria-pressed="${a.lookId===l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div>`:'<p class="status">No saved looks yet. Build your first one right here.</p>'}<div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn small" data-act="lookfornew">＋ New look</button>${a.lookId&&state.looks.some(x=>x.id===a.lookId)?'<button class="btn small ghost" data-act="lookforremix">Remix this look</button>':''}</div>${lookFor(a)?`<div class="lksum">${lookThumbs(lookFor(a))}${beautyStrip(lookFor(a).beauty)}</div>${apptBeautyEdit(a)}`:''}</div>`:''}
       <label>Title<input type="text" id="aname" value="${esc(a.title)}" maxlength="50"></label>
       <div class="row" style="gap:10px;flex-wrap:nowrap"><label style="flex:1;min-width:0">Date<input type="date" id="adate" value="${a.date}"></label><label style="flex:1;min-width:0">Time<input type="time" id="atime" value="${esc(a.time)}"></label></div>
       ${a.seriesId?`<div class="repnote"><span class="status">Repeats ${esc((repeatLabel((state.series[a.seriesId]||{}).every)||'').toLowerCase())}</span><button class="linkbtn" data-act="stoprepeat">Stop repeating</button></div>`
@@ -1116,7 +1116,7 @@ function setToast(t){ toast=t; render(); setTimeout(()=>{toast='';render();},220
 function logToday(){ const t=isoDay(); if(!state.log.includes(t)) state.log.push(t); }
 
 const actions = {
-  tab(v){ if(v==='calendar'||v==='today') v='home'; ui.arrange=false; ui.enter=true; ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
+  tab(v){ if(v==='calendar'||v==='today') v='home'; ui.fromAppt=false; ui.arrange=false; ui.enter=true; ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
   cat(v){ ui.cat=v; ui.sty='all'; ui.occ='all'; ui.bg='all'; },
   bg(v){ ui.bg=v; ui.sty='all'; },
   sty(v){ ui.sty=v; },
@@ -1151,7 +1151,10 @@ const actions = {
     ui.draft.vars=ui.draft.vars||{}; want.forEach(c=>{ const it=pick(c); if(it){ s[c]=it.id; const vs=it.variants.filter(x=>x.have); const pool=vs.length?vs:it.variants; ui.draft.vars[c]=pool[Math.floor(Math.random()*pool.length)].id; } }); },
   newlook(){ ui.btab='outfit'; ui.omode='split'; ui.assignDay=null; ui.draft={name:'',occasion:'',cat:'',sub:'',catd:true,slots:{},vars:{},pics:[],beauty:{nails:NAILS[0][0],lips:LIPS[0][0],hair:HAIR[0]}}; window.scrollTo(0,0); },
   editlook(v){ ui.btab='outfit'; ui.draft=JSON.parse(JSON.stringify(state.looks.find(l=>l.id===v))); ui.omode=ui.draft.slots.dress?'dress':'split'; window.scrollTo(0,0); },
-  cancel(){ ui.draft=null; ui.hstyle=null; ui.assignDay=null; },
+  cancel(){ ui.draft=null; ui.hstyle=null; ui.assignDay=null; if(ui.fromAppt && ui.adraft){ ui.fromAppt=false; ui.sheet={type:'appt'}; } else ui.fromAppt=false; },
+  lookfornew(){ syncAppt(); const keep=ui.adraft; ui.sheet=null; actions.newlook(); ui.adraft=keep; ui.fromAppt=true; ui.draft.cat=ui.pcat&&ui.pcat!=='all'?ui.pcat:''; ui.draft.sub=ui.psub&&ui.psub!=='all'?ui.psub:''; },
+  lookforremix(){ syncAppt(); const keep=ui.adraft, l=state.looks.find(x=>x.id===keep.lookId); if(!l) return; ui.sheet=null; actions.newlook(); ui.adraft=keep; ui.fromAppt=true;
+    const c=JSON.parse(JSON.stringify(l)); delete c.id; c.name=(l.name||'Look')+' 2'; c.catd=true; c.forDay=undefined; ui.draft=c; if(ui.draft.slots.dress) ui.omode='dress'; },
   dellook(v){ if(!confirm('Delete this look?')) return; state.looks=state.looks.filter(l=>l.id!==v);
     for(const k in state.plan) if(state.plan[k]===v) delete state.plan[k]; save(); },
   pick(v){ syncDraft(); ui.sheet={type:'pick',slot:v}; },
@@ -1165,10 +1168,12 @@ const actions = {
   savelook(){ syncDraft(); const d=ui.draft;
     if(!Object.keys(d.slots).length && !(d.pics||[]).length){ return setToast('Pick at least one piece or picture before saving.'); }
     if(ui.assignDay!==null) d.forDay=ui.assignDay;
+    const fa=ui.fromAppt&&ui.adraft;
     if(!d.name.trim()) d.name=ui.assignDay!==null ? DAYFULL[ui.assignDay]+' look' : 'Look '+(state.looks.length+1);
     if(d.id){ const i=state.looks.findIndex(l=>l.id===d.id); state.looks[i]=d; } else { d.id=uid(); state.looks.push(d); }
-    if(ui.assignDay!==null){ state.plan[ui.assignDay]=d.id; ui.tab='home'; } else ui.tab='looks';
-    ui.assignDay=null; save(); ui.draft=null; ui.hstyle=null; window.scrollTo(0,0); },
+    if(fa){ const a=ui.adraft; a.lookId=d.id; if(a.title===defTitle('outfit')||!String(a.title||'').trim()||/^Outfit: /.test(a.title)) a.title='Outfit: '+d.name; ui.sheet={type:'appt'}; ui.fromAppt=false; }
+    else if(ui.assignDay!==null){ state.plan[ui.assignDay]=d.id; ui.tab='home'; } else ui.tab='looks';
+    ui.assignDay=null; save(); ui.draft=null; ui.hstyle=null; if(!fa) window.scrollTo(0,0); },
   assign(v){ const day=+v, cur=state.looks.find(l=>l.id===state.plan[day]);
     actions.newlook(); ui.assignDay=day;
     if(cur){ const c=JSON.parse(JSON.stringify(cur)); if(cur.forDay!==day) delete c.id; c.vars=c.vars||{}; c.pics=c.pics||[]; ui.draft=c; ui.omode=c.slots.dress?'dress':'split'; }
