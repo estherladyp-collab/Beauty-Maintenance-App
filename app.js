@@ -787,7 +787,19 @@ function closet(){
       ${open?`<div class="grid accbody">${g.list.map(o=>`<button class="item" data-act="closetopen" data-v="${o.it.id}:${o.v.id}" aria-label="${esc(o.it.name)}, ${esc(colorName(o.v.color))}"><div class="pic">${pic(o.it,o.v)}</div><h3>${esc(o.it.name)}</h3><p>${esc(colorName(o.v.color))}${wearInfo(o.it,o.v)}</p></button>`).join('')}</div>`:''}</section>`; }).join('')}</div>`;
 }
 function foldBox(k,label,inner){ return `<div class="fold"><button class="foldh" data-act="fold" data-v="${k}" aria-expanded="${!!ui.fold[k]}"><span>${label}</span><i aria-hidden="true">${ui.fold[k]?'−':'+'}</i></button>${ui.fold[k]?`<div class="foldb">${inner}</div>`:''}</div>`; }
+const SHEET_ORDER = ['top','dress','outer','bottom','shoes','bag','jewel'];
+function lookSheet(l, compact){
+  const tiles = SHEET_ORDER.map(sl => { const it = state.items.find(i => i.id===(l.slots||{})[sl]); return it && {cap:esc(it.name), kind:SLOT_LABEL[sl], html:pic(it, vOf(it, l.vars&&l.vars[sl]))}; }).filter(Boolean);
+  const pics = (l.pics||[]).map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean), b = l.beauty || {};
+  const hp = pics.find(x => x.tag==='Hair'), np = pics.find(x => x.tag==='Nails'), nc = NAILS.find(x => x[0]===b.nails), sc = scentOf(b);
+  if(hp || b.hair) tiles.push({cap:esc(b.hair||'Hair'), kind:'Hair', html: hp ? `<img src="${hp.src}" alt="">` : `<span class="ls-tx">${esc(b.hair)}</span>`, photo:!!hp});
+  if(np || nc) tiles.push({cap:esc(b.nails||'Nails'), kind:'Nails', html: np ? `<img src="${np.src}" alt="">` : `<i class="nail" style="background:${nc[1]}"></i>`, photo:!!np});
+  if(sc) tiles.push({cap:esc(scentShort(sc)), kind:'Scent', html: sc.photo ? `<img src="${sc.photo}" alt="">` : ticon('scent',false), photo:!!sc.photo});
+  const model = l.model ? `<img src="${l.model}" alt="">` : `<span class="ls-ph"><svg viewBox="0 0 40 80" aria-hidden="true"><circle cx="20" cy="12" r="8"/><path d="M8 78c0-30 4-44 12-44s12 14 12 44z"/></svg><small>Model</small></span>`;
+  return `<div class="ls ${compact?'sm':''}"><div class="ls-m ${l.model?'has':''}">${model}</div><div class="ls-g">${tiles.map(t=>`<figure class="ls-p"><div class="ls-i ${t.photo?'ph':''}">${t.html}</div><figcaption><small>${t.kind}</small>${t.cap}</figcaption></figure>`).join('')}</div></div>`;
+}
 function lookCover(l){
+  if (Object.keys(l.slots||{}).length) return lookSheet(l, true);
   const pics = (l.pics||[]).map(id => (state.pics||[]).find(p => p.id===id)).filter(Boolean).slice(0,4);
   if (pics.length) return `<div class="lk-img ph n${pics.length}">${pics.map(p=>`<img src="${p.src}" alt="">`).join('')}</div>`;
   const order = l.slots.dress ? ['outer','dress','jewel','bag','shoes'] : ['outer','top','bottom','jewel','bag','shoes'];
@@ -853,10 +865,10 @@ function builder(){
   }
   return `<button class="back" data-act="cancel">← Back</button>
   <h1 class="page-title" style="margin-bottom:12px">${ui.assignDay!==null?`Plan <em>${DAYFULL[ui.assignDay]}</em>`:`${d.id?'Edit':'Create a'} <em>look</em>`}</h1>
-  <div class="builder"><div class="pv">${parts.core}<div class="pvside">
+  <div class="builder"><div class="pv">${Object.keys(d.slots).length||d.model?lookSheet(d):parts.core}<div class="pvside">
     <input type="text" id="lname" value="${esc(d.name)}" placeholder="Name this look" maxlength="40" aria-label="Look name">
     <input type="text" id="locc" value="${esc(d.occasion)}" placeholder="Occasion" maxlength="50" aria-label="Occasion">
-    <button class="btn" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>${Object.keys(d.slots).length?`<button class="btn small ghost" data-act="shoplook" data-v="draft">${CART} Shop this look</button>`:''}${ui.assignDay!==null&&state.plan[ui.assignDay]?'<button class="btn small ghost" data-act="clearday">Clear this day</button>':''}${d.id?'<button class="btn small ghost" data-act="delcur">Delete this look</button>':''}${parts.strip}${parts.mood}</div></div>
+    <label class="btn small ghost" style="cursor:pointer;text-align:center">${d.model?'Change model picture':'Add model picture'}<input type="file" id="modelup" accept="image/*" hidden></label>${d.model?'<button class="linkbtn" data-act="rmmodel">Remove model picture</button>':''}<button class="btn" data-act="savelook">${ui.assignDay!==null?'Save to '+DAYS[ui.assignDay]:'Save look'}</button>${Object.keys(d.slots).length?`<button class="btn small ghost" data-act="shoplook" data-v="draft">${CART} Shop this look</button>`:''}${ui.assignDay!==null&&state.plan[ui.assignDay]?'<button class="btn small ghost" data-act="clearday">Clear this day</button>':''}${d.id?'<button class="btn small ghost" data-act="delcur">Delete this look</button>':''}${parts.strip}${parts.mood}</div></div>
   <div class="bmain">${ui.assignDay!==null&&state.looks.length?`<div class="brow"><div class="eyebrow">Or start from a saved look</div><div class="hscroll">${state.looks.map(l=>`<button class="tile" data-act="uselook" data-v="${l.id}"><span class="thumbboard">${boardParts(l).core}</span><span class="tn">${esc(l.name)}</span></button>`).join('')}</div></div>`:''}<div class="chips" role="tablist" aria-label="Look parts">${BTABS.map(t=>`<button class="chip" role="tab" aria-selected="${ui.btab===t[0]}" aria-pressed="${ui.btab===t[0]}" data-act="btab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
     <div class="bbody">${body}</div>
     ${notes.length?`<div class="eyebrow" style="margin-top:14px">Style check</div><div class="slots" style="margin-top:8px">${notes.map(n=>`<div class="note ${n.warn?'warn':''}">${esc(n.t)}</div>`).join('')}</div>`:''}
@@ -1119,6 +1131,7 @@ const actions = {
     if(s==='top'||s==='bottom') delete ui.draft.slots.dress; ui.sheet=null; },
   clear(v){ delete ui.draft.slots[v]; ui.sheet=null; },
   nodress(){ syncDraft(); delete ui.draft.slots.dress; },
+  rmmodel(){ syncDraft(); delete ui.draft.model; },
   beauty(v,e){ syncDraft(); const k=e.currentTarget.dataset.k; if(k==='scent' && ui.draft.beauty.scent===v) delete ui.draft.beauty.scent; else ui.draft.beauty[k]=v; },
   addscent(){ syncDraft(); ui.pdraft = {id:uid(), area:'scent', name:'', price:0, shop:'', note:'', photo:null}; ui.sheet = {type:'prod', isNew:true}; },
   savelook(){ syncDraft(); const d=ui.draft;
@@ -1526,6 +1539,9 @@ document.addEventListener('paste', e => { const fs=[...(e.clipboardData?.files||
 document.addEventListener('dragover', e => { if([...(e.dataTransfer?.types||[])].includes('Files')) e.preventDefault(); });
 document.addEventListener('drop', e => { if(e.dataTransfer?.files?.length){ e.preventDefault(); addFiles(e.dataTransfer.files); } });
 document.addEventListener('change', async e => {
+  if (e.target.id==='modelup' && e.target.files.length && ui.draft){ const f=e.target.files[0]; e.target.value=''; syncDraft();
+    const big = await new Promise(res => { const fr=new FileReader(); fr.onload=()=>{ const im=new Image(); im.onload=()=>{ const sc=Math.min(1,820/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*sc); c.height=Math.round(im.height*sc); c.getContext('2d').drawImage(im,0,0,c.width,c.height); res(c.toDataURL('image/jpeg',.82)); }; im.onerror=()=>res(null); im.src=fr.result; }; fr.onerror=()=>res(null); fr.readAsDataURL(f); });
+    if(big){ ui.draft.model=big; render(); } return; }
   if ((e.target.id==='picup'||e.target.id==='picfab') && e.target.files.length){
     const fs=[...e.target.files]; e.target.value=''; await addFiles(fs, e.target.id==='picup'&&ui.tab==='mood'?'insp':undefined); return;
   }

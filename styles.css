@@ -1060,3 +1060,31 @@ h2{font-size:22px}
 .gc-p{overflow:hidden;min-height:0}
 .gc-p img,.gc-p svg{max-height:100%;max-width:100%;width:auto;height:auto;margin:auto;object-fit:contain}
 .gc-p svg{height:100%;width:100%}
+/* lookbook sheet: model on the left, every piece with its name on the right */
+.ls{display:grid;grid-template-columns:42% 1fr;gap:12px;background:#e9dfd3;border-radius:var(--r);padding:12px;align-items:start}
+.ls-m{position:sticky;top:12px;aspect-ratio:3/5;border-radius:12px;overflow:hidden;display:grid;place-items:center;background:color-mix(in srgb,#fff 35%,#e9dfd3);border:1px dashed color-mix(in srgb,var(--gold) 45%,transparent)}
+.ls-m.has{border:0;background:none}
+.ls-m img{width:100%;height:100%;object-fit:cover;object-position:top}
+.ls-ph{display:grid;justify-items:center;gap:6px;color:#8a7260}
+.ls-ph svg{width:44px;height:88px;fill:currentColor;opacity:.4}
+.ls-ph small,.ls-p small{font-size:9px;letter-spacing:.16em;text-transform:uppercase;opacity:.7;display:block}
+.ls-g{display:grid;grid-template-columns:1fr 1fr;gap:10px 8px}
+.ls-p{margin:0;display:grid;gap:4px;text-align:center}
+.ls-i{aspect-ratio:1;display:grid;place-items:center;border-radius:10px;overflow:hidden}
+.ls-i svg{width:100%;height:100%;filter:drop-shadow(0 3px 5px rgba(0,0,0,.18))}
+.ls-i img{width:100%;height:100%;object-fit:contain}
+.ls-i.ph{background:#e9dfd3}.ls-i.ph img{object-fit:cover}
+.ls-i .nail{width:26px;height:38px}
+.ls-i .ls-tx{font:400 15px/1.2 var(--display);color:#3a2a22;padding:6px}
+.ls-p figcaption{font-size:10.5px;line-height:1.25;color:#3a2a22;letter-spacing:.03em;text-transform:uppercase;overflow-wrap:anywhere}
+.ls.sm .ls-p figcaption{font-size:9.5px}
+.lk-img+.ls,.lk-open .ls{border:1px solid color-mix(in srgb,var(--gold) 22%,var(--line))}
+.lk-grid{grid-template-columns:1fr}
+@media(min-width:700px){.lk-grid{grid-template-columns:1fr 1fr}}
+.builder .pv .ls{width:100%}
+.ls{align-items:stretch}
+.ls-m{position:static;aspect-ratio:auto;min-height:300px;align-self:stretch}
+.ls-m.has{min-height:0}
+.ls-m.has img{height:auto;object-fit:contain;object-position:top;border-radius:12px}
+.ls-m.has{display:block;align-self:start;background:none}
+.ls-m.has img{width:100%;height:auto;display:block}
