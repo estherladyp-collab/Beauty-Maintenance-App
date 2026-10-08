@@ -271,10 +271,11 @@ const IMGOF = { flag: 'week', today: 'today', food: 'essen', cart: 'shop', spark
 function fold(k, title, meta, body, o = {}) {
   const open = ui.open.has(k);
   const img = o.img || IMGOF[o.icon];
-  const head = o.sub !== undefined
-    ? `<span class="ico ${img ? 'photo i-' + img : ''}">${img ? '' : icon(o.icon)}</span><span class="ft"><b>${title}</b><span class="fs">${o.sub}</span></span>`
-    : `<span class="ft">${title}</span><span class="fm">${meta || ''}</span>`;
-  return `<div class="fold ${o.sub !== undefined ? 'card' : ''} ${open ? 'open' : ''}"><button class="foldh" data-a="fold" data-k="${k}" aria-expanded="${open}">${head}<span class="chev">${icon('down')}</span></button><div class="foldw"><div class="foldb"><div class="foldi">${body}</div></div></div></div>`;
+  const card = o.sub !== undefined;
+  const text = `<span class="ft"><b>${title}</b><span class="fs">${o.sub}</span></span>`;
+  const head = !card ? `<span class="ft">${title}</span><span class="fm">${meta || ''}</span>` : img ? text : `<span class="ico">${icon(o.icon)}</span>${text}`;
+  const cls = `fold ${card ? 'card' : ''} ${card && img ? 'hero' : ''} ${open ? 'open' : ''}`;
+  return `<div class="${cls}"><button class="foldh ${card && img ? 'photo i-' + img : ''}" data-a="fold" data-k="${k}" aria-expanded="${open}">${head}<span class="chev">${icon('down')}</span></button><div class="foldw"><div class="foldb"><div class="foldi">${body}</div></div></div></div>`;
 }
 const slotLine = (k, c) => `<div class="slot p${c.pot < 0 ? 'x' : c.pot}" style="cursor:default"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</div>`;
 const HUBT = { essen: 'Essen', shop: 'Einkauf', clean: 'Reinigung', budget: 'Budget' };

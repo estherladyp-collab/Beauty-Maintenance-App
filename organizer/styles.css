@@ -393,3 +393,17 @@ h1, h2, h3 { font-weight: 500; letter-spacing: -.015em; }
 .i-church { background-image: url(img/church.jpg); }
 .i-homeroom { background-image: url(img/homeroom.jpg); }
 .fab svg path { stroke: currentColor; stroke-width: 14; stroke-linecap: round; }
+
+/* Karten mit Foto als Kopf */
+.fold.card.hero { box-shadow: var(--shadow); }
+.fold.card.hero .foldh.photo { position: relative; min-height: 136px; padding: 0; align-items: flex-end; background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 22px; transition: border-radius .3s var(--ease); }
+.fold.card.hero.open .foldh.photo { border-radius: 22px 22px 0 0; }
+.fold.card.hero .foldh.photo::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(to top, rgba(16, 10, 6, .86) 0%, rgba(16, 10, 6, .42) 52%, rgba(16, 10, 6, .08) 100%); }
+.fold.card.hero .foldh.photo .ft { position: relative; padding: 0 18px 16px; color: #fff; }
+.fold.card.hero .foldh.photo .ft b { font-size: 24px; color: #fff; text-shadow: 0 1px 12px rgba(0, 0, 0, .35); }
+.fold.card.hero .foldh.photo .fs { color: rgba(255, 255, 255, .82); }
+.fold.card.hero .foldh.photo .chev { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: rgba(16, 10, 6, .45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.fold.card.hero .foldh.photo .chev svg { width: 20px; height: 20px; }
+.fold.card.hero .foldh.photo:active { background-color: transparent; filter: brightness(.95); }
+.fold.card.hero .foldi { padding: 14px 18px 18px; }
+.fold.card { padding: 0; overflow: hidden; }
