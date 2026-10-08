@@ -547,7 +547,7 @@ document.addEventListener('change', e => {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
 
 /* Farben: gleiche sechs Themes wie bei Maintaining You, dazu eigene Farben */
-const THEMES = [['coffee', 'Coffee & gold', '#2a1b16', '#b48a4c'], ['cream', 'Cream', '#f1e6de', '#b48a4c'], ['rose', 'Rosé', '#f3dfdb', '#b4675c'], ['sage', 'Sage', '#1f2a24', '#c8a96a'], ['midnight', 'Midnight', '#1b2233', '#c9a45c'], ['plum', 'Plum', '#2e1a2a', '#d8a28f']];
+const THEMES = [['coffee', 'Coffee & gold', '#2a1b16', '#b48a4c'], ['cream', 'Cream', '#f1e6de', '#b48a4c'], ['rose', 'Rosé', '#f3dfdb', '#b4675c'], ['sage', 'Sage', '#1f2a24', '#c8a96a'], ['midnight', 'Midnight', '#1b2233', '#c9a45c'], ['plum', 'Plum', '#2e1a2a', '#d8a28f'], ['noir', 'Noir & Champagne', '#121110', '#e6d3a8']];
 const hx = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
 const mixc = (a, b, t) => '#' + hx(a).map((v, i) => Math.round(v + (hx(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
 const lum = h => { const [r, g, b] = hx(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
