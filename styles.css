@@ -1097,3 +1097,10 @@ body.dragging{overflow-x:hidden;-webkit-user-select:none;user-select:none}
 #splash.photo .sw-name{text-shadow:0 2px 22px rgba(0,0,0,.45)}
 @keyframes swbg{from{transform:scale(1.08)}to{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){#splash .sw-bg{animation:none}}
+
+/* luxury photo atmosphere behind every page */
+#bgfx{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;background:var(--milk)}
+#bgfx i{position:absolute;inset:0;background-size:cover;background-position:center top;opacity:0;transition:opacity .5s ease}
+#bgfx i.on{opacity:1}
+#bgfx::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(var(--bgrgb,244,236,224),calc(var(--veil,.88) - .3)) 0,rgba(var(--bgrgb,244,236,224),var(--veil,.88)) 38%,rgba(var(--bgrgb,244,236,224),calc(var(--veil,.88) + .08)) 100%)}
+@media(prefers-reduced-motion:reduce){#bgfx i{transition:none}}

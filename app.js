@@ -203,6 +203,7 @@ function applyTheme(t){
   set('--milk',bg); set('--espresso',ink); set('--gold',ac); set('--goldtxt', dark ? ac : mixc(ac,'#241713',.32));
   if(dark){ set('--card',mixc(bg,'#ffffff',.06)); set('--blush',mixc(bg,'#ffffff',.14)); set('--mocha',mixc(ink,bg,.18)); set('--cocoa',mixc(ink,bg,.35)); set('--hero',mixc(bg,'#ffffff',.07)); }
   else { set('--card',mixc(bg,'#ffffff',.5)); set('--blush',mixc(bg,'#7a5240',.14)); set('--mocha','#4a3128'); set('--cocoa','#7a5240'); set('--hero','#241713'); }
+  set('--bgrgb',rgb(bg)); set('--veil', dark ? '.74' : '.88');
   set('--line',`rgba(${rgb(ink)},.16)`); set('--muted',`rgba(${rgb(ink)},.62)`); set('--navbg',`rgba(${rgb(bg)},.93)`);
   document.documentElement.dataset.mode = dark ? 'dark' : 'light';
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = bg;
@@ -1681,10 +1682,18 @@ document.addEventListener('keydown', e => {
   if ((e.key==='Enter'||e.key===' ') && e.target.matches('[role=button][data-act]')){ e.preventDefault(); e.target.click(); }
 });
 
+const BGMAP = {home:3,calendar:3,today:3,beauty:1,mood:1,looks:0,snaps:0,wardrobe:2,closet:2};
+function paintBg(){
+  const B = window.MUSE_BG; if(!B||!B.length) return;
+  let fx = document.getElementById('bgfx');
+  if(!fx){ fx = document.createElement('div'); fx.id='bgfx'; fx.setAttribute('aria-hidden','true'); fx.innerHTML = B.map((u,i)=>`<i data-i="${i}" style="background-image:url(${u})"></i>`).join(''); document.body.insertBefore(fx, document.body.firstChild); }
+  const k = BGMAP[ui.tab]; const want = String(k===undefined ? 3 : k % B.length);
+  fx.querySelectorAll('i').forEach(i => i.classList.toggle('on', i.dataset.i===want));
+}
 function render(){
   const a = document.activeElement, id = a && a.id;
   const hadSheet = !!document.querySelector('.overlay');
-  document.getElementById('app').innerHTML = view(); ui.enter = false;
+  document.getElementById('app').innerHTML = view(); ui.enter = false; paintBg();
   const ov = document.querySelector('.overlay'); if(ov && !hadSheet) ov.classList.add('in');
   if(ui.celebrate){ ui.celebrate=false; const c=document.createElement('div'); c.className='sparkle'; c.setAttribute('aria-hidden','true'); c.innerHTML=Array.from({length:14},(_,i)=>`<i style="--a:${i*26}deg;--d:${60+(i%4)*22}px;animation-delay:${(i%5)*40}ms"></i>`).join(''); document.body.appendChild(c); setTimeout(()=>c.remove(),1400); }
   if (id){ const n=document.getElementById(id); if(n && n.focus) n.focus(); }
