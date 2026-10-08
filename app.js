@@ -427,7 +427,7 @@ function seg(tab){ const g = NAV.find(n => n[2].includes(tab)); const subs = g &
 function view(){
   const body = ui.draft ? builder() : seg(ui.tab) + {home,calendar:home,today,wardrobe,closet,looks,snaps,mood,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true"><img class="medal d" src="${(window.MUSE_LOGO||{}).medal||''}" alt=""><img class="medal g" src="${(window.MUSE_LOGO||{}).gold||''}" alt="">Maintaining You</div>
-  <main class="shell ${ui.enter?'enter':''}"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
+  <main class="shell ${ui.enter?'enter':''}"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="avatar" data-act="profile" aria-label="Your photo">${(state.profile&&state.profile.photo)?`<img src="${state.profile.photo}" alt="">`:'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg>'}</button><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${NAV.map(g=>`<button data-act="tab" data-v="${(ui.last&&ui.last[g[0]])||g[2][0]}" ${g[2].includes(ui.tab)&&!ui.draft?'aria-current="page"':''}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${g[3]}</svg><span>${g[1]}</span></button>`).join('')}</div></nav>
   ${true ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${ui.lightbox?`<div class="lightbox" data-act="lbclose" role="dialog" aria-label="Photo"><img src="${ui.lightbox}" alt=""></div>`:''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
 }
@@ -503,6 +503,10 @@ function today(){
     ${plans.length?`<div class="gallery big" style="margin-top:16px">${plans.map(apptGCard).join('')}</div>`:quickPlan('Nothing planned yet. What is next?')}
   </section>
   ${stayReady()}`;
+}
+function profStyle(){
+  const w=ui.pw||1, h=ui.ph||1, base=Math.min(w,h)/(ui.pz||1), L=(w-base)*(ui.px/100), T=(h-base)*(ui.py/100), D=200, k=D/base;
+  return `background-image:url(${ui.psrc});background-size:${w*k}px ${h*k}px;background-position:${-L*k}px ${-T*k}px`;
 }
 function apptBeautyEdit(a){
   const hs=[...hairGroups().map(g=>({g,cur:g.pics.find(p=>p.id===a.hairPic)||g.pics[0]})), ...planHairPics().map(p=>({g:null,cur:p}))];
@@ -1041,6 +1045,13 @@ function sheet(){
     ${s.mode==='insp'&&s.items.some(f=>f.cat==='Hair')?`<div class="eyebrow" style="margin:12px 0 6px">Hair type for all hair pictures</div><div class="chips" style="flex-wrap:wrap">${HCATS.map(c=>`<button class="chip s" data-act="hcatall" data-v="${c[0]}">${c[1]}</button>`).join('')}</div><div class="eyebrow" style="margin:12px 0 6px">Hairstyle for all hair pictures</div><div class="chips" style="flex-wrap:wrap">${HAIR.map(h=>`<button class="chip s" data-act="hairall" data-v="${h}">${h}</button>`).join('')}</div>`:''}
     <div class="sortgrid" style="margin-top:14px">${s.items.map((f,i)=>`<div class="sorti ${f.cat?'':'todo'}"><img src="${f.src}" alt=""><button class="x" data-act="sortdel" data-v="${i}" aria-label="Remove picture">✕</button><div class="chips" style="flex-wrap:wrap;gap:4px">${cats.map(c=>`<button class="chip s" aria-pressed="${catActive(f,c[0])}" data-act="sortcat" data-v="${i}:${c[0]}">${c[1]}</button>`).join('')}</div>${s.mode==='ward'&&f.cat?`<input type="text" class="sname" data-i="${i}" value="${esc(f.name ?? autoName(f))}" maxlength="40" aria-label="Name" placeholder="Name">`:''}${s.mode==='insp'&&f.cat==='Hair'?`<div class="chips" style="flex-wrap:wrap;gap:4px" role="group" aria-label="Hair type">${HCATS.map(c=>`<button class="chip s" aria-pressed="${(f.hcat||'Natural')===c[0]}" data-act="sorthcat" data-v="${i}:${c[0]}">${c[1]}</button>`).join('')}</div><div class="eyebrow">Hairstyle · ${esc(hairName(f.hair))}</div><div class="chips" style="flex-wrap:wrap;gap:4px">${HAIR.map(h=>`<button class="chip s" aria-pressed="${(f.hstyle||'Other')===h}" data-act="sorthair" data-v="${i}:${h}">${h}</button>`).join('')}</div>`:''}</div>`).join('')}</div>
     <div class="row" style="margin-top:16px"><label class="btn ghost small" style="cursor:pointer;text-transform:none;letter-spacing:0;color:var(--espresso)">Add more<input type="file" id="sortmore" accept="image/*" multiple hidden></label><button class="btn small" data-act="sortsave" ${todo?'aria-disabled="true"':''}>${todo?`Sort ${todo} more`:`Save ${s.items.length} picture${s.items.length===1?'':'s'}`}</button><button class="btn ghost small" data-act="close">Cancel</button></div>`;
+  } else if (s.type==='profile'){
+    const has = !!(state.profile&&state.profile.photo), src = ui.psrc || (has ? state.profile.photo : '');
+    inner = `<span class="eyebrow" style="color:var(--goldtxt)">Just you</span><h2 style="margin-top:4px">Your photo</h2>
+      <div class="pf-wrap"><div class="pf-prev" id="pfprev" style="${src?profStyle():''}">${src?'':'<span>Add a photo of you</span>'}</div></div>
+      ${ui.psrc?`<div class="pf-ctl"><label>Zoom<input type="range" id="pfz" min="1" max="3" step="0.05" value="${ui.pz}"></label><label>Left / right<input type="range" id="pfx" min="0" max="100" step="1" value="${ui.px}"></label><label>Up / down<input type="range" id="pfy" min="0" max="100" step="1" value="${ui.py}"></label></div>`:''}
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:14px"><label class="btn small ${ui.psrc?'ghost':''}" style="cursor:pointer">${has||ui.psrc?'Choose another':'Choose photo'}<input type="file" id="profphoto" accept="image/*" hidden></label>${ui.psrc?'<button class="btn small" data-act="psave">Use this photo</button>':''}${has&&!ui.psrc?'<button class="btn small ghost" data-act="premove">Remove photo</button>':''}<button class="btn small ghost" data-act="close">Close</button></div>
+      <p class="status" style="margin-top:12px">The photo stays on this device, it is not part of the cloud backup.</p>`;
   } else if (s.type==='appt'){
     const a = ui.adraft, ti = typeInfo(a.type), pics = (a.pics||[]).map(id=>(state.pics||[]).find(p=>p.id===id)).filter(Boolean);
     const openN = a.prep.filter(p=>!p.done).length;
@@ -1153,6 +1164,13 @@ const actions = {
   newlook(){ ui.btab='outfit'; ui.omode='split'; ui.assignDay=null; ui.draft={name:'',occasion:'',cat:'',sub:'',catd:true,slots:{},vars:{},pics:[],beauty:{nails:NAILS[0][0],lips:LIPS[0][0],hair:HAIR[0]}}; window.scrollTo(0,0); },
   editlook(v){ ui.btab='outfit'; ui.draft=JSON.parse(JSON.stringify(state.looks.find(l=>l.id===v))); ui.omode=ui.draft.slots.dress?'dress':'split'; window.scrollTo(0,0); },
   cancel(){ ui.draft=null; ui.hstyle=null; ui.assignDay=null; if(ui.fromAppt && ui.adraft){ ui.fromAppt=false; ui.sheet={type:'appt'}; } else ui.fromAppt=false; },
+  profile(){ ui.psrc=null; ui.pz=1; ui.px=50; ui.py=50; ui.sheet={type:'profile'}; },
+  premove(){ delete state.profile; save(); ui.sheet=null; },
+  async psave(){
+    const im = await loadImg(ui.psrc); if(!im){ return setToast('That picture would not open.'); }
+    const w=im.naturalWidth, h=im.naturalHeight, base=Math.min(w,h)/ui.pz, L=(w-base)*(ui.px/100), T=(h-base)*(ui.py/100);
+    const c=document.createElement('canvas'); c.width=c.height=360; c.getContext('2d').drawImage(im,L,T,base,base,0,0,360,360);
+    state.profile={photo:c.toDataURL('image/jpeg',.82)}; ui.psrc=null; ui.sheet=null; save(); render(); },
   lookfornew(){ syncAppt(); const keep=ui.adraft; ui.sheet=null; actions.newlook(); ui.adraft=keep; ui.fromAppt=true; ui.draft.cat=ui.pcat&&ui.pcat!=='all'?ui.pcat:''; ui.draft.sub=ui.psub&&ui.psub!=='all'?ui.psub:''; },
   lookforremix(){ syncAppt(); const keep=ui.adraft, l=state.looks.find(x=>x.id===keep.lookId); if(!l) return; ui.sheet=null; actions.newlook(); ui.adraft=keep; ui.fromAppt=true;
     const c=JSON.parse(JSON.stringify(l)); delete c.id; c.name=(l.name||'Look')+' 2'; c.catd=true; c.forDay=undefined; ui.draft=c; if(ui.draft.slots.dress) ui.omode='dress'; },
@@ -1637,6 +1655,7 @@ async function addFiles(files, mode){
   if(n) setToast(n+(n===1?' picture added.':' pictures added.')+(inSheet?'':' Tap one to set its tag.'));
 }
 document.addEventListener('input', e => {
+  if(e.target.id==='pfz'||e.target.id==='pfx'||e.target.id==='pfy'){ ui[{pfz:'pz',pfx:'px',pfy:'py'}[e.target.id]] = +e.target.value; const pv=document.getElementById('pfprev'); if(pv) pv.setAttribute('style', profStyle()); return; }
   if(e.target.id==='thbg'||e.target.id==='thac'){ const t = themeNow(); const n = {id:'custom', bg:t.bg, accent:t.accent}; if(e.target.id==='thbg') n.bg=e.target.value; else n.accent=e.target.value; state.theme=n; applyTheme(); save(); return; }
   if(e.target.id==='pprice' && ui.sheet && ui.sheet.type==='pdp'){ const it = state.items.find(i => i.id===ui.sheet.id); if(it){ it.price = Math.max(0, parseFloat(e.target.value)||0); save(); } return; }
   if(e.target.id==='shopq' && ui.sheet && ui.sheet.type==='shop'){ ui.sheet.q = e.target.value; document.querySelectorAll('.shoplink').forEach(a => { a.href = shopUrl(a.dataset.tpl, e.target.value); }); return; }
@@ -1651,6 +1670,7 @@ document.addEventListener('change', async e => {
   if ((e.target.id==='picup'||e.target.id==='picfab') && e.target.files.length){
     const fs=[...e.target.files]; e.target.value=''; await addFiles(fs, e.target.id==='picup'&&ui.tab==='mood'?'insp':undefined); return;
   }
+  if (e.target.id==='profphoto' && e.target.files[0]){ const f=e.target.files[0]; e.target.value=''; const d = await shrink(f, 1000); if(!d){ setToast('That picture would not open.'); return; } const im = await loadImg(d); ui.psrc=d; ui.pw=im?im.naturalWidth:1; ui.ph=im?im.naturalHeight:1; ui.pz=1; ui.px=50; ui.py=50; render(); return; }
   if (e.target.id==='pdpphoto' && e.target.files[0]){ const it=state.items.find(i=>i.id===ui.sheet.id), c=vOf(it,ui.vsel[it.id]); const r=await prepare(e.target.files[0]); if(r){ c.photo=r.src; syncHave(it); save(); render(); } return; }
   if ((e.target.id==='snapfile'||e.target.id==='snapcam') && e.target.files[0] && ui.sheet && ui.sheet.type==='snap'){ const f=e.target.files[0]; e.target.value=''; const n=document.getElementById('snnote'); if(n) ui.sheet.note=n.value; const d = await shrink(f, 1000); if(d){ ui.sheet.photo=d; render(); } else setToast('That picture would not open.'); return; }
   if (e.target.id==='sndate' && ui.sheet && ui.sheet.type==='snap'){ ui.sheet.date = e.target.value || isoDay(); ui.sheet.sel=null; const n=document.getElementById('snnote'); if(n) ui.sheet.note=n.value; render(); return; }
