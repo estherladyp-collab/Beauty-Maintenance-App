@@ -417,3 +417,10 @@ h1, h2, h3 { font-weight: 500; letter-spacing: -.015em; }
 .inline-add .btn { width: 46px; padding: 0; flex: none; }
 .inline-add .btn svg { width: 22px; height: 22px; }
 .inline-add .btn svg path { stroke: currentColor; stroke-width: 10; stroke-linecap: round; }
+
+/* Top 3 und Deadlines */
+.prio-row { display: flex; align-items: center; gap: 14px; padding: 6px 0; border-bottom: 1px solid var(--line); min-height: 58px; }
+.prio-row:last-child { border-bottom: 0; }
+.prio-row .pn { font-family: var(--serif); font-weight: 500; font-size: 26px; color: var(--gold-text); width: 22px; text-align: center; flex: none; }
+.prio-row .pt { flex: 1; min-width: 0; font-size: 17px; line-height: 1.3; overflow-wrap: anywhere; }
+.prio-row.done .pt { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }

@@ -178,8 +178,17 @@ function vToday() {
   const slot = (k, s) => { const c = cell(mon, di, s); return `<button class="slot p${c.pot < 0 ? 'x' : c.pot} ${c.text ? '' : 'empty-slot'}" data-a="edit-meal" data-wk="${mon}" data-i="${di}" data-s="${s}"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</button>`; };
   const strip = DS.map((n, i) => { const d = addDays(mon, i); return `<button class="dsb" data-a="pick-day" data-d="${d}" aria-pressed="${d === sel}" ${d === t ? 'aria-current="date"' : ''} aria-label="${fmtLong(d)}"><small>${n}</small><b>${+d.slice(8)}</b><span class="dots">${dotsFor(d)}</span></button>`; }).join('');
   const essen = `<div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div>`;
+  const wkNow = mondayOf(t), sun = addDays(wkNow, 6);
+  const pr = S.priorities[wkNow] || [], pd = (S.prioDone || {})[wkNow] || [];
+  const prios = [0, 1, 2].filter(i => pr[i]).map(i => `<div class="prio-row ${pd[i] ? 'done' : ''}"><span class="pn">${i + 1}</span><span class="pt">${esc(pr[i])}</span>${chk(!!pd[i], `data-a="prio-tg" data-wk="${wkNow}" data-i="${i}" aria-label="${esc(pr[i])} erledigt"`)}</div>`).join('');
+  const dl = S.todos.map(x => ({ x, d: nextOcc(x, t) })).filter(o => o.d && o.d <= sun && !todoDone(o.x, o.d)).sort((p, q) => p.d.localeCompare(q.d));
+  const dlShown = dl.slice(0, 6);
   return `<div class="dash">
     <header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
+    <section><div class="sec"><h2>Top 3 diese Woche</h2><button class="more" data-a="prio-edit" data-wk="${wkNow}">${prios ? 'Ändern' : 'Festlegen'}</button></div>
+      <div class="card list">${prios || `<p class="muted">Was sind deine drei wichtigsten Dinge diese Woche?</p>`}</div></section>
+    <section><div class="sec"><h2>Deadlines diese Woche</h2>${dl.length > 6 ? `<button class="more" data-a="goto-todos">Alle ${dl.length}</button>` : ''}</div>
+      <div class="card list">${dlShown.length ? dlShown.map(o => todoRow(o.x, o.d, { showDate: true })).join('') : `<p class="muted">Keine Deadlines diese Woche.</p>`}</div></section>
     <div class="week-bar"><button class="icon-btn" data-a="wk-prev" aria-label="Vorherige Woche">${icon('left')}</button><span>${fmtShort(mon)} bis ${fmtShort(addDays(mon, 6))}</span><button class="icon-btn" data-a="wk-next" aria-label="Nächste Woche">${icon('right')}</button></div>
     <div class="daystrip" role="group" aria-label="Tag wählen">${strip}</div>
     <section><div class="sec"><h2>${sel === t ? 'Heute' : DAYS[di]}</h2>${sel !== t ? `<button class="more" data-a="cal-today">Zu heute</button>` : ''}</div><div class="card list">${dayAgenda(sel, true)}</div></section>
@@ -237,7 +246,7 @@ function vCal() {
     body = `<div class="daystrip" role="group" aria-label="Tag wählen">${DS.map((n, i) => { const d = addDays(mon, i); return `<button class="dsb" data-a="pick-day" data-d="${d}" aria-pressed="${d === sel}" ${d === t ? 'aria-current="date"' : ''} aria-label="${fmtLong(d)}"><small>${n}</small><b>${+d.slice(8)}</b><span class="dots">${dotsFor(d)}</span></button>`; }).join('')}</div>
       <section style="margin-top:22px"><div class="sec"><h2>${sel === t ? 'Heute' : DAYS[di]}</h2><button class="more" data-a="new" data-d="${sel}">Hinzufügen</button></div><div class="card list">${dayAgenda(sel, true)}</div></section>
       <section style="margin-top:22px"><div class="sec"><h2>Essen</h2></div><div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div></section>
-      <div style="margin-top:22px">${fold('d-week', 'Prioritäten der Woche', pr.length ? '' : 'offen', pr.length ? `<ol class="prio-list">${pr.map(x => `<li>${esc(x)}</li>`).join('')}</ol><button class="btn ghost small" style="margin-top:12px" data-a="prio-edit">Ändern</button>` : `<p class="muted">Was sind deine 3 Prioritäten?</p><button class="btn small" style="margin-top:12px" data-a="prio-edit">Festlegen</button>`)}</div>`;
+      <div style="margin-top:22px">${fold('d-week', 'Prioritäten der Woche', pr.length ? '' : 'offen', pr.length ? `<ol class="prio-list">${pr.map(x => `<li>${esc(x)}</li>`).join('')}</ol><button class="btn ghost small" style="margin-top:12px" data-a="prio-edit" data-wk="${mon}">Ändern</button>` : `<p class="muted">Was sind deine 3 Prioritäten?</p><button class="btn small" style="margin-top:12px" data-a="prio-edit" data-wk="${mon}">Festlegen</button>`)}</div>`;
   }
   return `<div class="stack"><header style="display:flex;justify-content:space-between;align-items:end;gap:12px"><h1 class="title">Kalender</h1><button class="btn ghost small" data-a="cal-today">Heute</button></header>
     <div class="seg" role="group" aria-label="Ansicht"><button data-a="cal-mode" data-m="month" aria-pressed="${ui.calMode === 'month'}">Monat</button><button data-a="cal-mode" data-m="week" aria-pressed="${ui.calMode === 'week'}">Woche</button><button data-a="cal-mode" data-m="agenda" aria-pressed="${ui.calMode === 'agenda'}">Agenda</button></div>
@@ -486,6 +495,8 @@ const A = {
   'todos-for': d => { ui.area = d.area; ui.tab = 'todos'; animateNext = true; commit(); window.scrollTo(0, 0); },
   'wk-prev': () => { ui.calSel = addDays(ui.calSel, -7); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
   'wk-next': () => { ui.calSel = addDays(ui.calSel, 7); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
+  'prio-tg': d => { S.prioDone = S.prioDone || {}; const arr = S.prioDone[d.wk] || (S.prioDone[d.wk] = [false, false, false]); arr[+d.i] = !arr[+d.i]; commit(); },
+  'goto-todos': () => { ui.area = 'all'; ui.tab = 'todos'; animateNext = true; commit(); window.scrollTo(0, 0); },
   'hub-go': d => { ui.home = d.v || null; commit(); window.scrollTo(0, 0); },
   fold: (d, el) => { const f = el.closest('.fold'), on = !ui.open.has(d.k); on ? ui.open.add(d.k) : ui.open.delete(d.k); f.classList.toggle('open', on); el.setAttribute('aria-expanded', on); },
   mealday: d => { ui.mealDay = +d.i; commit(); },
@@ -507,7 +518,7 @@ const A = {
   'cal-prev': () => calMove(-1), 'cal-next': () => calMove(1),
   'cal-today': () => { ui.calSel = isoOf(); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
   week: d => { ui.week = addDays(ui.week, 7 * +d.n); ui.mealDay = null; commit(); },
-  'prio-edit': () => { const p = S.priorities[mondayOf(ui.calSel)] || ['', '', '']; openSheet(`<h2>Diese Woche</h2><form class="form" data-a="prio-save">${[0, 1, 2].map(i => `<label class="field"><span>Priorität ${i + 1}</span><input class="in" id="pr${i}" value="${esc(p[i] || '')}" autocomplete="off" placeholder="${['Das Wichtigste', 'Danach', 'Und noch eins'][i]}"></label>`).join('')}<button class="btn block" type="submit">Speichern</button></form>`); },
+  'prio-edit': d => { const wk = d.wk || mondayOf(isoOf()); const p = S.priorities[wk] || ['', '', '']; openSheet(`<h2>Diese Woche</h2><form class="form" data-a="prio-save" data-wk="${wk}">${[0, 1, 2].map(i => `<label class="field"><span>Priorität ${i + 1}</span><input class="in" id="pr${i}" value="${esc(p[i] || '')}" autocomplete="off" placeholder="${['Das Wichtigste', 'Danach', 'Und noch eins'][i]}"></label>`).join('')}<button class="btn block" type="submit">Speichern</button></form>`); },
   'plan-ingr': () => openSheet(ingrSheet()),
   'ingr-tg': (d, el) => { const on = el.getAttribute('aria-checked') !== 'true'; el.setAttribute('aria-checked', on ? 'true' : 'false'); on ? ingrSel.add(d.n) : ingrSel.delete(d.n); const b = $('#ingr-go'); if (b) { b.textContent = `${ingrSel.size} auf die Einkaufsliste`; b.disabled = !ingrSel.size; } },
   'ingr-add': () => { ingrList.filter(x => ingrSel.has(x.n)).forEach(x => S.shopping.push({ id: uid(), text: x.n, cat: x.cat, done: false, src: 'plan' })); const n = ingrSel.size; closeSheet(); commit(); toast(`${n} Zutaten auf der Liste`); },
@@ -599,7 +610,7 @@ const SUBMIT = {
     commit(); toast(q.kind === 'event' ? 'Termin angelegt' : 'Aufgabe angelegt');
     const n = $('#ia-' + d.area); if (n) n.focus();
   },
-  'prio-save': () => { S.priorities[mondayOf(ui.calSel)] = [0, 1, 2].map(i => $('#pr' + i).value.trim()); closeSheet(); commit(); },
+  'prio-save': (f, d) => { S.priorities[d.wk || mondayOf(isoOf())] = [0, 1, 2].map(i => $('#pr' + i).value.trim()); closeSheet(); commit(); },
   qa: () => {
     const q = parseQuick($('#qa').value); if (!q.title) return;
     const base = { title: q.title, area: q.area || defaultArea(), date: q.date, repeat: q.repeat };
