@@ -446,8 +446,11 @@ const A = {
   'lead-edit': d => leadSheet(d.id),
   'lead-next': d => { const l = S.leads.find(x => x.id === d.id); l.status = LEAD_ST[(LEAD_ST.indexOf(l.status) + 1) % LEAD_ST.length]; commit(); },
   'del-lead': d => { S.leads = S.leads.filter(x => x.id !== d.id); closeSheet(); commit(); },
-  theme: d => { S.settings.theme = d.v; applyTheme(); commit(); },
-  export: () => exportBackup(S),
+  theme: d => { S.settings.theme = d.v; applyTheme(true); commit(); },
+  export: async () => {
+    try { const dl = window.claude && await window.claude.use('downloads'); if (dl) { await dl.save({ filename: 'maintaining-home-backup-' + isoOf() + '.json', data: JSON.stringify(S, null, 2) }); return; } } catch (e) { return; }
+    exportBackup(S);
+  },
   import: () => $('#file').click(),
   reset: () => {
     openSheet(`<h2>Wirklich alles löschen?</h2><p class="muted" style="margin-bottom:16px">Aufgaben, Termine, Pläne und Budget gehen verloren. Speichere vorher ein Backup, wenn du unsicher bist.</p><div class="stack-s"><button class="btn danger block" data-a="reset-yes">Ja, alles löschen</button><button class="btn ghost block" data-a="close">Abbrechen</button></div>`);
@@ -535,8 +538,9 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
 
-function applyTheme() {
-  const t = S.settings.theme; if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+function applyTheme(force) {
+  const t = S.settings.theme;
+  if (t === 'auto') { if (force) delete document.documentElement.dataset.theme; } else document.documentElement.dataset.theme = t;
 }
 
 (async function boot() {

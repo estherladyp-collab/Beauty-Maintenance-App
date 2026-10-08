@@ -53,17 +53,41 @@ async function idbSet(v) {
   } catch (e) { /* localStorage-Spiegel reicht */ }
 }
 
+/* Cloud (nur im Artifact): privates Dokument pro Person. Ohne Cloud läuft alles lokal weiter. */
+const withTimeout = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+async function cloudRef() {
+  try {
+    if (!window.claude || !window.claude.use) return null;
+    const [db, user] = await withTimeout(Promise.all([window.claude.use('db'), window.claude.use('user')]), 4000) || [];
+    if (!db || !user) return null;
+    const id = await user.id(); if (!id) return null;
+    return db.collection('data/users/' + id).doc('state');
+  } catch (e) { return null; }
+}
 async function loadState() {
   let raw = await idbGet();
   if (!raw) { try { raw = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { raw = null; } }
+  try {
+    const ref = await cloudRef();
+    if (ref) {
+      const snap = await withTimeout(ref.get(), 4000);
+      const d = snap && snap.exists ? snap.data() : null;
+      if (d && d.json) { const c = JSON.parse(d.json); if (!raw || (c.savedAt || 0) >= (raw.savedAt || 0)) raw = c; }
+      cloudReady = ref;
+    }
+  } catch (e) { /* lokal weiter */ }
   return raw ? migrate(raw) : freshState();
 }
+let cloudReady = null, cloudT = null;
 
 let saveT = null;
 function persist(state) {
   clearTimeout(saveT);
   saveT = setTimeout(() => {
+    state.savedAt = Date.now();
     idbSet(state);
+    clearTimeout(cloudT);
+    if (cloudReady) cloudT = setTimeout(() => { cloudReady.set({ json: JSON.stringify(state), savedAt: state.savedAt }).catch(() => { }); }, 1500);
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* voll oder gesperrt */ }
   }, 200);
 }
