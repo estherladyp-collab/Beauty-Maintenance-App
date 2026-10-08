@@ -4,6 +4,11 @@ import sys, os
 here = os.path.dirname(os.path.abspath(__file__))
 out = sys.argv[1] if len(sys.argv) > 1 else '/tmp/maintaining-home.html'
 css = open(os.path.join(here, 'styles.css')).read().replace('calc(env(safe-area-inset-top) + 22px)', '22px')
+import base64, re
+def inline(m):
+    p = os.path.join(here, m.group(1))
+    return 'url(data:image/jpeg;base64,' + base64.b64encode(open(p, 'rb').read()).decode() + ')'
+css = re.sub(r'url\((img/[a-z]+\.jpg)\)', inline, css)
 js = ''.join(open(os.path.join(here, f)).read() + '\n' for f in ['seed.js', 'store.js', 'app.js'])
 html = f'''<title>Maintaining Home</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">

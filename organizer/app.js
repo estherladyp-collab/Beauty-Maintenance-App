@@ -187,7 +187,7 @@ function vToday() {
   const log = S.cleanLog[t] || [], ids = roundIds(), deep = deepInfo(t), st = streak();
   const focus = SEED.focus[dowOf(t)], di = dowOf(t);
   const week = pr.length ? `<ol class="prio-list">${pr.map(x => `<li>${esc(x)}</li>`).join('')}</ol><button class="btn ghost small" style="margin-top:12px" data-a="prio-edit">Ändern</button>` : `<p class="muted">Was sind deine 3 Prioritäten?</p><button class="btn small" style="margin-top:12px" data-a="prio-edit">Festlegen</button>`;
-  const today = `${empty ? '<p class="muted">Nichts geplant. Tippe auf das Plus.</p>' : ''}${ev.map(eventRow).join('')}${over.map(x => todoRow(x, x.date, { showDate: true })).join('')}${open.map(x => todoRow(x, t)).join('')}${doneT.map(x => todoRow(x, t)).join('')}`;
+  const today = `${empty ? '<p class="muted">Tippe auf das Plus, um etwas einzutragen.</p>' : ''}${ev.map(eventRow).join('')}${over.map(x => todoRow(x, x.date, { showDate: true })).join('')}${open.map(x => todoRow(x, t)).join('')}${doneT.map(x => todoRow(x, t)).join('')}`;
   const essen = `<div class="stack-s">${slotLine('Früh', cell(wk, di, 0))}${slotLine('Mittag', cell(wk, di, 1))}${slotLine('Abend', cell(wk, di, 2))}</div>`;
   const clean = `<p class="muted small">${deep ? esc(SEED.deep[deep].title) : esc(focus[1])}</p><div class="bar" style="margin:12px 0 8px"><i style="--p:${log.length / ids.length}"></i></div><p class="small muted">Runde ${log.length} von ${ids.length}${st >= 2 ? `, ${st} Tage in Folge` : ''}</p><button class="btn ghost block" style="margin-top:12px" data-a="goto" data-t="home" data-sub="clean">Runde öffnen</button>`;
   return `<div class="dash">
@@ -279,10 +279,12 @@ function vTodos() {
 
 /* ---------- Haushalt: Übersicht und Unterseiten ---------- */
 const seg = (key, opts) => `<div class="seg" role="group">${opts.map(o => `<button data-a="seg" data-key="${key}" data-v="${o[0]}" aria-pressed="${ui[key] === o[0]}">${o[1]}</button>`).join('')}</div>`;
+const IMGOF = { flag: 'week', today: 'today', food: 'essen', cart: 'shop', sparkle: 'clean', wallet: 'budget' };
 function fold(k, title, meta, body, o = {}) {
   const open = ui.open.has(k);
+  const img = IMGOF[o.icon];
   const head = o.sub !== undefined
-    ? `<span class="ico">${icon(o.icon)}</span><span class="ft"><b>${title}</b><span class="fs">${o.sub}</span></span>`
+    ? `<span class="ico ${img ? 'photo i-' + img : ''}">${img ? '' : icon(o.icon)}</span><span class="ft"><b>${title}</b><span class="fs">${o.sub}</span></span>`
     : `<span class="ft">${title}</span><span class="fm">${meta || ''}</span>`;
   return `<div class="fold ${o.sub !== undefined ? 'card' : ''} ${open ? 'open' : ''}"><button class="foldh" data-a="fold" data-k="${k}" aria-expanded="${open}">${head}<span class="chev">${icon('down')}</span></button><div class="foldw"><div class="foldb"><div class="foldi">${body}</div></div></div></div>`;
 }

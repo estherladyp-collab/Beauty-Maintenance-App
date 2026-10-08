@@ -240,7 +240,7 @@ select.in { background-image: linear-gradient(45deg, transparent 50%, var(--mute
 .colorpick input { width: 100%; height: 46px; border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 3px; background: var(--card); }
 .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; }
 
-.cover { position: fixed; inset: 0; z-index: 90; background: var(--bg); display: grid; grid-template-rows: 1fr auto; padding: calc(env(safe-area-inset-top) + 28px) 28px calc(env(safe-area-inset-bottom) + 28px); animation: fade .5s ease-out; }
+.cover { position: fixed; inset: 0; z-index: 90; display: grid; grid-template-rows: 1fr auto; padding: calc(env(safe-area-inset-top) + 28px) 28px calc(env(safe-area-inset-bottom) + 28px); animation: fade .5s ease-out; }
 .cover.out { animation: coverout .5s var(--ease) forwards; pointer-events: none; }
 @keyframes coverout { to { opacity: 0; transform: scale(1.03); } }
 .cover-mid { display: grid; align-content: center; justify-items: center; text-align: center; gap: 22px; }
@@ -334,3 +334,13 @@ select.in { background-image: linear-gradient(45deg, transparent 50%, var(--mute
 .bigfig { display: grid; gap: 6px; }
 .bigfig .v { font-family: var(--serif); font-size: 52px; line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .bigfig .v.neg { color: var(--danger); }
+
+/* Bilder (von Higgsfield erzeugt) */
+.ico.photo { width: 58px; height: 58px; border-radius: 16px; background-size: cover; background-position: center; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08); }
+.i-week { background-image: url(img/week.jpg); }
+.i-today { background-image: url(img/today.jpg); }
+.i-essen { background-image: url(img/essen.jpg); }
+.i-shop { background-image: url(img/shop.jpg); }
+.i-clean { background-image: url(img/clean.jpg); }
+.i-budget { background-image: url(img/budget.jpg); }
+.cover { background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 62%, transparent), color-mix(in srgb, var(--bg) 80%, transparent) 55%, var(--bg) 96%), url(img/cover.jpg) center / cover no-repeat, var(--bg); }
