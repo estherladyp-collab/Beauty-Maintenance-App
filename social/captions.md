@@ -32,7 +32,7 @@ I used to believe appearance doesn't matter as long as my heart is right. I dres
 
 Then I read my Bible again. Rebekah was beautiful, and she kept herself. Esther spent a whole year in beauty treatment before she stood before the king: six months with oil, six months with perfumes and creams. Same Bible. Same God.
 
-God does look at the heart. But people look at the outside first. And if nobody trusts the woman who cannot take care of herself, nobody will listen to what she carries.
+God does look at the heart. But people look at the outside first. If you cannot take care of yourself, who would trust you? And if nobody trusts you, nobody will listen to what you carry.
 
 So I take care of myself. Not for my ego, but for my purpose. It is possible to love Jesus and still look attractive.
 
