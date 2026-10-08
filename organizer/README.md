@@ -1,4 +1,4 @@
-# Mein Planer
+# Maintaining Home
 
 Kalender, To-dos (Victory Family, Church mit VOMI/GLS/Choir, Home) und der Haushaltsplaner aus dem PDF: Kochplan mit 4-Wochen-Rotation, Einkauf, Vorräte, Reinigung, Budget.
 

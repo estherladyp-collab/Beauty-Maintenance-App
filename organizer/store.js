@@ -72,7 +72,7 @@ function exportBackup(state) {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'planer-backup-' + isoOf() + '.json';
+  a.download = 'maintaining-home-backup-' + isoOf() + '.json';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
