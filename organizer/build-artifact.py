@@ -8,7 +8,7 @@ import base64, re
 def inline(m):
     p = os.path.join(here, m.group(1))
     return 'url(data:image/jpeg;base64,' + base64.b64encode(open(p, 'rb').read()).decode() + ')'
-css = re.sub(r'url\((img/[a-z]+\.jpg)\)', inline, css)
+css = re.sub(r'url\((img/[a-z-]+\.jpg)\)', inline, css)
 js = ''.join(open(os.path.join(here, f)).read() + '\n' for f in ['seed.js', 'store.js', 'app.js'])
 html = f'''<title>Maintaining Home</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,6 +17,7 @@ html = f'''<title>Maintaining Home</title>
 <style>
 {css}
 </style>
+<div id="bg" class="t-today" aria-hidden="true"></div>
 <div id="app" class="app"></div>
 <div id="chrome"></div>
 <div id="sheets"></div>

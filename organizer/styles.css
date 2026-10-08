@@ -305,14 +305,14 @@ select.in { background-image: linear-gradient(45deg, transparent 50%, var(--mute
 .fold:not(.open) .foldb { visibility: hidden; transition: visibility 0s .38s; }
 .foldi { padding: 0 0 16px; }
 /* Fächer als Karten (Heute, Haushalt) */
-.dash { display: grid; gap: 12px; }
+.dash { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .dash > header { margin-bottom: 4px; }
 .fold.card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); transition: transform .15s var(--ease); }
 .fold.card:last-child { border-bottom: 1px solid var(--line); }
 .fold.card .foldh { padding: 14px 16px; min-height: 76px; gap: 14px; border-radius: 22px; }
 .fold.card .foldh:active { background: var(--gold-soft); }
 .fold.card .ft b { display: block; font-family: var(--serif); font-weight: 400; font-size: 24px; line-height: 1.15; }
-.fold.card .fs { display: block; font-family: var(--sans); font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.fold.card .fs { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-family: var(--sans); font-size: 14px; color: var(--muted); overflow: hidden; margin-top: 2px; }
 .fold.card .foldi { padding: 2px 16px 18px; }
 .fold.card.open .fs { opacity: .75; }
 .ico { width: 46px; height: 46px; border-radius: 50%; background: var(--gold-soft); color: var(--gold-text); display: grid; place-items: center; flex: none; }
@@ -344,3 +344,12 @@ select.in { background-image: linear-gradient(45deg, transparent 50%, var(--mute
 .i-clean { background-image: url(img/clean.jpg); }
 .i-budget { background-image: url(img/budget.jpg); }
 .cover { background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 62%, transparent), color-mix(in srgb, var(--bg) 80%, transparent) 55%, var(--bg) 96%), url(img/cover.jpg) center / cover no-repeat, var(--bg); }
+
+/* Hintergrundbilder pro Tab (von Higgsfield erzeugt), vom Theme abgedunkelt oder aufgehellt */
+#bg { position: fixed; inset: 0; z-index: -1; background-size: cover; background-position: center; background-repeat: no-repeat; }
+#bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 62%, transparent), color-mix(in srgb, var(--bg) 84%, transparent) 55%, var(--bg) 100%); }
+#bg.t-today { background-image: url(img/bg-today.jpg); }
+#bg.t-cal { background-image: url(img/bg-cal.jpg); }
+#bg.t-todos { background-image: url(img/bg-todos.jpg); }
+#bg.t-home { background-image: url(img/bg-home.jpg); }
+#bg.t-more { background-image: url(img/bg-more.jpg); }

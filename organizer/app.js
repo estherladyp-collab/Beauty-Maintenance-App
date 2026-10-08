@@ -109,6 +109,7 @@ function render() {
   const y = window.scrollY;
   const ae = document.activeElement; if (ae && ae !== document.body && ae.blur && $('#app').contains(ae)) ae.blur();
   const V = { today: vToday, cal: vCal, todos: vTodos, home: vHome, more: vMore }[ui.tab];
+  const bg = $('#bg'); if (bg) bg.className = 't-' + ui.tab;
   $('#app').innerHTML = `<main class="${animateNext ? 'page' : ''}">${V()}</main>`;
   animateNext = false;
   const tabs = [['today', 'Heute', 'today'], ['cal', 'Kalender', 'cal'], ['todos', 'To-dos', 'todo'], ['home', 'Haushalt', 'home'], ['more', 'Mehr', 'more']];
