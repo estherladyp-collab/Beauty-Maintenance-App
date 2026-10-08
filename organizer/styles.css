@@ -424,3 +424,5 @@ h1, h2, h3 { font-weight: 500; letter-spacing: -.015em; }
 .prio-row .pn { font-family: var(--serif); font-weight: 500; font-size: 26px; color: var(--gold-text); width: 22px; text-align: center; flex: none; }
 .prio-row .pt { flex: 1; min-width: 0; font-size: 17px; line-height: 1.3; overflow-wrap: anywhere; }
 .prio-row.done .pt { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+
+.tnote { display: block; margin-top: 3px; font-size: 14px; line-height: 1.4; color: var(--muted); white-space: pre-line; overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }

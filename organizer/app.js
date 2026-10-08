@@ -113,7 +113,7 @@ function todoRow(t, d, opts = {}) {
   const late = !done && t.date && (t.repeat || 'none') === 'none' && t.date < isoOf();
   const when = opts.showDate && t.date ? `<span class="${late ? 'late' : ''}">${late ? 'Überfällig seit ' : ''}${fmt(d, { weekday: 'short', day: 'numeric', month: 'short' })}${t.repeat && t.repeat !== 'none' ? ' · ' + repLabel(t.repeat) : ''}</span>` : (late ? '<span class="late">Überfällig</span>' : '');
   return `<div class="row ${done ? 'done' : ''}">${chk(done, `data-a="tg-todo" data-id="${t.id}" data-d="${d}" aria-label="${esc(t.title)} erledigt"`)}
-    <button class="row-body" data-a="edit" data-k="todo" data-id="${t.id}"><span class="t">${esc(t.title)}</span><span class="m">${tagHtml(a)}${when}</span></button></div>`;
+    <button class="row-body" data-a="edit" data-k="todo" data-id="${t.id}"><span class="t">${esc(t.title)}</span>${t.note ? `<span class="tnote">${esc(t.note)}</span>` : ''}<span class="m">${tagHtml(a)}${when}</span></button></div>`;
 }
 const repLabel = r => ({ none: 'Einmalig', daily: 'Täglich', weekly: 'Jede Woche', biweekly: 'Alle 2 Wochen', monthly: 'Jeden Monat' }[r] || '');
 function eventRow(e) {
@@ -450,6 +450,7 @@ function itemSheet(o) {
       <div class="two"><label class="field"><span>${kind === 'todo' ? 'Fällig am' : 'Datum'}</span><input class="in" type="date" id="f-date" value="${d}"></label>
       ${kind === 'event' ? `<label class="field"><span>Uhrzeit</span><input class="in" type="time" id="f-time" value="${it ? it.time || '' : ''}"></label>` : `<label class="field"><span>Wiederholen</span><select class="in" id="f-rep">${repOptions(it ? it.repeat : 'none')}</select></label>`}</div>
       ${kind === 'event' ? `<label class="field"><span>Wiederholen</span><select class="in" id="f-rep">${repOptions(it ? it.repeat : 'none')}</select></label>` : ''}
+      <label class="field"><span>Notiz</span><textarea class="in" id="f-note" rows="3" placeholder="Telefon, E-Mail, Details">${esc(it ? it.note || '' : '')}</textarea></label>
       <button class="btn block" type="submit">Speichern</button>
       ${it ? `<button class="btn danger block" type="button" data-a="del-item" data-k="${kind}" data-id="${it.id}">Löschen</button>` : ''}</form>`);
 }
@@ -619,7 +620,7 @@ const SUBMIT = {
   },
   'save-item': (f, d) => {
     const title = $('#f-title').value.trim(); if (!title) return;
-    const base = { title, area: $('#f-area').value, date: $('#f-date').value, repeat: $('#f-rep').value };
+    const base = { title, area: $('#f-area').value, date: $('#f-date').value, repeat: $('#f-rep').value, note: $('#f-note').value.trim() };
     if (d.k === 'event') {
       if (!base.date) base.date = ui.calSel || isoOf();
       base.time = $('#f-time').value;
