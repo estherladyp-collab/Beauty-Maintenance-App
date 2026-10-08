@@ -146,7 +146,7 @@ function vToday() {
   const di = dowOf(t), lunch = cell(wk, di, 1), dinner = cell(wk, di, 2);
   const slotLine = (k, c) => `<div class="slot p${c.pot < 0 ? 'x' : c.pot}" style="cursor:default;margin:0"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</div>`;
   return `<div class="stack">
-    <header><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></header>
+    <header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
     <section>${sec('Meine 3 Prioritäten', `<span class="small muted">Woche ab ${fmtShort(wk)}</span>`)}
       <div class="stack-s">${[0, 1, 2].map(i => `<label class="prio"><span>${i + 1}.</span><input class="line-in" data-c="prio" data-i="${i}" value="${esc(pr[i])}" placeholder="${['Das Wichtigste diese Woche', 'Danach', 'Und noch eins'][i]}" enterkeyhint="done" autocomplete="off"></label>`).join('')}</div></section>
     <section>${sec('Heute')}
@@ -341,7 +341,8 @@ function vMore() {
     <section>${sec('Du')}<div class="form"><label class="field"><span>Name</span><input class="in" data-c="set" data-k="name" value="${esc(st.name)}" autocomplete="off"></label>
       <label class="field"><span>Startdatum des Planers</span><input class="in" type="date" data-c="set" data-k="start" value="${st.start}"></label>
       <p class="small muted">Vom Startdatum aus zählen Kochrotation und Deep Clean A und B.</p></div></section>
-    <section>${sec('Darstellung')}${`<div class="seg" role="group">${[['auto', 'Automatisch'], ['light', 'Hell'], ['dark', 'Dunkel']].map(o => `<button data-a="theme" data-v="${o[0]}" aria-pressed="${st.theme === o[0]}">${o[1]}</button>`).join('')}</div>`}</section>
+    <section>${sec('Farben')}${themeOptions()}</section>
+    <section>${sec('Startbildschirm')}<div class="toggle-row"><span>Beim Öffnen zeigen</span><button class="chip" data-a="cover-tg" aria-pressed="${st.cover !== false}">${st.cover !== false ? 'An' : 'Aus'}</button></div><button class="btn ghost block" style="margin-top:10px" data-a="cover-show">Jetzt ansehen</button></section>
     <section>${sec('Backup')}<p class="small muted" style="margin-bottom:10px">Alles bleibt auf diesem Gerät. Mit der Datei kannst du auf ein anderes Gerät umziehen.</p>
       <div class="stack-s"><button class="btn block" data-a="export">Backup speichern</button><button class="btn ghost block" data-a="import">Backup laden</button><input type="file" id="file" accept="application/json,.json" hidden></div></section>
     <section>${sec('Aufräumen')}<button class="btn danger block" data-a="reset">Alles zurücksetzen</button></section></div>`;
@@ -376,6 +377,8 @@ function itemSheet(o) {
       <button class="btn block" type="submit">Speichern</button>
       ${it ? `<button class="btn danger block" type="button" data-a="del-item" data-k="${kind}" data-id="${it.id}">Löschen</button>` : ''}</form>`);
 }
+
+const themeSheet = () => `<h2>Farben</h2>${themeOptions()}<button class="btn block" style="margin-top:20px" data-a="close">Fertig</button>`;
 
 /* ---------- Aktionen ---------- */
 const toastEl = () => $('#toast');
@@ -446,7 +449,11 @@ const A = {
   'lead-edit': d => leadSheet(d.id),
   'lead-next': d => { const l = S.leads.find(x => x.id === d.id); l.status = LEAD_ST[(LEAD_ST.indexOf(l.status) + 1) % LEAD_ST.length]; commit(); },
   'del-lead': d => { S.leads = S.leads.filter(x => x.id !== d.id); closeSheet(); commit(); },
-  theme: d => { S.settings.theme = d.v; applyTheme(true); commit(); },
+  settheme: d => { const p = THEMES.find(x => x[0] === d.v); S.settings.theme = { id: p[0], bg: p[2], accent: p[3] }; applyTheme(); commit(); if ($('#sheets .sheet')) openSheet(themeSheet()); },
+  themes: () => openSheet(themeSheet()),
+  'cover-go': () => hideCover(),
+  'cover-show': () => showCover(),
+  'cover-tg': () => { S.settings.cover = S.settings.cover === false; commit(); },
   export: async () => {
     try { const dl = window.claude && await window.claude.use('downloads'); if (dl) { await dl.save({ filename: 'maintaining-home-backup-' + isoOf() + '.json', data: JSON.stringify(S, null, 2) }); return; } } catch (e) { return; }
     exportBackup(S);
@@ -528,6 +535,7 @@ document.addEventListener('change', e => {
     if (el.files[0]) r.readAsText(el.files[0]); return;
   }
   const c = el.dataset.c; if (!c) return;
+  if (c === 'themecolor') { const t = themeNow(); S.settings.theme = { ...t, id: 'custom', [el.dataset.k]: el.value }; applyTheme(); save(); render(); return; }
   if (c === 'prio') { const wk = mondayOf(isoOf()); const p = S.priorities[wk] || (S.priorities[wk] = ['', '', '']); p[+el.dataset.i] = el.value.trim(); save(); }
   if (c === 'set') { S.settings[el.dataset.k] = el.value; if (el.dataset.k === 'start' && !el.value) S.settings.start = mondayIso(); save(); if (el.dataset.k === 'start') render(); }
   if (c === 'budget') {
@@ -538,13 +546,57 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
 
-function applyTheme(force) {
-  const t = S.settings.theme;
-  if (t === 'auto') { if (force) delete document.documentElement.dataset.theme; } else document.documentElement.dataset.theme = t;
+/* Farben: gleiche sechs Themes wie bei Maintaining You, dazu eigene Farben */
+const THEMES = [['coffee', 'Coffee & gold', '#2a1b16', '#b48a4c'], ['cream', 'Cream', '#f1e6de', '#b48a4c'], ['rose', 'Rosé', '#f3dfdb', '#b4675c'], ['sage', 'Sage', '#1f2a24', '#c8a96a'], ['midnight', 'Midnight', '#1b2233', '#c9a45c'], ['plum', 'Plum', '#2e1a2a', '#d8a28f']];
+const hx = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mixc = (a, b, t) => '#' + hx(a).map((v, i) => Math.round(v + (hx(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
+const lum = h => { const [r, g, b] = hx(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
+const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+const HEX = /^#[0-9a-f]{6}$/i;
+function themeNow() {
+  const t = S.settings.theme; const o = (t && typeof t === 'object') ? t : {};
+  const p = THEMES.find(x => x[0] === o.id) || THEMES[0];
+  return { id: o.id === 'custom' ? 'custom' : p[0], bg: HEX.test(o.bg) ? o.bg : p[2], accent: HEX.test(o.accent) ? o.accent : p[3] };
 }
+function applyTheme() {
+  const t = themeNow(), bg = t.bg, ac = t.accent, [r, g, b] = hx(bg);
+  const dark = (.299 * r + .587 * g + .114 * b) < 120, ink = dark ? '#f3e8df' : '#241713';
+  const R = document.documentElement.style, set = (k, v) => R.setProperty(k, v), rgb = h => hx(h).join(',');
+  set('--bg', bg); set('--ink', ink); set('--gold', ac);
+  set('--gold-text', dark ? ac : mixc(ac, ink, .42));
+  set('--gold-ink', contrast(ac, '#241713') >= contrast(ac, '#ffffff') ? '#241713' : '#ffffff');
+  set('--gold-soft', `rgba(${rgb(ac)},.16)`);
+  set('--card', dark ? mixc(bg, '#ffffff', .06) : mixc(bg, '#ffffff', .5));
+  set('--card-2', dark ? mixc(bg, '#ffffff', .11) : mixc(bg, '#7a5240', .1));
+  set('--line', `rgba(${rgb(ink)},.16)`); set('--muted', `rgba(${rgb(ink)},.64)`);
+  set('--nav-bg', `rgba(${rgb(bg)},.93)`);
+  set('--danger', dark ? '#e08a7a' : '#a34a3d');
+  if (dark) { set('--pot0', 'rgba(154,168,138,.22)'); set('--pot1', 'rgba(196,161,95,.22)'); set('--pot2', 'rgba(196,154,143,.22)'); set('--pot0-line', '#8a9a7b'); set('--pot1-line', '#b8955a'); set('--pot2-line', '#b08b80'); }
+  else { set('--pot0', '#e3e8d8'); set('--pot1', '#f0e2c8'); set('--pot2', '#f0dfd9'); set('--pot0-line', '#9aa88a'); set('--pot1-line', '#c4a15f'); set('--pot2-line', '#c49a8f'); }
+  R.colorScheme = dark ? 'dark' : 'light';
+  let m = document.querySelector('meta[name=theme-color]');
+  if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
+  m.content = bg;
+}
+const themeOptions = () => { const t = themeNow(); return `<div class="themes">${THEMES.map(p => `<button class="themeopt" data-a="settheme" data-v="${p[0]}" aria-pressed="${t.id === p[0]}" aria-label="${esc(p[1])}"><span class="swatch" style="background:${p[2]}"><i style="background:${p[3]}"></i></span><small>${esc(p[1])}</small></button>`).join('')}</div>
+  <div class="two" style="margin-top:16px"><label class="colorpick">Hintergrund<input type="color" data-c="themecolor" data-k="bg" value="${t.bg}"></label><label class="colorpick">Akzent<input type="color" data-c="themecolor" data-k="accent" value="${t.accent}"></label></div>`; };
+
+/* Startbildschirm */
+const SAYINGS = ['Rich people stay organized.', 'A calm home is a rich home.', 'Plan it. Cook it. Clean it. Done.', 'Your home runs on your habits.', 'Maintain your home. Maintain your peace.'];
+let coverT;
+function showCover() {
+  if ($('.cover')) return;
+  const h = new Date().getHours(), greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
+  document.body.insertAdjacentHTML('beforeend', `<div class="cover" role="dialog" aria-label="Maintaining Home"><div class="cover-mid"><h1>Maintaining<em>Home</em></h1><div class="rule" aria-hidden="true"><i></i></div><div class="sayings" aria-live="off">${SAYINGS.map((s, i) => `<span class="${i === 0 ? 'on' : ''}">${s}</span>`).join('')}</div></div><div><p class="hello">${greet}, ${esc(S.settings.name)}</p><button class="btn block" data-a="cover-go">Los geht's</button></div></div>`);
+  let i = 0; clearInterval(coverT);
+  coverT = setInterval(() => { const sp = document.querySelectorAll('.sayings span'); if (!sp.length) return clearInterval(coverT); sp[i].classList.remove('on'); i = (i + 1) % sp.length; sp[i].classList.add('on'); }, 3200);
+}
+function hideCover() { const c = $('.cover'); if (!c) return; clearInterval(coverT); c.classList.add('out'); setTimeout(() => c.remove(), 500); try { sessionStorage.setItem('mh.cover', '1'); } catch (e) { /* egal */ } }
 
 (async function boot() {
   S = await loadState(); applyTheme(); render();
+  let seen = false; try { seen = sessionStorage.getItem('mh.cover') === '1'; } catch (e) { /* egal */ }
+  if (S.settings.cover !== false && !seen) showCover();
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { /* egal */ }
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
 })();

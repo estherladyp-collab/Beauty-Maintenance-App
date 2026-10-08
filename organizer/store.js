@@ -8,7 +8,7 @@ const mondayIso = (d = new Date()) => { const x = new Date(d); x.setHours(12, 0,
 function freshState() {
   return {
     version: VERSION,
-    settings: { name: 'Esther', start: mondayIso(), rotShift: 0, theme: 'auto' },
+    settings: { name: 'Esther', start: mondayIso(), rotShift: 0, theme: { id: 'coffee', bg: '#2a1b16', accent: '#b48a4c' }, cover: true },
     areas: SEED.areas.map(a => ({ ...a })),
     todos: [], events: [], leads: [],
     priorities: {},
