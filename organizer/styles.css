@@ -293,11 +293,34 @@ select.in { background-image: linear-gradient(45deg, transparent 50%, var(--mute
 .hub-row:active { background: var(--gold-soft); }
 .fold { border-top: 1px solid var(--line); }
 .fold:last-child { border-bottom: 1px solid var(--line); }
-.foldh { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 0; text-align: left; }
-.foldh .ft { flex: 1; font-family: var(--serif); font-size: 21px; line-height: 1.2; }
+.foldh { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0; text-align: left; }
+.foldh .ft { flex: 1; min-width: 0; font-family: var(--serif); font-size: 21px; line-height: 1.2; }
 .foldh .fm { font-size: 13px; color: var(--muted); white-space: nowrap; }
-.foldh i { font: 300 24px/1 var(--sans); font-style: normal; color: var(--gold-text); width: 22px; text-align: center; }
-.foldb { padding: 0 0 16px; }
+.chev { width: 24px; height: 24px; flex: none; color: var(--gold-text); transition: transform .35s var(--ease); }
+.chev svg { width: 24px; height: 24px; display: block; }
+.fold.open .chev { transform: rotate(180deg); }
+.foldw { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .38s var(--ease); }
+.fold.open .foldw { grid-template-rows: 1fr; }
+.foldb { overflow: hidden; min-height: 0; }
+.fold:not(.open) .foldb { visibility: hidden; transition: visibility 0s .38s; }
+.foldi { padding: 0 0 16px; }
+/* Fächer als Karten (Heute, Haushalt) */
+.dash { display: grid; gap: 12px; }
+.dash > header { margin-bottom: 4px; }
+.fold.card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); transition: transform .15s var(--ease); }
+.fold.card:last-child { border-bottom: 1px solid var(--line); }
+.fold.card .foldh { padding: 14px 16px; min-height: 76px; gap: 14px; border-radius: 22px; }
+.fold.card .foldh:active { background: var(--gold-soft); }
+.fold.card .ft b { display: block; font-family: var(--serif); font-weight: 400; font-size: 24px; line-height: 1.15; }
+.fold.card .fs { display: block; font-family: var(--sans); font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.fold.card .foldi { padding: 2px 16px 18px; }
+.fold.card.open .fs { opacity: .75; }
+.ico { width: 46px; height: 46px; border-radius: 50%; background: var(--gold-soft); color: var(--gold-text); display: grid; place-items: center; flex: none; }
+.ico svg { width: 23px; height: 23px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { font-size: 13px; padding: 5px 11px; border-radius: 999px; background: var(--card-2); color: var(--ink); font-variant-numeric: tabular-nums; }
+.fold.card .row:last-of-type { border-bottom: 0; }
+@media (prefers-reduced-motion: reduce) { .foldw, .chev { transition: none; } }
 .daystrip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .dsb { display: grid; justify-items: center; gap: 2px; padding: 8px 0; border-radius: 999px; min-height: 58px; color: var(--muted); }
 .dsb small { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }

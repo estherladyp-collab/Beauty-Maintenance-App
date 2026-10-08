@@ -28,14 +28,20 @@ const IC = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   left: '<path d="M14.5 5.5L8 12l6.5 6.5"/>',
   right: '<path d="M9.5 5.5L16 12l-6.5 6.5"/>',
-  x: '<path d="M6 6l12 12M18 6L6 18"/>'
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  food: '<path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 3c-2.2 1.6-3 4-3 7h3v11"/>',
+  cart: '<path d="M3 4h2l2.4 10.2a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 8H6.2"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/>',
+  sparkle: '<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9zM18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
+  wallet: '<rect x="3.5" y="6.5" width="17" height="13" rx="3"/><path d="M3.5 10h17M16 14.5h1.5M7 6.5l8-3 1.5 3"/>',
+  down: '<path d="M6 9.5l6 6 6-6"/>'
 };
 const icon = (n, w = 1.6) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
 const CHECK = '<svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>';
 
 const ui = {
   tab: 'today', calMode: 'month', calMonth: isoOf().slice(0, 7), calSel: isoOf(),
-  area: 'all', home: null, open: new Set(), mealDay: null, cleanTouched: false, essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
+  area: 'all', home: null, open: new Set(['d-today']), mealDay: null, cleanTouched: false, essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
   week: mondayIso(), budgetMonth: isoOf().slice(0, 7), showDone: false
 };
 
@@ -176,29 +182,22 @@ function vToday() {
   const over = S.todos.filter(x => (x.repeat || 'none') === 'none' && !x.done && x.date && x.date < t);
   const open = td.filter(x => !todoDone(x, t));
   const doneT = td.filter(x => todoDone(x, t));
-  const empty = !ev.length && !open.length && !over.length && !doneT.length;
+  const nOpen = open.length + over.length;
+  const empty = !ev.length && !nOpen && !doneT.length;
   const log = S.cleanLog[t] || [], ids = roundIds(), deep = deepInfo(t), st = streak();
-  const focus = SEED.focus[dowOf(t)];
-  const di = dowOf(t), lunch = cell(wk, di, 1), dinner = cell(wk, di, 2);
-  const meal = (k, c) => `<div class="hh-row"><span class="k">${k}</span><span>${esc(c.text) || 'Nichts geplant'}${c.koch ? ' <em class="kt">Kochtag</em>' : ''}</span></div>`;
-  return `<div class="stack">
+  const focus = SEED.focus[dowOf(t)], di = dowOf(t);
+  const week = pr.length ? `<ol class="prio-list">${pr.map(x => `<li>${esc(x)}</li>`).join('')}</ol><button class="btn ghost small" style="margin-top:12px" data-a="prio-edit">Ändern</button>` : `<p class="muted">Was sind deine 3 Prioritäten?</p><button class="btn small" style="margin-top:12px" data-a="prio-edit">Festlegen</button>`;
+  const today = `${empty ? '<p class="muted">Nichts geplant. Tippe auf das Plus.</p>' : ''}${ev.map(eventRow).join('')}${over.map(x => todoRow(x, x.date, { showDate: true })).join('')}${open.map(x => todoRow(x, t)).join('')}${doneT.map(x => todoRow(x, t)).join('')}`;
+  const essen = `<div class="stack-s">${slotLine('Früh', cell(wk, di, 0))}${slotLine('Mittag', cell(wk, di, 1))}${slotLine('Abend', cell(wk, di, 2))}</div>`;
+  const clean = `<p class="muted small">${deep ? esc(SEED.deep[deep].title) : esc(focus[1])}</p><div class="bar" style="margin:12px 0 8px"><i style="--p:${log.length / ids.length}"></i></div><p class="small muted">Runde ${log.length} von ${ids.length}${st >= 2 ? `, ${st} Tage in Folge` : ''}</p><button class="btn ghost block" style="margin-top:12px" data-a="goto" data-t="home" data-sub="clean">Runde öffnen</button>`;
+  return `<div class="dash">
     <header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
     <form class="qa" data-a="qa"><div class="qa-row"><input class="in" id="qa" type="text" placeholder="Schnell notieren: Angebot Hotel morgen vf" enterkeyhint="send" autocomplete="off" aria-label="Schnell notieren"><button class="btn" type="submit">Dazu</button></div><p class="qa-prev small" id="qa-prev" aria-live="polite"></p></form>
-    <section>${sec('Diese Woche', `<button class="more" data-a="prio-edit">${pr.length ? 'Ändern' : 'Festlegen'}</button>`)}
-      ${pr.length ? `<ol class="prio-list">${pr.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : `<p class="muted">Was sind deine 3 Prioritäten?</p>`}</section>
-    <section>${sec('Heute')}
-      ${empty ? `<p class="muted">Nichts geplant. Tippe auf das Plus.</p>` : ''}
-      ${ev.map(eventRow).join('')}
-      ${over.map(x => todoRow(x, x.date, { showDate: true })).join('')}
-      ${open.map(x => todoRow(x, t)).join('')}
-      ${doneT.map(x => todoRow(x, t)).join('')}
-    </section>
-    <section>${sec('Im Haus')}
-      <button class="card today-card" data-a="goto" data-t="home" data-sub="clean">
-        <div class="hh-row"><span class="k">Fokus</span><span>${deep ? `Deep Clean, Woche ${deep}` : esc(focus[0])}</span></div>
-        ${meal('Mittag', lunch)}${meal('Abend', dinner)}
-        <span class="bar" aria-hidden="true"><i style="--p:${log.length / ids.length}"></i></span>
-        <span class="small muted">Runde ${log.length} von ${ids.length}${st >= 2 ? `, ${st} Tage in Folge` : ''}</span></button></section></div>`;
+    ${fold('d-week', 'Diese Woche', '', week, { icon: 'flag', sub: pr.length ? esc(pr[0]) : 'Prioritäten festlegen' })}
+    ${fold('d-today', 'Heute', '', today, { icon: 'today', sub: empty ? 'Nichts geplant' : `${nOpen} offen${ev.length ? ', ' + ev.length + (ev.length === 1 ? ' Termin' : ' Termine') : ''}` })}
+    ${fold('d-essen', 'Essen', '', essen, { icon: 'food', sub: esc(cell(wk, di, 1).text) || 'Nichts geplant' })}
+    ${fold('d-clean', 'Reinigung', '', clean, { icon: 'sparkle', sub: `${esc(deep ? 'Deep Clean, Woche ' + deep : focus[0])}, ${log.length} von ${ids.length}` })}
+  </div>`;
 }
 
 /* ---------- Kalender ---------- */
@@ -280,10 +279,14 @@ function vTodos() {
 
 /* ---------- Haushalt: Übersicht und Unterseiten ---------- */
 const seg = (key, opts) => `<div class="seg" role="group">${opts.map(o => `<button data-a="seg" data-key="${key}" data-v="${o[0]}" aria-pressed="${ui[key] === o[0]}">${o[1]}</button>`).join('')}</div>`;
-function fold(k, title, meta, body) {
-  const o = ui.open.has(k);
-  return `<div class="fold"><button class="foldh" data-a="fold" data-k="${k}" aria-expanded="${o}"><span class="ft">${title}</span><span class="fm">${meta || ''}</span><i aria-hidden="true">${o ? '−' : '+'}</i></button>${o ? `<div class="foldb">${body}</div>` : ''}</div>`;
+function fold(k, title, meta, body, o = {}) {
+  const open = ui.open.has(k);
+  const head = o.sub !== undefined
+    ? `<span class="ico">${icon(o.icon)}</span><span class="ft"><b>${title}</b><span class="fs">${o.sub}</span></span>`
+    : `<span class="ft">${title}</span><span class="fm">${meta || ''}</span>`;
+  return `<div class="fold ${o.sub !== undefined ? 'card' : ''} ${open ? 'open' : ''}"><button class="foldh" data-a="fold" data-k="${k}" aria-expanded="${open}">${head}<span class="chev">${icon('down')}</span></button><div class="foldw"><div class="foldb"><div class="foldi">${body}</div></div></div></div>`;
 }
+const slotLine = (k, c) => `<div class="slot p${c.pot < 0 ? 'x' : c.pot}" style="cursor:default"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</div>`;
 const HUBT = { essen: 'Essen', shop: 'Einkauf', clean: 'Reinigung', budget: 'Budget' };
 function vHome() {
   if (!ui.home) return vHub();
@@ -291,17 +294,21 @@ function vHome() {
   return `<div class="stack"><header><button class="back" data-a="hub-go" data-v="">${icon('left')}Haushalt</button><h1 class="title">${HUBT[ui.home]}</h1></header>${body}</div>`;
 }
 function vHub() {
-  const t = isoOf(), wk = mondayOf(t), lunch = cell(wk, dowOf(t), 1).text;
-  const open = S.shopping.filter(x => !x.done).length, miss = Object.values(S.pantry).filter(v => v === 'fehlt').length;
-  const log = (S.cleanLog[t] || []).length, all = roundIds().length, f = SEED.focus[dowOf(t)];
-  const mk = monthKey(t), b = S.budget[mk], spent = S.purchases.filter(p => p.date.startsWith(mk)).reduce((a, p) => a + num(p.amount), 0);
-  const row = (k, title, line) => `<button class="hub-row" data-a="hub-go" data-v="${k}"><span><b>${title}</b><span class="muted">${line}</span></span>${icon('right')}</button>`;
-  return `<div class="stack"><header><h1 class="title">Haushalt</h1></header><div class="hub">
-    ${row('essen', 'Essen', lunch ? 'Heute Mittag: ' + esc(lunch) : 'Heute nichts geplant')}
-    ${row('shop', 'Einkauf', open ? `${open} auf der Liste${miss ? ', ' + miss + ' im Vorrat fehlen' : ''}` : 'Liste ist leer')}
-    ${row('clean', 'Reinigung', `${esc(f[0])}, Runde ${log} von ${all}`)}
-    ${row('budget', 'Budget', b && num(b.budget) ? `${eur(num(b.budget) - spent)} übrig im ${fmt(mk + '-01', { month: 'long' })}` : 'Noch kein Budget')}
-  </div></div>`;
+  const t = isoOf(), wk = mondayOf(t), di = dowOf(t), lunch = cell(wk, di, 1).text;
+  const open = S.shopping.filter(x => !x.done), miss = Object.values(S.pantry).filter(v => v === 'fehlt').length;
+  const log = S.cleanLog[t] || [], all = roundIds().length, f = SEED.focus[di], deep = deepInfo(t);
+  const mk = monthKey(t), b = S.budget[mk], bud = b ? num(b.budget) : 0, spent = S.purchases.filter(p => p.date.startsWith(mk)).reduce((a, p) => a + num(p.amount), 0);
+  const go = (v, label) => `<button class="btn ghost block" style="margin-top:14px" data-a="hub-go" data-v="${v}">${label}</button>`;
+  const essen = `<div class="stack-s">${slotLine('Früh', cell(wk, di, 0))}${slotLine('Mittag', cell(wk, di, 1))}${slotLine('Abend', cell(wk, di, 2))}</div>${go('essen', 'Kochplan öffnen')}`;
+  const shop = `${open.length ? open.slice(0, 6).map(i => `<div class="row">${chk(false, `data-a="shop-tg" data-id="${i.id}" aria-label="${esc(i.text)}"`)}<span class="row-body"><span class="t">${esc(i.text)}</span></span></div>`).join('') + (open.length > 6 ? `<p class="small muted" style="margin-top:6px">und ${open.length - 6} weitere</p>` : '') : '<p class="muted">Die Liste ist leer.</p>'}${go('shop', 'Einkaufsliste öffnen')}`;
+  const clean = `<p class="muted small">${deep ? esc(SEED.deep[deep].title) : esc(f[1])}</p><div class="bar" style="margin:12px 0"><i style="--p:${log.length / all}"></i></div><div class="pills">${SEED.round.map((r, i) => `<span class="pill">${r[0]} ${r[2].filter((_, j) => log.includes(`r${i}-${j}`)).length}/${r[2].length}</span>`).join('')}</div>${go('clean', 'Runde öffnen')}`;
+  const budget = bud ? `<div class="bigfig"><span class="muted small">Übrig</span><div class="v ${bud - spent < 0 ? 'neg' : ''}">${eur(bud - spent)}</div><div class="bar"><i style="--p:${Math.min(1, spent / bud)}"></i></div><span class="small muted">${eur(spent)} von ${eur(bud)} ausgegeben</span></div>${go('budget', 'Budget öffnen')}` : `<p class="muted">Noch kein Budget. ${spent ? eur(spent) + ' ausgegeben.' : ''}</p>${go('budget', 'Budget öffnen')}`;
+  return `<div class="dash"><header><h1 class="title">Haushalt</h1></header>
+    ${fold('h-essen', 'Essen', '', essen, { icon: 'food', sub: lunch ? 'Heute Mittag: ' + esc(lunch) : 'Heute nichts geplant' })}
+    ${fold('h-shop', 'Einkauf', '', shop, { icon: 'cart', sub: open.length ? `${open.length} auf der Liste${miss ? ', ' + miss + ' im Vorrat fehlen' : ''}` : 'Liste ist leer' })}
+    ${fold('h-clean', 'Reinigung', '', clean, { icon: 'sparkle', sub: `${esc(deep ? 'Deep Clean' : f[0])}, Runde ${log.length} von ${all}` })}
+    ${fold('h-budget', 'Budget', '', budget, { icon: 'wallet', sub: bud ? `${eur(bud - spent)} übrig im ${fmt(mk + '-01', { month: 'long' })}` : 'Noch kein Budget' })}
+  </div>`;
 }
 
 function vEssen() {
@@ -477,7 +484,7 @@ const A = {
   goto: d => { ui.tab = d.t; if (d.sub) ui.home = d.sub; animateNext = true; commit(); window.scrollTo(0, 0); },
   seg: d => { ui[d.key] = d.v; commit(); },
   'hub-go': d => { ui.home = d.v || null; commit(); window.scrollTo(0, 0); },
-  fold: d => { ui.open.has(d.k) ? ui.open.delete(d.k) : ui.open.add(d.k); commit(); },
+  fold: (d, el) => { const f = el.closest('.fold'), on = !ui.open.has(d.k); on ? ui.open.add(d.k) : ui.open.delete(d.k); f.classList.toggle('open', on); el.setAttribute('aria-expanded', on); },
   mealday: d => { ui.mealDay = +d.i; commit(); },
   area: d => { ui.area = d.id; commit(); },
   'toggle-done': () => { ui.showDone = !ui.showDone; commit(); },
@@ -672,6 +679,7 @@ function applyTheme() {
   set('--line', `rgba(${rgb(ink)},.16)`); set('--muted', `rgba(${rgb(ink)},.64)`);
   set('--nav-bg', `rgba(${rgb(bg)},.93)`);
   set('--danger', dark ? '#e08a7a' : '#a34a3d');
+  set('--shadow', dark ? '0 8px 24px rgba(0,0,0,.35)' : '0 1px 2px rgba(60,40,20,.06), 0 8px 24px rgba(60,40,20,.08)');
   if (dark) { set('--pot0', 'rgba(154,168,138,.22)'); set('--pot1', 'rgba(196,161,95,.22)'); set('--pot2', 'rgba(196,154,143,.22)'); set('--pot0-line', '#8a9a7b'); set('--pot1-line', '#b8955a'); set('--pot2-line', '#b08b80'); }
   else { set('--pot0', '#e3e8d8'); set('--pot1', '#f0e2c8'); set('--pot2', '#f0dfd9'); set('--pot0-line', '#9aa88a'); set('--pot1-line', '#c4a15f'); set('--pot2-line', '#c49a8f'); }
   R.colorScheme = dark ? 'dark' : 'light';
