@@ -39,3 +39,12 @@ So I take care of myself. Not for my ego, but for my purpose. It is possible to 
 That is why I am building Maintaining You, for women who want their appearance to open doors. 🤍
 
 #lookinggoodforyourpurpose #maintainingyou #womenofgod #purposedriven #christianwomen #selfcare
+
+## Video 2: Faceless UGC "I used to dress anyhow" (9.5 s, silent)
+I used to dress anyhow. I thought only the heart matters.
+
+God does see the heart. But people see you first. Hair laid, nails done, a scent that stays. It's not ego, it's preparation for your purpose.
+
+Plan your looks, hair and nails in Maintaining You. 🤍
+
+#faceless #ugc #lookinggoodforyourpurpose #maintainingyou #womenofgod #purposedriven #grwm #selfcare
