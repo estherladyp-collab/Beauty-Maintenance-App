@@ -12,6 +12,7 @@ function freshState() {
     areas: SEED.areas.map(a => ({ ...a })),
     todos: [], events: [], leads: [],
     priorities: {},
+    dayPrio: {}, dayPrioDone: {}, history: [],
     myMeals: [],
     plan: {},
     shopping: [],
@@ -29,6 +30,7 @@ function migrate(s) {
   const f = freshState();
   const out = { ...f, ...s, settings: { ...f.settings, ...(s.settings || {}) } };
   out.version = VERSION;
+  if (!s.dayPrio) { out.dayPrio = {}; const mk = mondayIso(); if (s.priorities && s.priorities[mk]) out.dayPrio[isoOf()] = s.priorities[mk].slice(); }
   return out;
 }
 

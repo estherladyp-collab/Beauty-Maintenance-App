@@ -25,7 +25,7 @@ const CHECK = '<svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>'
 
 const ui = {
   tab: 'today', calMode: 'month', calMonth: isoOf().slice(0, 7), calSel: isoOf(),
-  area: 'all', home: null, open: new Set(['d-vf', 'd-church', 'd-home']), mealDay: null, cleanTouched: false, essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
+  area: 'all', revWk: mondayIso(), home: null, open: new Set(['d-vf', 'd-church', 'd-home']), mealDay: null, cleanTouched: false, essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
   week: mondayIso(), budgetMonth: isoOf().slice(0, 7), showDone: false
 };
 
@@ -178,14 +178,17 @@ function vToday() {
   const slot = (k, s) => { const c = cell(mon, di, s); return `<button class="slot p${c.pot < 0 ? 'x' : c.pot} ${c.text ? '' : 'empty-slot'}" data-a="edit-meal" data-wk="${mon}" data-i="${di}" data-s="${s}"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</button>`; };
   const strip = DS.map((n, i) => { const d = addDays(mon, i); return `<button class="dsb" data-a="pick-day" data-d="${d}" aria-pressed="${d === sel}" ${d === t ? 'aria-current="date"' : ''} aria-label="${fmtLong(d)}"><small>${n}</small><b>${+d.slice(8)}</b><span class="dots">${dotsFor(d)}</span></button>`; }).join('');
   const essen = `<div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div>`;
-  const wkNow = mondayOf(t), sun = addDays(wkNow, 6);
-  const pr = S.priorities[wkNow] || [], pd = (S.prioDone || {})[wkNow] || [];
-  const prios = [0, 1, 2].filter(i => pr[i]).map(i => `<div class="prio-row ${pd[i] ? 'done' : ''}"><span class="pn">${i + 1}</span><span class="pt">${esc(pr[i])}</span>${chk(!!pd[i], `data-a="prio-tg" data-wk="${wkNow}" data-i="${i}" aria-label="${esc(pr[i])} erledigt"`)}</div>`).join('');
+  const wkNow = mondayOf(t), sun = addDays(wkNow, 6), dnow = dowOf(t);
+  const revWk = dnow === 0 ? addDays(wkNow, -7) : wkNow, rv = reviewFor(revWk);
+  const banner = (dnow >= 4 || dnow === 0) ? `<button class="card rev-banner" data-a="goto-review" data-wk="${revWk}"><span><b>Wochenrückblick</b><span class="muted">${rv.done.length} erledigt${rv.pTotal ? `, ${rv.pDone} von ${rv.pTotal} Prioritäten` : ''}</span></span>${icon('right')}</button>` : '';
+  const pr = S.dayPrio[t] || [], pd = S.dayPrioDone[t] || [];
+  const prios = [0, 1, 2].filter(i => pr[i]).map(i => `<div class="prio-row ${pd[i] ? 'done' : ''}"><span class="pn">${i + 1}</span><span class="pt">${esc(pr[i])}</span>${chk(!!pd[i], `data-a="prio-tg" data-date="${t}" data-i="${i}" aria-label="${esc(pr[i])} erledigt"`)}</div>`).join('');
   const dl = S.todos.map(x => ({ x, d: nextOcc(x, t) })).filter(o => o.d && o.d <= sun && !todoDone(o.x, o.d)).sort((p, q) => p.d.localeCompare(q.d));
   const dlShown = dl.slice(0, 6);
   return `<div class="dash">
     <header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
-    <section><div class="sec"><h2>Top 3 diese Woche</h2><button class="more" data-a="prio-edit" data-wk="${wkNow}">${prios ? 'Ändern' : 'Festlegen'}</button></div>
+    ${banner}
+    <section><div class="sec"><h2>Top 3 heute</h2><button class="more" data-a="prio-edit" data-date="${t}">${prios ? 'Ändern' : 'Festlegen'}</button></div>
       <div class="card list">${prios || `<p class="muted">Was sind deine drei wichtigsten Dinge diese Woche?</p>`}</div></section>
     <section><div class="sec"><h2>Deadlines diese Woche</h2>${dl.length > 6 ? `<button class="more" data-a="goto-todos">Alle ${dl.length}</button>` : ''}</div>
       <div class="card list">${dlShown.length ? dlShown.map(o => todoRow(o.x, o.d, { showDate: true })).join('') : `<p class="muted">Keine Deadlines diese Woche.</p>`}</div></section>
@@ -198,6 +201,50 @@ function vToday() {
     ${listCard('d-church', 'Church', 'church', a => a === 'church' || area(a).parent === 'church', 'church')}
     ${listCard('d-home', 'Home', 'homeroom', a => a === 'home', 'home')}
   </div>`;
+}
+
+/* ---------- Wochenrückblick ---------- */
+function reviewFor(mon) {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(mon, i)), sun = days[6], inW = d => d >= mon && d <= sun;
+  const done = S.history.filter(h => h.k === 'todo' && inW(h.date));
+  const prios = days.map(d => { const pr = S.dayPrio[d] || [], dn = S.dayPrioDone[d] || []; return { d, items: [0, 1, 2].filter(i => pr[i]).map(i => ({ t: pr[i], ok: !!dn[i] })) }; }).filter(o => o.items.length);
+  const pTotal = prios.reduce((s, o) => s + o.items.length, 0), pDone = prios.reduce((s, o) => s + o.items.filter(x => x.ok).length, 0);
+  const events = days.flatMap(d => S.events.filter(e => occursOn(e, d)).sort(byTime).map(e => ({ d, e })));
+  const clean = days.map(d => ({ d, n: (S.cleanLog[d] || []).length }));
+  const cleanDays = clean.filter(c => c.n >= 10).length;
+  const deep = S.deepDone.filter(x => inW(x.date));
+  const spent = S.purchases.filter(p => inW(p.date)).reduce((s, p) => s + num(p.amount), 0);
+  const open = S.todos.filter(x => (x.repeat || 'none') === 'none' && !x.done && x.date && inW(x.date));
+  return { days, mon, sun, done, prios, pTotal, pDone, events, clean, cleanDays, deep, spent, open };
+}
+function reviewSentence(r) {
+  const p = [`${r.done.length} ${r.done.length === 1 ? 'Aufgabe' : 'Aufgaben'} erledigt`];
+  if (r.pTotal) p.push(`${r.pDone} von ${r.pTotal} Prioritäten geschafft`);
+  p.push(r.cleanDays ? `die Runde an ${r.cleanDays} ${r.cleanDays === 1 ? 'Tag' : 'Tagen'} gemacht` : 'keine Runde geputzt');
+  if (r.events.length) p.push(`${r.events.length} ${r.events.length === 1 ? 'Termin' : 'Termine'}`);
+  if (r.spent) p.push(`${eur(r.spent)} für Essen ausgegeben`);
+  return p.join(', ') + '.';
+}
+function reviewText(r) {
+  const L = [`Wochenrückblick ${fmtShort(r.mon)} bis ${fmtShort(r.sun)}`, reviewSentence(r), ''];
+  if (r.done.length) { L.push('Erledigt:'); r.done.forEach(h => L.push(`- ${h.title} (${areaName(area(h.area))}, ${fmt(h.date, { weekday: 'short', day: 'numeric', month: 'short' })})`)); L.push(''); }
+  if (r.prios.length) { L.push('Prioritäten:'); r.prios.forEach(o => { L.push(fmt(o.d, { weekday: 'long' }) + ':'); o.items.forEach(x => L.push(`  ${x.ok ? 'erledigt' : 'offen'}: ${x.t}`)); }); L.push(''); }
+  if (r.open.length) { L.push('Offen geblieben:'); r.open.forEach(x => L.push(`- ${x.title}`)); }
+  return L.join('\n').trim();
+}
+function vReview() {
+  const r = reviewFor(ui.revWk), t = isoOf();
+  const grp = {}; r.done.forEach(h => { const a = area(h.area), k = a.parent ? a.parent : a.id; (grp[k] = grp[k] || []).push(h); });
+  const todosBody = r.done.length ? S.areas.filter(a => !a.parent && grp[a.id]).map(a => `<h3 class="group-title" style="margin-top:12px">${esc(a.name)}</h3>${grp[a.id].sort((x, y) => x.date.localeCompare(y.date)).map(h => `<div class="plain-row" style="min-height:44px"><span class="grow">${esc(h.title)}</span><span class="small muted">${fmt(h.date, { weekday: 'short', day: 'numeric' })}</span></div>`).join('')}`).join('') : '<p class="muted">Diese Woche wurde noch nichts abgehakt.</p>';
+  const prioBody = r.prios.length ? r.prios.map(o => `<div style="margin-top:12px"><b style="font-weight:600">${fmt(o.d, { weekday: 'long', day: 'numeric', month: 'short' })}</b>${o.items.map(x => `<div class="plain-row ${x.ok ? '' : 'muted'}" style="min-height:40px"><span class="mk ${x.ok ? 'ok' : ''}"></span><span class="grow">${esc(x.t)}</span></div>`).join('')}</div>`).join('') : '<p class="muted">Keine Prioritäten eingetragen.</p>';
+  const evBody = r.events.length ? r.events.map(o => `<div class="plain-row"><span class="small muted" style="width:62px;flex:none">${fmt(o.d, { weekday: 'short', day: 'numeric' })}</span><span class="grow">${esc(o.e.title)}${o.e.time ? ` <span class="small muted">${o.e.time}</span>` : ''}</span></div>`).join('') : '<p class="muted">Keine Termine.</p>';
+  const cleanBody = r.clean.map(c => `<div class="plain-row" style="min-height:40px"><b style="width:30px;font-weight:600">${DS[dowOf(c.d)]}</b><div class="bar grow"><i style="--p:${c.n / 19}"></i></div><span class="small muted num" style="width:44px;text-align:right">${c.n} / 19</span></div>`).join('') + (r.deep.length ? `<p class="small" style="margin-top:10px">Deep Clean: ${r.deep.map(x => 'Woche ' + x.v).join(', ')}</p>` : '');
+  const openBody = r.open.length ? r.open.map(x => todoRow(x, x.date, { showDate: true })).join('') : '<p class="muted">Nichts offen geblieben.</p>';
+  return `<div class="cal-head"><button class="icon-btn" data-a="rev-prev" aria-label="Vorherige Woche">${icon('left')}</button><h2>${fmtShort(r.mon)} bis ${fmtShort(r.sun)}</h2><button class="icon-btn" data-a="rev-next" aria-label="Nächste Woche">${icon('right')}</button></div>
+    <div class="card" style="margin-top:6px"><p class="rsum">${esc(reviewSentence(r))}</p></div>
+    <div class="rgrid"><div class="rstat"><b>${r.done.length}</b><span>Aufgaben erledigt</span></div><div class="rstat"><b>${r.pDone}<small>/${r.pTotal}</small></b><span>Prioritäten geschafft</span></div><div class="rstat"><b>${r.cleanDays}<small>/7</small></b><span>Tage geputzt</span></div><div class="rstat"><b>${eur(r.spent)}</b><span>Essen ausgegeben</span></div></div>
+    <div style="margin-top:8px">${fold('r-todos', 'Erledigte Aufgaben', String(r.done.length), todosBody)}${fold('r-prio', 'Prioritäten pro Tag', r.pTotal ? `${r.pDone} von ${r.pTotal}` : '', prioBody)}${fold('r-ev', 'Termine', String(r.events.length || ''), evBody)}${fold('r-clean', 'Reinigung', `${r.cleanDays} Tage`, cleanBody)}${fold('r-open', 'Offen geblieben', String(r.open.length || ''), openBody)}</div>
+    <button class="btn ghost block" style="margin-top:16px" data-a="rev-copy">Rückblick als Text kopieren</button>`;
 }
 
 /* ---------- Kalender ---------- */
@@ -219,7 +266,8 @@ function dayAgenda(d, compact) {
 function vCal() {
   const t = isoOf();
   let head, body;
-  if (ui.calMode === 'agenda') {
+  if (ui.calMode === 'review') { head = ''; body = vReview(); }
+  else if (ui.calMode === 'agenda') {
     const late = S.todos.filter(x => (x.repeat || 'none') === 'none' && !x.done && x.date && x.date < t);
     const days = Array.from({ length: 21 }, (_, i) => addDays(t, i)).map(d => ({ d, i: itemsOn(d), deep: deepInfo(d) })).filter(o => o.i.ev.length || o.i.td.length || o.deep);
     head = '';
@@ -240,16 +288,14 @@ function vCal() {
       <section style="margin-top:26px">${sec(ui.calSel === t ? 'Heute' : fmtLong(ui.calSel), `<button class="more" data-a="new" data-d="${ui.calSel}">Hinzufügen</button>`)}${dayAgenda(ui.calSel)}</section>`;
   } else {
     const mon = mondayOf(ui.calSel), sel = ui.calSel, di = dowOf(sel);
-    const pr = (S.priorities[mon] || []).filter(x => x);
     const slot = (k, s) => { const c = cell(mon, di, s); return `<button class="slot p${c.pot < 0 ? 'x' : c.pot} ${c.text ? '' : 'empty-slot'}" data-a="edit-meal" data-wk="${mon}" data-i="${di}" data-s="${s}"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</button>`; };
     head = `<div class="cal-head"><button class="icon-btn" data-a="cal-prev" aria-label="Vorherige Woche">${icon('left')}</button><h2>${fmtShort(mon)} bis ${fmtShort(addDays(mon, 6))}</h2><button class="icon-btn" data-a="cal-next" aria-label="Nächste Woche">${icon('right')}</button></div>`;
     body = `<div class="daystrip" role="group" aria-label="Tag wählen">${DS.map((n, i) => { const d = addDays(mon, i); return `<button class="dsb" data-a="pick-day" data-d="${d}" aria-pressed="${d === sel}" ${d === t ? 'aria-current="date"' : ''} aria-label="${fmtLong(d)}"><small>${n}</small><b>${+d.slice(8)}</b><span class="dots">${dotsFor(d)}</span></button>`; }).join('')}</div>
       <section style="margin-top:22px"><div class="sec"><h2>${sel === t ? 'Heute' : DAYS[di]}</h2><button class="more" data-a="new" data-d="${sel}">Hinzufügen</button></div><div class="card list">${dayAgenda(sel, true)}</div></section>
-      <section style="margin-top:22px"><div class="sec"><h2>Essen</h2></div><div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div></section>
-      <div style="margin-top:22px">${fold('d-week', 'Prioritäten der Woche', pr.length ? '' : 'offen', pr.length ? `<ol class="prio-list">${pr.map(x => `<li>${esc(x)}</li>`).join('')}</ol><button class="btn ghost small" style="margin-top:12px" data-a="prio-edit" data-wk="${mon}">Ändern</button>` : `<p class="muted">Was sind deine 3 Prioritäten?</p><button class="btn small" style="margin-top:12px" data-a="prio-edit" data-wk="${mon}">Festlegen</button>`)}</div>`;
+      <section style="margin-top:22px"><div class="sec"><h2>Essen</h2></div><div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div></section>`;
   }
   return `<div class="stack"><header style="display:flex;justify-content:space-between;align-items:end;gap:12px"><h1 class="title">Kalender</h1><button class="btn ghost small" data-a="cal-today">Heute</button></header>
-    <div class="seg" role="group" aria-label="Ansicht"><button data-a="cal-mode" data-m="month" aria-pressed="${ui.calMode === 'month'}">Monat</button><button data-a="cal-mode" data-m="week" aria-pressed="${ui.calMode === 'week'}">Woche</button><button data-a="cal-mode" data-m="agenda" aria-pressed="${ui.calMode === 'agenda'}">Agenda</button></div>
+    <div class="seg" role="group" aria-label="Ansicht"><button data-a="cal-mode" data-m="month" aria-pressed="${ui.calMode === 'month'}">Monat</button><button data-a="cal-mode" data-m="week" aria-pressed="${ui.calMode === 'week'}">Woche</button><button data-a="cal-mode" data-m="agenda" aria-pressed="${ui.calMode === 'agenda'}">Agenda</button><button data-a="cal-mode" data-m="review" aria-pressed="${ui.calMode === 'review'}">Rückblick</button></div>
     <div>${head}${body}</div></div>`;
 }
 
@@ -496,8 +542,18 @@ const A = {
   'todos-for': d => { ui.area = d.area; ui.tab = 'todos'; animateNext = true; commit(); window.scrollTo(0, 0); },
   'wk-prev': () => { ui.calSel = addDays(ui.calSel, -7); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
   'wk-next': () => { ui.calSel = addDays(ui.calSel, 7); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
-  'prio-tg': d => { S.prioDone = S.prioDone || {}; const arr = S.prioDone[d.wk] || (S.prioDone[d.wk] = [false, false, false]); arr[+d.i] = !arr[+d.i]; commit(); },
+  'prio-tg': d => {
+    const arr = S.dayPrioDone[d.date] || (S.dayPrioDone[d.date] = [false, false, false]); arr[+d.i] = !arr[+d.i];
+    const title = (S.dayPrio[d.date] || [])[+d.i] || '';
+    S.history = S.history.filter(h => !(h.k === 'prio' && h.date === d.date && h.i === +d.i));
+    if (arr[+d.i]) S.history.push({ k: 'prio', title, date: d.date, i: +d.i });
+    commit();
+  },
   'goto-todos': () => { ui.area = 'all'; ui.tab = 'todos'; animateNext = true; commit(); window.scrollTo(0, 0); },
+  'rev-prev': () => { ui.revWk = addDays(ui.revWk, -7); commit(); },
+  'rev-next': () => { ui.revWk = addDays(ui.revWk, 7); commit(); },
+  'goto-review': d => { ui.revWk = d.wk; ui.calMode = 'review'; ui.tab = 'cal'; animateNext = true; commit(); window.scrollTo(0, 0); },
+  'rev-copy': async () => { const txt = reviewText(reviewFor(ui.revWk)); try { await navigator.clipboard.writeText(txt); toast('Rückblick kopiert'); } catch (e) { toast('Kopieren hat nicht geklappt'); } },
   'hub-go': d => { ui.home = d.v || null; commit(); window.scrollTo(0, 0); },
   fold: (d, el) => { const f = el.closest('.fold'), on = !ui.open.has(d.k); on ? ui.open.add(d.k) : ui.open.delete(d.k); f.classList.toggle('open', on); el.setAttribute('aria-expanded', on); },
   mealday: d => { ui.mealDay = +d.i; commit(); },
@@ -509,7 +565,10 @@ const A = {
   'sheet-kind': d => itemSheet({ kind: d.k, title: $('#f-title')?.value, date: $('#f-date')?.value, area: $('#f-area')?.value }),
   'tg-todo': d => {
     const t = S.todos.find(x => x.id === d.id); if (!t) return;
-    if ((t.repeat || 'none') === 'none') t.done = !t.done; else { t.doneOn = t.doneOn || {}; t.doneOn[d.d] ? delete t.doneOn[d.d] : (t.doneOn[d.d] = 1); }
+    let on, when;
+    if ((t.repeat || 'none') === 'none') { t.done = !t.done; on = t.done; when = isoOf(); } else { t.doneOn = t.doneOn || {}; t.doneOn[d.d] ? delete t.doneOn[d.d] : (t.doneOn[d.d] = 1); on = !!t.doneOn[d.d]; when = d.d; }
+    S.history = S.history.filter(h => !(h.k === 'todo' && h.id === t.id && ((t.repeat || 'none') === 'none' || h.occ === d.d)));
+    if (on) S.history.push({ k: 'todo', id: t.id, occ: d.d, title: t.title, area: t.area, date: when });
     commit();
   },
   'del-item': d => { if (d.k === 'todo') S.todos = S.todos.filter(x => x.id !== d.id); else S.events = S.events.filter(x => x.id !== d.id); closeSheet(); commit(); toast('Gelöscht'); },
@@ -519,7 +578,12 @@ const A = {
   'cal-prev': () => calMove(-1), 'cal-next': () => calMove(1),
   'cal-today': () => { ui.calSel = isoOf(); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
   week: d => { ui.week = addDays(ui.week, 7 * +d.n); ui.mealDay = null; commit(); },
-  'prio-edit': d => { const wk = d.wk || mondayOf(isoOf()); const p = S.priorities[wk] || ['', '', '']; openSheet(`<h2>Diese Woche</h2><form class="form" data-a="prio-save" data-wk="${wk}">${[0, 1, 2].map(i => `<label class="field"><span>Priorität ${i + 1}</span><input class="in" id="pr${i}" value="${esc(p[i] || '')}" autocomplete="off" placeholder="${['Das Wichtigste', 'Danach', 'Und noch eins'][i]}"></label>`).join('')}<button class="btn block" type="submit">Speichern</button></form>`); },
+  'prio-edit': d => {
+    const date = d.date || isoOf(), p = S.dayPrio[date] || ['', '', ''];
+    const y = addDays(date, -1), yp = (S.dayPrio[y] || []).map((x, i) => ({ x, i })).filter(o => o.x && !(S.dayPrioDone[y] || [])[o.i]);
+    openSheet(`<h2>Top 3 ${date === isoOf() ? 'heute' : fmtShort(date)}</h2><form class="form" data-a="prio-save" data-date="${date}">${[0, 1, 2].map(i => `<label class="field"><span>Priorität ${i + 1}</span><input class="in" id="pr${i}" value="${esc(p[i] || '')}" autocomplete="off" placeholder="${['Das Wichtigste', 'Danach', 'Und noch eins'][i]}"></label>`).join('')}${yp.length ? `<button class="btn ghost block" type="button" data-a="prio-carry" data-date="${date}">${yp.length} offene von gestern übernehmen</button>` : ''}<button class="btn block" type="submit">Speichern</button></form>`);
+  },
+  'prio-carry': d => { const y = addDays(d.date, -1); (S.dayPrio[y] || []).forEach((x, i) => { if (x && !(S.dayPrioDone[y] || [])[i]) { const free = [0, 1, 2].find(k => !$('#pr' + k).value.trim()); if (free !== undefined) $('#pr' + free).value = x; } }); },
   'plan-ingr': () => openSheet(ingrSheet()),
   'ingr-tg': (d, el) => { const on = el.getAttribute('aria-checked') !== 'true'; el.setAttribute('aria-checked', on ? 'true' : 'false'); on ? ingrSel.add(d.n) : ingrSel.delete(d.n); const b = $('#ingr-go'); if (b) { b.textContent = `${ingrSel.size} auf die Einkaufsliste`; b.disabled = !ingrSel.size; } },
   'ingr-add': () => { ingrList.filter(x => ingrSel.has(x.n)).forEach(x => S.shopping.push({ id: uid(), text: x.n, cat: x.cat, done: false, src: 'plan' })); const n = ingrSel.size; closeSheet(); commit(); toast(`${n} Zutaten auf der Liste`); },
@@ -611,7 +675,7 @@ const SUBMIT = {
     commit(); toast(q.kind === 'event' ? 'Termin angelegt' : 'Aufgabe angelegt');
     const n = $('#ia-' + d.area); if (n) n.focus();
   },
-  'prio-save': (f, d) => { S.priorities[d.wk || mondayOf(isoOf())] = [0, 1, 2].map(i => $('#pr' + i).value.trim()); closeSheet(); commit(); },
+  'prio-save': (f, d) => { const date = d.date || isoOf(); const old = S.dayPrio[date] || []; S.dayPrio[date] = [0, 1, 2].map(i => $('#pr' + i).value.trim()); const dn = S.dayPrioDone[date]; if (dn) [0, 1, 2].forEach(i => { if (old[i] !== S.dayPrio[date][i]) { dn[i] = false; S.history = S.history.filter(h => !(h.k === 'prio' && h.date === date && h.i === i)); } }); closeSheet(); commit(); },
   qa: () => {
     const q = parseQuick($('#qa').value); if (!q.title) return;
     const base = { title: q.title, area: q.area || defaultArea(), date: q.date, repeat: q.repeat };
@@ -665,7 +729,6 @@ document.addEventListener('change', e => {
   }
   const c = el.dataset.c; if (!c) return;
   if (c === 'themecolor') { const t = themeNow(); S.settings.theme = { ...t, id: 'custom', [el.dataset.k]: el.value }; applyTheme(); save(); render(); return; }
-  if (c === 'prio') { const wk = mondayOf(isoOf()); const p = S.priorities[wk] || (S.priorities[wk] = ['', '', '']); p[+el.dataset.i] = el.value.trim(); save(); }
   if (c === 'set') { S.settings[el.dataset.k] = el.value; if (el.dataset.k === 'start' && !el.value) S.settings.start = mondayIso(); save(); if (el.dataset.k === 'start') render(); }
   if (c === 'budget') {
     const b = budgetOf(ui.budgetMonth), p = el.dataset.p;
