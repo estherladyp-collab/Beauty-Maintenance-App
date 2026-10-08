@@ -1,13 +1,20 @@
 /* start animation: logo, "Maintaining" from the left, "You" from the right, tagline already there */
 (function(){
   var el = document.getElementById('splash'); if(!el) return;
-  function paint(c){ if(!c || !c.bg) return; el.style.background = c.bg; el.style.setProperty('--sp-ink', c.ink); el.style.setProperty('--sp-ac', c.ac); el.classList.toggle('dark', !!c.dark); }
+  function paint(c){ if(!c || !c.bg) return; el.style.background = c.bg; el.style.setProperty('--sp-ink', c.ink); el.style.setProperty('--sp-ac', c.ac); el.classList.toggle('dark', !!c.dark || el.classList.contains('photo')); if(el.classList.contains('photo')){ el.style.setProperty('--sp-ink','#f5ebdf'); el.style.setProperty('--sp-ac','#d9b273'); } }
   window.MUSE_SPLASH = function(c){ paint(c); try { localStorage.setItem('muse.splash', JSON.stringify(c)); } catch(e){} };
   try { paint(JSON.parse(localStorage.getItem('muse.splash'))); } catch(e){}
   var LINES = ['Give yourself a lift','Looking good for your purpose','Because you are worth it','Polished on purpose','Show up as the woman you are','Your glow, your plan','Well groomed, well booked','Be ready before you need to be'];
   try { var tg = el.querySelector('.sw-tag'), last = parseInt(localStorage.getItem('muse.tag'), 10), i;
     do { i = Math.floor(Math.random() * LINES.length); } while (i === last && LINES.length > 1);
     tg.textContent = LINES[i]; localStorage.setItem('muse.tag', i); } catch(e){}
+  try { var BG = window.MUSE_BG || [];
+    if(BG.length){ var lb = parseInt(localStorage.getItem('muse.bg'), 10), k;
+      do { k = Math.floor(Math.random() * BG.length); } while (k === lb && BG.length > 1);
+      localStorage.setItem('muse.bg', k);
+      var bg = document.createElement('div'); bg.className = 'sw-bg'; bg.style.backgroundImage = 'url(' + BG[k] + ')';
+      el.insertBefore(bg, el.firstChild); el.classList.add('photo', 'dark');
+      el.style.setProperty('--sp-ink', '#f5ebdf'); el.style.setProperty('--sp-ac', '#d9b273'); } } catch(e){}
   var t0 = Date.now(), tGo = 0, HOLD = 3200, MAX = 7000, gone = false;
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   function start(){ if(tGo) return; tGo = Date.now(); el.classList.add('go'); }

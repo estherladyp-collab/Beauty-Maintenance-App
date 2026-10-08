@@ -1088,3 +1088,12 @@ body.dragging{overflow-x:hidden;-webkit-user-select:none;user-select:none}
 .lk-filter{display:grid;gap:8px;margin-top:16px}
 .lk-cat{display:block;font-size:11px;letter-spacing:.06em;color:var(--goldtxt);margin-top:2px}
 .lksum+.brow{margin-top:16px}
+
+/* start screen with luxury photo background */
+#splash .sw-bg{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;animation:swbg 9s ease-out both}
+#splash.photo::before{content:"";position:absolute;inset:0;z-index:1;background:radial-gradient(120% 80% at 50% 38%,rgba(20,11,7,.15),rgba(20,11,7,.62) 70%,rgba(16,9,6,.82)),linear-gradient(180deg,rgba(18,10,6,.35),rgba(18,10,6,.1) 40%,rgba(18,10,6,.5))}
+#splash.photo>*:not(.sw-bg){position:relative;z-index:2}
+#splash.photo .sw-medal.g{position:static}
+#splash.photo .sw-name{text-shadow:0 2px 22px rgba(0,0,0,.45)}
+@keyframes swbg{from{transform:scale(1.08)}to{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){#splash .sw-bg{animation:none}}
