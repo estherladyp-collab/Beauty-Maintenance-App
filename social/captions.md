@@ -26,3 +26,16 @@ A routine beats a rescue mission. Plan the week, then show up.
 Save this and send it to the friend who always runs late to her own appointments.
 
 #selfmaintenance #beautyroutine #weeklyplanning #nailsandhair #lashesandbrows #maintainingyou #lookinggoodforyourpurpose #getreadywithme
+
+## Post 4: I used to believe the heart is all that matters (carousel, 6 slides)
+I used to believe appearance doesn't matter as long as my heart is right. I dressed anyhow, because "man looks at the outward appearance, but God looks at the heart."
+
+Then I read my Bible again. Rebekah was beautiful, and she kept herself. Esther spent a whole year in beauty treatment before she stood before the king: six months with oil, six months with perfumes and creams. Same Bible. Same God.
+
+God does look at the heart. But people look at the outside first. And if nobody trusts the woman who cannot take care of herself, nobody will listen to what she carries.
+
+So I take care of myself. Not for my ego, but for my purpose. It is possible to love Jesus and still look attractive.
+
+That is why I am building Maintaining You, for women who want their appearance to open doors. 🤍
+
+#lookinggoodforyourpurpose #maintainingyou #womenofgod #purposedriven #christianwomen #selfcare
