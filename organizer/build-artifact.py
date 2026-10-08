@@ -13,7 +13,7 @@ js = ''.join(open(os.path.join(here, f)).read() + '\n' for f in ['seed.js', 'sto
 html = f'''<title>Maintaining Home</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Hanken+Grotesk:wght@400;500;600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 {css}
 </style>

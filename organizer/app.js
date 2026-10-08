@@ -19,29 +19,13 @@ const num = v => parseFloat(String(v ?? '').replace(',', '.')) || 0;
 const monthKey = d => d.slice(0, 7);
 const quarterKey = d => d.slice(0, 4) + '-Q' + (Math.floor((+d.slice(5, 7) - 1) / 3) + 1);
 
-const IC = {
-  today: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>',
-  cal: '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
-  todo: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',
-  home: '<path d="M4 11l8-7 8 7v8.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M10 20.5V14h4v6.5"/>',
-  more: '<circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  left: '<path d="M14.5 5.5L8 12l6.5 6.5"/>',
-  right: '<path d="M9.5 5.5L16 12l-6.5 6.5"/>',
-  x: '<path d="M6 6l12 12M18 6L6 18"/>',
-  flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
-  food: '<path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 3c-2.2 1.6-3 4-3 7h3v11"/>',
-  cart: '<path d="M3 4h2l2.4 10.2a1 1 0 0 0 1 .8h8.7a1 1 0 0 0 1-.8L20 8H6.2"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/>',
-  sparkle: '<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9zM18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
-  wallet: '<rect x="3.5" y="6.5" width="17" height="13" rx="3"/><path d="M3.5 10h17M16 14.5h1.5M7 6.5l8-3 1.5 3"/>',
-  down: '<path d="M6 9.5l6 6 6-6"/>'
-};
-const icon = (n, w = 1.6) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+const IC = {"today": "<path d=\"M240,154H197.28a70.91,70.91,0,0,0,.72-10,70,70,0,0,0-140,0,70.91,70.91,0,0,0,.72,10H16a6,6,0,0,0,0,12H240a6,6,0,0,0,0-12ZM70,144a58,58,0,1,1,115.13,10H70.87A58.63,58.63,0,0,1,70,144Zm144,56a6,6,0,0,1-6,6H48a6,6,0,0,1,0-12H208A6,6,0,0,1,214,200ZM74.63,42.69a6,6,0,0,1,10.74-5.37l8,16a6,6,0,0,1-10.74,5.36Zm-56,50.63a6,6,0,0,1,8.05-2.69l16,8a6,6,0,0,1-5.36,10.74l-16-8A6,6,0,0,1,18.63,93.32Zm192,13.36a6,6,0,0,1,2.69-8.05l16-8a6,6,0,1,1,5.36,10.74l-16,8a6,6,0,0,1-8.05-2.69Zm-48-53.36,8-16a6,6,0,0,1,10.74,5.37l-8,16a6,6,0,1,1-10.74-5.36Z\"/>", "cal": "<path d=\"M208,34H182V24a6,6,0,0,0-12,0V34H86V24a6,6,0,0,0-12,0V34H48A14,14,0,0,0,34,48V208a14,14,0,0,0,14,14H208a14,14,0,0,0,14-14V48A14,14,0,0,0,208,34ZM48,46H74V56a6,6,0,0,0,12,0V46h84V56a6,6,0,0,0,12,0V46h26a2,2,0,0,1,2,2V82H46V48A2,2,0,0,1,48,46ZM208,210H48a2,2,0,0,1-2-2V94H210V208A2,2,0,0,1,208,210Z\"/>", "week": "<path d=\"M208,34H182V24a6,6,0,0,0-12,0V34H86V24a6,6,0,0,0-12,0V34H48A14,14,0,0,0,34,48V208a14,14,0,0,0,14,14H208a14,14,0,0,0,14-14V48A14,14,0,0,0,208,34ZM48,46H74V56a6,6,0,0,0,12,0V46h84V56a6,6,0,0,0,12,0V46h26a2,2,0,0,1,2,2V82H46V48A2,2,0,0,1,48,46ZM208,210H48a2,2,0,0,1-2-2V94H210V208A2,2,0,0,1,208,210Zm-70-78a10,10,0,1,1-10-10A10,10,0,0,1,138,132Zm44,0a10,10,0,1,1-10-10A10,10,0,0,1,182,132ZM94,172a10,10,0,1,1-10-10A10,10,0,0,1,94,172Zm44,0a10,10,0,1,1-10-10A10,10,0,0,1,138,172Zm44,0a10,10,0,1,1-10-10A10,10,0,0,1,182,172Z\"/>", "todo": "<path d=\"M222,128a6,6,0,0,1-6,6H128a6,6,0,0,1,0-12h88A6,6,0,0,1,222,128ZM128,70h88a6,6,0,0,0,0-12H128a6,6,0,0,0,0,12Zm88,116H128a6,6,0,0,0,0,12h88a6,6,0,0,0,0-12ZM83.76,43.76,56,71.51,44.24,59.76a6,6,0,0,0-8.48,8.48l16,16a6,6,0,0,0,8.48,0l32-32a6,6,0,0,0-8.48-8.48Zm0,64L56,135.51,44.24,123.76a6,6,0,1,0-8.48,8.48l16,16a6,6,0,0,0,8.48,0l32-32a6,6,0,0,0-8.48-8.48Zm0,64L56,199.51,44.24,187.76a6,6,0,0,0-8.48,8.48l16,16a6,6,0,0,0,8.48,0l32-32a6,6,0,0,0-8.48-8.48Z\"/>", "home": "<path d=\"M240,210H222V131.17l5.76,5.76a6,6,0,0,0,8.48-8.49L137.9,30.09a14,14,0,0,0-19.8,0L19.76,128.44a6,6,0,0,0,8.48,8.49L34,131.17V210H16a6,6,0,0,0,0,12H240a6,6,0,0,0,0-12ZM46,119.17l80.58-80.59a2,2,0,0,1,2.84,0L210,119.17V210H158V152a6,6,0,0,0-6-6H104a6,6,0,0,0-6,6v58H46ZM146,210H110V158h36Z\"/>", "more": "<path d=\"M40,86H74.6a30,30,0,0,0,58.8,0H216a6,6,0,0,0,0-12H133.4a30,30,0,0,0-58.8,0H40a6,6,0,0,0,0,12Zm64-24A18,18,0,1,1,86,80,18,18,0,0,1,104,62ZM216,170H197.4a30,30,0,0,0-58.8,0H40a6,6,0,0,0,0,12h98.6a30,30,0,0,0,58.8,0H216a6,6,0,0,0,0-12Zm-48,24a18,18,0,1,1,18-18A18,18,0,0,1,168,194Z\"/>", "dots": "<path d=\"M138,128a10,10,0,1,1-10-10A10,10,0,0,1,138,128ZM60,118a10,10,0,1,0,10,10A10,10,0,0,0,60,118Zm136,0a10,10,0,1,0,10,10A10,10,0,0,0,196,118Z\"/>", "plus": "<path d=\"M222,128a6,6,0,0,1-6,6H134v82a6,6,0,0,1-12,0V134H40a6,6,0,0,1,0-12h82V40a6,6,0,0,1,12,0v82h82A6,6,0,0,1,222,128Z\"/>", "left": "<path d=\"M164.24,203.76a6,6,0,1,1-8.48,8.48l-80-80a6,6,0,0,1,0-8.48l80-80a6,6,0,0,1,8.48,8.48L88.49,128Z\"/>", "right": "<path d=\"M180.24,132.24l-80,80a6,6,0,0,1-8.48-8.48L167.51,128,91.76,52.24a6,6,0,0,1,8.48-8.48l80,80A6,6,0,0,1,180.24,132.24Z\"/>", "down": "<path d=\"M212.24,100.24l-80,80a6,6,0,0,1-8.48,0l-80-80a6,6,0,0,1,8.48-8.48L128,167.51l75.76-75.75a6,6,0,0,1,8.48,8.48Z\"/>", "x": "<path d=\"M204.24,195.76a6,6,0,1,1-8.48,8.48L128,136.49,60.24,204.24a6,6,0,0,1-8.48-8.48L119.51,128,51.76,60.24a6,6,0,0,1,8.48-8.48L128,119.51l67.76-67.75a6,6,0,0,1,8.48,8.48L136.49,128Z\"/>", "flag": "<path d=\"M237.07,52.8A6,6,0,0,0,232,50H40a6,6,0,0,0-4.24,10.24L79.51,104,35.76,147.76A6,6,0,0,0,40,158H176.78l-30.2,63.42a6,6,0,0,0,10.84,5.16l80-168A6,6,0,0,0,237.07,52.8ZM182.5,146h-128l37.75-37.76a6,6,0,0,0,0-8.48L54.49,62h168Z\"/>", "food": "<path d=\"M74,88V40a6,6,0,0,1,12,0V88a6,6,0,0,1-12,0ZM214,40V224a6,6,0,0,1-12,0V174H152a6,6,0,0,1-6-6c0-4.41.68-108.25,59.64-133.51A6,6,0,0,1,214,40ZM202,50c-36.79,24.29-42.82,91.48-43.81,112H202ZM117.92,39a6,6,0,1,0-11.84,2L114,88.48a34,34,0,0,1-68,0L53.92,41a6,6,0,0,0-11.84-2l-8,48A6.61,6.61,0,0,0,34,88a46.06,46.06,0,0,0,40,45.6V224a6,6,0,0,0,12,0V133.6A46.06,46.06,0,0,0,126,88a6.61,6.61,0,0,0-.08-1Z\"/>", "cart": "<path d=\"M236.78,68.37A6,6,0,0,0,232,66H55.67L45.78,30.39A6,6,0,0,0,40,26H16a6,6,0,0,0,0,12H35.44L71,165.89A22.08,22.08,0,0,0,92.16,182H191a22.08,22.08,0,0,0,21.2-16.11l25.63-92.28A6,6,0,0,0,236.78,68.37Zm-36.2,94.31A10,10,0,0,1,191,170H92.16a10,10,0,0,1-9.63-7.32L59,78H224.11ZM102,216a14,14,0,1,1-14-14A14,14,0,0,1,102,216Zm104,0a14,14,0,1,1-14-14A14,14,0,0,1,206,216Z\"/>", "sparkle": "<path d=\"M196.89,130.94,144.4,111.6,125.06,59.11a13.92,13.92,0,0,0-26.12,0L79.6,111.6,27.11,130.94a13.92,13.92,0,0,0,0,26.12L79.6,176.4l19.34,52.49a13.92,13.92,0,0,0,26.12,0L144.4,176.4l52.49-19.34a13.92,13.92,0,0,0,0-26.12Zm-4.15,14.86-55.08,20.3a6,6,0,0,0-3.56,3.56l-20.3,55.08a1.92,1.92,0,0,1-3.6,0L89.9,169.66a6,6,0,0,0-3.56-3.56L31.26,145.8a1.92,1.92,0,0,1,0-3.6l55.08-20.3a6,6,0,0,0,3.56-3.56l20.3-55.08a1.92,1.92,0,0,1,3.6,0l20.3,55.08a6,6,0,0,0,3.56,3.56l55.08,20.3a1.92,1.92,0,0,1,0,3.6ZM146,40a6,6,0,0,1,6-6h18V16a6,6,0,0,1,12,0V34h18a6,6,0,0,1,0,12H182V64a6,6,0,0,1-12,0V46H152A6,6,0,0,1,146,40ZM246,88a6,6,0,0,1-6,6H230v10a6,6,0,0,1-12,0V94H208a6,6,0,0,1,0-12h10V72a6,6,0,0,1,12,0V82h10A6,6,0,0,1,246,88Z\"/>", "wallet": "<path d=\"M216,66H56a10,10,0,0,1,0-20H192a6,6,0,0,0,0-12H56A22,22,0,0,0,34,56V184a22,22,0,0,0,22,22H216a14,14,0,0,0,14-14V80A14,14,0,0,0,216,66Zm2,126a2,2,0,0,1-2,2H56a10,10,0,0,1-10-10V75.59A21.84,21.84,0,0,0,56,78H216a2,2,0,0,1,2,2Zm-28-60a10,10,0,1,1-10-10A10,10,0,0,1,190,132Z\"/>", "vf": "<path d=\"M106,112a6,6,0,0,1,6-6h32a6,6,0,0,1,0,12H112A6,6,0,0,1,106,112ZM230,72V200a14,14,0,0,1-14,14H40a14,14,0,0,1-14-14V72A14,14,0,0,1,40,58H82V48a22,22,0,0,1,22-22h48a22,22,0,0,1,22,22V58h42A14,14,0,0,1,230,72ZM94,58h68V48a10,10,0,0,0-10-10H104A10,10,0,0,0,94,48ZM38,72v42.79A186,186,0,0,0,128,138a185.91,185.91,0,0,0,90-23.22V72a2,2,0,0,0-2-2H40A2,2,0,0,0,38,72ZM218,200V128.37A198.12,198.12,0,0,1,128,150a198.05,198.05,0,0,1-90-21.62V200a2,2,0,0,0,2,2H216A2,2,0,0,0,218,200Z\"/>", "church": "<path d=\"M227.09,146.86,190,124.6V104a6,6,0,0,0-3-5.21L134,68.52V46h18a6,6,0,0,0,0-12H134V16a6,6,0,0,0-12,0V34H104a6,6,0,0,0,0,12h18V68.52L69,98.79A6,6,0,0,0,66,104v20.6L28.91,146.86A6,6,0,0,0,26,152v64a6,6,0,0,0,6,6h80a6,6,0,0,0,6-6V168a10,10,0,0,1,20,0v48a6,6,0,0,0,6,6h80a6,6,0,0,0,6-6V152A6,6,0,0,0,227.09,146.86ZM38,155.4l28-16.8V210H38Zm90-9.4a22,22,0,0,0-22,22v42H78V107.48l50-28.57,50,28.57V210H150V168A22,22,0,0,0,128,146Zm90,64H190V138.6l28,16.8Z\"/>", "homei": "<path d=\"M217.9,110.1l-80-80a14,14,0,0,0-19.8,0l-80,80A13.92,13.92,0,0,0,34,120v96a6,6,0,0,0,6,6h64a6,6,0,0,0,6-6V158h36v58a6,6,0,0,0,6,6h64a6,6,0,0,0,6-6V120A13.92,13.92,0,0,0,217.9,110.1ZM210,210H158V152a6,6,0,0,0-6-6H104a6,6,0,0,0-6,6v58H46V120a2,2,0,0,1,.58-1.42l80-80a2,2,0,0,1,2.84,0l80,80A2,2,0,0,1,210,120Z\"/>", "trash": "<path d=\"M216,50H174V40a22,22,0,0,0-22-22H104A22,22,0,0,0,82,40V50H40a6,6,0,0,0,0,12H50V208a14,14,0,0,0,14,14H192a14,14,0,0,0,14-14V62h10a6,6,0,0,0,0-12ZM94,40a10,10,0,0,1,10-10h48a10,10,0,0,1,10,10V50H94ZM194,208a2,2,0,0,1-2,2H64a2,2,0,0,1-2-2V62H194ZM110,104v64a6,6,0,0,1-12,0V104a6,6,0,0,1,12,0Zm48,0v64a6,6,0,0,1-12,0V104a6,6,0,0,1,12,0Z\"/>"};
+const icon = n => `<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${IC[n]}</svg>`;
 const CHECK = '<svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>';
 
 const ui = {
-  tab: 'today', calMode: 'month', calMonth: isoOf().slice(0, 7), calSel: isoOf(),
-  area: 'all', home: null, open: new Set(['d-today']), mealDay: null, cleanTouched: false, essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
+  tab: 'today', calMode: 'week', calMonth: isoOf().slice(0, 7), calSel: isoOf(),
+  area: 'all', home: null, open: new Set(['d-vf', 'd-church', 'd-home']), mealDay: null, cleanTouched: false, essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
   week: mondayIso(), budgetMonth: isoOf().slice(0, 7), showDone: false
 };
 
@@ -112,8 +96,8 @@ function render() {
   const bg = $('#bg'); if (bg) bg.className = 't-' + ui.tab;
   $('#app').innerHTML = `<main class="${animateNext ? 'page' : ''}">${V()}</main>`;
   animateNext = false;
-  const tabs = [['today', 'Heute', 'today'], ['cal', 'Kalender', 'cal'], ['todos', 'To-dos', 'todo'], ['home', 'Haushalt', 'home'], ['more', 'Mehr', 'more']];
-  const fab = ['today', 'cal', 'todos'].includes(ui.tab) ? `<button class="fab" data-a="new" aria-label="Neu anlegen">${icon('plus', 2)}</button>` : '';
+  const tabs = [['today', 'Start', 'today'], ['cal', 'Woche', 'week'], ['todos', 'To-dos', 'todo'], ['home', 'Haushalt', 'home'], ['more', 'Mehr', 'more']];
+  const fab = ['today', 'cal', 'todos'].includes(ui.tab) ? `<button class="fab" data-a="new" aria-label="Neu anlegen">${icon('plus')}</button>` : '';
   $('#chrome').innerHTML = fab + `<nav class="nav" aria-label="Hauptmenü"><div class="nav-in">${tabs.map(t => `<button class="tab" data-a="tab" data-t="${t[0]}" ${ui.tab === t[0] ? 'aria-current="page"' : ''}>${icon(t[2])}<span>${t[1]}</span></button>`).join('')}</div></nav>`;
   window.scrollTo(0, y);
 }
@@ -175,29 +159,27 @@ function streak() {
 
 /* ---------- Heute ---------- */
 function roundIds() { const ids = []; SEED.round.forEach((r, i) => r[2].forEach((_, j) => ids.push(`r${i}-${j}`))); return ids; }
+function openFor(pred) {
+  const t = isoOf();
+  return S.todos.filter(x => pred(x.area)).map(x => ({ x, d: nextOcc(x, t) })).filter(o => !todoDone(o.x, o.d || t)).sort((p, q) => (p.d || '9').localeCompare(q.d || '9'));
+}
+function listCard(key, title, img, pred, areaId) {
+  const t = isoOf(), items = openFor(pred), late = items.filter(o => o.d && o.d < t && (o.x.repeat || 'none') === 'none').length;
+  const shown = items.slice(0, 6);
+  const sub = !items.length ? 'Alles erledigt' : `${items.length} offen${late ? ', ' + late + ' überfällig' : ''}`;
+  const body = (shown.length ? shown.map(o => todoRow(o.x, o.d || t, { showDate: true })).join('') : '<p class="muted">Nichts offen.</p>') +
+    `<div class="card-actions"><button class="btn small" data-a="new-in" data-area="${areaId}">Neu</button>${items.length > 6 ? `<button class="btn ghost small" data-a="todos-for" data-area="${areaId}">Alle ${items.length} ansehen</button>` : (items.length ? `<button class="btn ghost small" data-a="todos-for" data-area="${areaId}">In To-dos öffnen</button>` : '')}</div>`;
+  return fold(key, title, '', body, { img, sub });
+}
 function vToday() {
-  const t = isoOf(), wk = mondayOf(t), h = new Date().getHours();
+  const t = isoOf(), h = new Date().getHours();
   const greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
-  const pr = (S.priorities[wk] || []).filter(x => x);
-  const { ev, td } = itemsOn(t);
-  const over = S.todos.filter(x => (x.repeat || 'none') === 'none' && !x.done && x.date && x.date < t);
-  const open = td.filter(x => !todoDone(x, t));
-  const doneT = td.filter(x => todoDone(x, t));
-  const nOpen = open.length + over.length;
-  const empty = !ev.length && !nOpen && !doneT.length;
-  const log = S.cleanLog[t] || [], ids = roundIds(), deep = deepInfo(t), st = streak();
-  const focus = SEED.focus[dowOf(t)], di = dowOf(t);
-  const week = pr.length ? `<ol class="prio-list">${pr.map(x => `<li>${esc(x)}</li>`).join('')}</ol><button class="btn ghost small" style="margin-top:12px" data-a="prio-edit">Ändern</button>` : `<p class="muted">Was sind deine 3 Prioritäten?</p><button class="btn small" style="margin-top:12px" data-a="prio-edit">Festlegen</button>`;
-  const today = `${empty ? '<p class="muted">Tippe auf das Plus, um etwas einzutragen.</p>' : ''}${ev.map(eventRow).join('')}${over.map(x => todoRow(x, x.date, { showDate: true })).join('')}${open.map(x => todoRow(x, t)).join('')}${doneT.map(x => todoRow(x, t)).join('')}`;
-  const essen = `<div class="stack-s">${slotLine('Früh', cell(wk, di, 0))}${slotLine('Mittag', cell(wk, di, 1))}${slotLine('Abend', cell(wk, di, 2))}</div>`;
-  const clean = `<p class="muted small">${deep ? esc(SEED.deep[deep].title) : esc(focus[1])}</p><div class="bar" style="margin:12px 0 8px"><i style="--p:${log.length / ids.length}"></i></div><p class="small muted">Runde ${log.length} von ${ids.length}${st >= 2 ? `, ${st} Tage in Folge` : ''}</p><button class="btn ghost block" style="margin-top:12px" data-a="goto" data-t="home" data-sub="clean">Runde öffnen</button>`;
   return `<div class="dash">
     <header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
     <form class="qa" data-a="qa"><div class="qa-row"><input class="in" id="qa" type="text" placeholder="Schnell notieren: Angebot Hotel morgen vf" enterkeyhint="send" autocomplete="off" aria-label="Schnell notieren"><button class="btn" type="submit">Dazu</button></div><p class="qa-prev small" id="qa-prev" aria-live="polite"></p></form>
-    ${fold('d-week', 'Diese Woche', '', week, { icon: 'flag', sub: pr.length ? esc(pr[0]) : 'Prioritäten festlegen' })}
-    ${fold('d-today', 'Heute', '', today, { icon: 'today', sub: empty ? 'Nichts geplant' : `${nOpen} offen${ev.length ? ', ' + ev.length + (ev.length === 1 ? ' Termin' : ' Termine') : ''}` })}
-    ${fold('d-essen', 'Essen', '', essen, { icon: 'food', sub: esc(cell(wk, di, 1).text) || 'Nichts geplant' })}
-    ${fold('d-clean', 'Reinigung', '', clean, { icon: 'sparkle', sub: `${esc(deep ? 'Deep Clean, Woche ' + deep : focus[0])}, ${log.length} von ${ids.length}` })}
+    ${listCard('d-vf', 'Victory Family', 'vf', a => a === 'vf', 'vf')}
+    ${listCard('d-church', 'Church', 'church', a => a === 'church' || area(a).parent === 'church', 'church')}
+    ${listCard('d-home', 'Home', 'homeroom', a => a === 'home', 'home')}
   </div>`;
 }
 
@@ -240,12 +222,17 @@ function vCal() {
     body = `<div class="dow">${DS.map(d => `<span>${d}</span>`).join('')}</div><div class="grid7">${cells.join('')}</div>
       <section style="margin-top:26px">${sec(ui.calSel === t ? 'Heute' : fmtLong(ui.calSel), `<button class="more" data-a="new" data-d="${ui.calSel}">Hinzufügen</button>`)}${dayAgenda(ui.calSel)}</section>`;
   } else {
-    const mon = mondayOf(ui.calSel);
+    const mon = mondayOf(ui.calSel), sel = ui.calSel, di = dowOf(sel);
+    const pr = (S.priorities[mon] || []).filter(x => x);
+    const slot = (k, s) => { const c = cell(mon, di, s); return `<button class="slot p${c.pot < 0 ? 'x' : c.pot} ${c.text ? '' : 'empty-slot'}" data-a="edit-meal" data-wk="${mon}" data-i="${di}" data-s="${s}"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</button>`; };
     head = `<div class="cal-head"><button class="icon-btn" data-a="cal-prev" aria-label="Vorherige Woche">${icon('left')}</button><h2>${fmtShort(mon)} bis ${fmtShort(addDays(mon, 6))}</h2><button class="icon-btn" data-a="cal-next" aria-label="Nächste Woche">${icon('right')}</button></div>`;
-    body = Array.from({ length: 7 }, (_, i) => { const d = addDays(mon, i); return `<div class="week-day ${d === t ? 'today' : ''}"><h3>${DAYS[i]}<small>${fmtShort(d)} <button class="more" style="color:var(--gold);padding:6px 0 6px 10px;font-weight:600" data-a="new" data-d="${d}" aria-label="Hinzufügen am ${fmtLong(d)}">+ Neu</button></small></h3>${dayAgenda(d, true)}</div>`; }).join('');
+    body = `<div class="daystrip" role="group" aria-label="Tag wählen">${DS.map((n, i) => { const d = addDays(mon, i); return `<button class="dsb" data-a="pick-day" data-d="${d}" aria-pressed="${d === sel}" ${d === t ? 'aria-current="date"' : ''} aria-label="${fmtLong(d)}"><small>${n}</small><b>${+d.slice(8)}</b><span class="dots">${dotsFor(d)}</span></button>`; }).join('')}</div>
+      <section style="margin-top:22px"><div class="sec"><h2>${sel === t ? 'Heute' : DAYS[di]}</h2><button class="more" data-a="new" data-d="${sel}">Hinzufügen</button></div><div class="card list">${dayAgenda(sel, true)}</div></section>
+      <section style="margin-top:22px"><div class="sec"><h2>Essen</h2></div><div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div></section>
+      <div style="margin-top:22px">${fold('d-week', 'Prioritäten der Woche', pr.length ? '' : 'offen', pr.length ? `<ol class="prio-list">${pr.map(x => `<li>${esc(x)}</li>`).join('')}</ol><button class="btn ghost small" style="margin-top:12px" data-a="prio-edit">Ändern</button>` : `<p class="muted">Was sind deine 3 Prioritäten?</p><button class="btn small" style="margin-top:12px" data-a="prio-edit">Festlegen</button>`)}</div>`;
   }
-  return `<div class="stack"><header style="display:flex;justify-content:space-between;align-items:end;gap:12px"><h1 class="title">Kalender</h1><button class="btn ghost small" data-a="cal-today">Heute</button></header>
-    <div class="seg" role="group" aria-label="Ansicht"><button data-a="cal-mode" data-m="month" aria-pressed="${ui.calMode === 'month'}">Monat</button><button data-a="cal-mode" data-m="week" aria-pressed="${ui.calMode === 'week'}">Woche</button><button data-a="cal-mode" data-m="agenda" aria-pressed="${ui.calMode === 'agenda'}">Agenda</button></div>
+  return `<div class="stack"><header style="display:flex;justify-content:space-between;align-items:end;gap:12px"><h1 class="title">Woche</h1><button class="btn ghost small" data-a="cal-today">Heute</button></header>
+    <div class="seg" role="group" aria-label="Ansicht"><button data-a="cal-mode" data-m="week" aria-pressed="${ui.calMode === 'week'}">Woche</button><button data-a="cal-mode" data-m="month" aria-pressed="${ui.calMode === 'month'}">Monat</button><button data-a="cal-mode" data-m="agenda" aria-pressed="${ui.calMode === 'agenda'}">Agenda</button></div>
     <div>${head}${body}</div></div>`;
 }
 
@@ -266,7 +253,7 @@ function vTodos() {
   const soon = dated.filter(o => o.d > t);
   const nodate = open.filter(x => !x.date && !x.done);
   const done = list.filter(x => (x.repeat || 'none') === 'none' && x.done);
-  const group = (title, arr, showDate) => arr.length ? `<section>${sec(title)}${arr.map(o => todoRow(o.x || o, o.d || t, { showDate })).join('')}</section>` : '';
+  const group = (title, arr, showDate) => arr.length ? `<section><h3 class="group-title">${title}</h3><div class="card list">${arr.map(o => todoRow(o.x || o, o.d || t, { showDate })).join('')}</div></section>` : '';
   const none = !late.length && !today.length && !soon.length && !nodate.length;
   const leads = ui.area === 'vf' ? `<section>${sec('Leads', `<button class="more" data-a="lead-new">Neuer Lead</button>`)}${S.leads.length ? S.leads.map(l => `<div class="plain-row"><button class="grow" data-a="lead-edit" data-id="${l.id}"><b style="font-weight:600">${esc(l.name)}</b>${l.note ? `<span class="small muted" style="display:block">${esc(l.note)}</span>` : ''}</button><button class="status" data-s="${l.status}" data-a="lead-next" data-id="${l.id}" aria-label="Status ${l.status}, ändern">${l.status[0].toUpperCase() + l.status.slice(1)}</button></div>`).join('') : '<div class="empty"><b>Noch keine Leads.</b>Trag ein, wen du als Nächstes anrufst.</div>'}</section>` : '';
   return `<div class="stack"><header><h1 class="title">To-dos</h1></header>
@@ -283,7 +270,7 @@ const seg = (key, opts) => `<div class="seg" role="group">${opts.map(o => `<butt
 const IMGOF = { flag: 'week', today: 'today', food: 'essen', cart: 'shop', sparkle: 'clean', wallet: 'budget' };
 function fold(k, title, meta, body, o = {}) {
   const open = ui.open.has(k);
-  const img = IMGOF[o.icon];
+  const img = o.img || IMGOF[o.icon];
   const head = o.sub !== undefined
     ? `<span class="ico ${img ? 'photo i-' + img : ''}">${img ? '' : icon(o.icon)}</span><span class="ft"><b>${title}</b><span class="fs">${o.sub}</span></span>`
     : `<span class="ft">${title}</span><span class="fm">${meta || ''}</span>`;
@@ -486,6 +473,8 @@ const A = {
   tab: d => { if (d.t === 'home' && ui.tab === 'home') ui.home = null; ui.tab = d.t; animateNext = true; commit(); window.scrollTo(0, 0); },
   goto: d => { ui.tab = d.t; if (d.sub) ui.home = d.sub; animateNext = true; commit(); window.scrollTo(0, 0); },
   seg: d => { ui[d.key] = d.v; commit(); },
+  'new-in': d => itemSheet({ kind: 'todo', area: d.area === 'church' ? 'church' : d.area }),
+  'todos-for': d => { ui.area = d.area; ui.tab = 'todos'; animateNext = true; commit(); window.scrollTo(0, 0); },
   'hub-go': d => { ui.home = d.v || null; commit(); window.scrollTo(0, 0); },
   fold: (d, el) => { const f = el.closest('.fold'), on = !ui.open.has(d.k); on ? ui.open.add(d.k) : ui.open.delete(d.k); f.classList.toggle('open', on); el.setAttribute('aria-expanded', on); },
   mealday: d => { ui.mealDay = +d.i; commit(); },
@@ -507,7 +496,7 @@ const A = {
   'cal-prev': () => calMove(-1), 'cal-next': () => calMove(1),
   'cal-today': () => { ui.calSel = isoOf(); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
   week: d => { ui.week = addDays(ui.week, 7 * +d.n); ui.mealDay = null; commit(); },
-  'prio-edit': () => { const p = S.priorities[mondayOf(isoOf())] || ['', '', '']; openSheet(`<h2>Diese Woche</h2><form class="form" data-a="prio-save">${[0, 1, 2].map(i => `<label class="field"><span>Priorität ${i + 1}</span><input class="in" id="pr${i}" value="${esc(p[i] || '')}" autocomplete="off" placeholder="${['Das Wichtigste', 'Danach', 'Und noch eins'][i]}"></label>`).join('')}<button class="btn block" type="submit">Speichern</button></form>`); },
+  'prio-edit': () => { const p = S.priorities[mondayOf(ui.calSel)] || ['', '', '']; openSheet(`<h2>Diese Woche</h2><form class="form" data-a="prio-save">${[0, 1, 2].map(i => `<label class="field"><span>Priorität ${i + 1}</span><input class="in" id="pr${i}" value="${esc(p[i] || '')}" autocomplete="off" placeholder="${['Das Wichtigste', 'Danach', 'Und noch eins'][i]}"></label>`).join('')}<button class="btn block" type="submit">Speichern</button></form>`); },
   'plan-ingr': () => openSheet(ingrSheet()),
   'ingr-tg': (d, el) => { const on = el.getAttribute('aria-checked') !== 'true'; el.setAttribute('aria-checked', on ? 'true' : 'false'); on ? ingrSel.add(d.n) : ingrSel.delete(d.n); const b = $('#ingr-go'); if (b) { b.textContent = `${ingrSel.size} auf die Einkaufsliste`; b.disabled = !ingrSel.size; } },
   'ingr-add': () => { ingrList.filter(x => ingrSel.has(x.n)).forEach(x => S.shopping.push({ id: uid(), text: x.n, cat: x.cat, done: false, src: 'plan' })); const n = ingrSel.size; closeSheet(); commit(); toast(`${n} Zutaten auf der Liste`); },
@@ -517,14 +506,14 @@ const A = {
   },
   'rot-set': d => { S.settings.rotShift = mod(S.settings.rotShift + (+d.i - rotOf(ui.week)), 4); closeSheet(); commit(); },
   'edit-meal': d => {
-    const i = +d.i, s = +d.s, c = cell(ui.week, i, s);
+    const wk = d.wk || ui.week, i = +d.i, s = +d.s, c = cell(wk, i, s);
     const pool = SEED.meals.filter(m => (s === 0) === (m[0] === 'Frühstück')).flatMap(m => m[1]).concat(S.myMeals);
-    openSheet(`<h2>${DAYS[i]}, ${['Frühstück', 'Mittag', 'Abend'][s]}</h2><form class="form" data-a="save-meal" data-i="${i}" data-s="${s}"><label class="field"><span>Gericht</span><input class="in" id="m-t" value="${esc(c.text)}" autocomplete="off" enterkeyhint="done"></label>
+    openSheet(`<h2>${DAYS[i]}, ${['Frühstück', 'Mittag', 'Abend'][s]}</h2><form class="form" data-a="save-meal" data-wk="${wk}" data-i="${i}" data-s="${s}"><label class="field"><span>Gericht</span><input class="in" id="m-t" value="${esc(c.text)}" autocomplete="off" enterkeyhint="done"></label>
       <div class="suggest">${pool.map(x => `<button type="button" class="chip" data-a="pick-meal" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>
-      <button class="btn block" type="submit">Speichern</button>${c.own ? `<button class="btn ghost block" type="button" data-a="reset-meal" data-i="${i}" data-s="${s}">Zurück zur Rotation</button>` : ''}</form>`);
+      <button class="btn block" type="submit">Speichern</button>${c.own ? `<button class="btn ghost block" type="button" data-a="reset-meal" data-wk="${wk}" data-i="${i}" data-s="${s}">Zurück zur Rotation</button>` : ''}</form>`);
   },
   'pick-meal': d => { $('#m-t').value = d.v; },
-  'reset-meal': d => { const p = S.plan[ui.week]; if (p && p[d.i]) delete p[d.i][d.s]; closeSheet(); commit(); },
+  'reset-meal': d => { const p = S.plan[d.wk || ui.week]; if (p && p[d.i]) delete p[d.i][d.s]; closeSheet(); commit(); },
   'add-idea': () => { const v = $('#idea').value.trim(); if (!v) return; S.myMeals.push(v); commit(); },
   'del-idea': d => { S.myMeals.splice(+d.i, 1); commit(); },
   pantry: d => {
@@ -592,7 +581,7 @@ function leadSheet(id) {
 
 /* Formulare */
 const SUBMIT = {
-  'prio-save': () => { S.priorities[mondayOf(isoOf())] = [0, 1, 2].map(i => $('#pr' + i).value.trim()); closeSheet(); commit(); },
+  'prio-save': () => { S.priorities[mondayOf(ui.calSel)] = [0, 1, 2].map(i => $('#pr' + i).value.trim()); closeSheet(); commit(); },
   qa: () => {
     const q = parseQuick($('#qa').value); if (!q.title) return;
     const base = { title: q.title, area: q.area || defaultArea(), date: q.date, repeat: q.repeat };
@@ -613,7 +602,7 @@ const SUBMIT = {
     }
     closeSheet(); commit(); toast('Gespeichert');
   },
-  'save-meal': (f, d) => { const p = S.plan[ui.week] || (S.plan[ui.week] = {}); (p[d.i] || (p[d.i] = {}))[d.s] = $('#m-t').value.trim(); closeSheet(); commit(); },
+  'save-meal': (f, d) => { const wk = d.wk || ui.week; const p = S.plan[wk] || (S.plan[wk] = {}); (p[d.i] || (p[d.i] = {}))[d.s] = $('#m-t').value.trim(); closeSheet(); commit(); },
   'shop-add': () => { const t = $('#shop-t').value.trim(); if (!t) return; S.shopping.push({ id: uid(), text: t, cat: guessCat(t), done: false }); commit(); $('#shop-t')?.focus(); },
   'save-buy': (f, d) => {
     const v = { store: $('#b-store').value.trim(), amount: num($('#b-amt').value), date: $('#b-date').value || isoOf(), cat: $('#b-cat').value, note: $('#b-note').value.trim() };
