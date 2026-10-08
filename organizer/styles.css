@@ -255,3 +255,12 @@ select.in { background-image: linear-gradient(45deg, transparent 50%, var(--mute
 .cover .btn { width: 100%; max-width: 360px; justify-self: center; min-height: 52px; font-size: 16px; }
 .cover .hello { text-align: center; font-size: 14px; color: var(--muted); margin-bottom: 14px; }
 @media (prefers-reduced-motion: reduce) { .sayings span { transition: none; } }
+
+/* Titel gleitet langsam von beiden Seiten ein */
+.cover h1 { overflow: hidden; padding: 0 .15em .1em; }
+.cover h1 .w1, .cover h1 .w2 { display: block; animation: slide-l 1.9s cubic-bezier(.22, .8, .24, 1) .25s both; }
+.cover h1 .w2 { animation-name: slide-r; animation-delay: .65s; }
+@keyframes slide-l { from { opacity: 0; transform: translateX(-70vw); } to { opacity: 1; transform: none; } }
+@keyframes slide-r { from { opacity: 0; transform: translateX(70vw); } to { opacity: 1; transform: none; } }
+.cover .rule, .cover .sayings { animation: fade 1.2s ease-out 1.9s both; }
+@media (prefers-reduced-motion: reduce) { .cover h1 .w1, .cover h1 .w2, .cover .rule, .cover .sayings { animation: none; } }

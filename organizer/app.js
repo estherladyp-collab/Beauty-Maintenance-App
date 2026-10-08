@@ -587,7 +587,7 @@ let coverT;
 function showCover() {
   if ($('.cover')) return;
   const h = new Date().getHours(), greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
-  document.body.insertAdjacentHTML('beforeend', `<div class="cover" role="dialog" aria-label="Maintaining Home"><div class="cover-mid"><h1>Maintaining<em>Home</em></h1><div class="rule" aria-hidden="true"><i></i></div><div class="sayings" aria-live="off">${SAYINGS.map((s, i) => `<span class="${i === 0 ? 'on' : ''}">${s}</span>`).join('')}</div></div><div><p class="hello">${greet}, ${esc(S.settings.name)}</p><button class="btn block" data-a="cover-go">Los geht's</button></div></div>`);
+  document.body.insertAdjacentHTML('beforeend', `<div class="cover" role="dialog" aria-label="Maintaining Home"><div class="cover-mid"><h1><span class="w1">Maintaining</span><em class="w2">Home</em></h1><div class="rule" aria-hidden="true"><i></i></div><div class="sayings" aria-live="off">${SAYINGS.map((s, i) => `<span class="${i === 0 ? 'on' : ''}">${s}</span>`).join('')}</div></div><div><p class="hello">${greet}, ${esc(S.settings.name)}</p><button class="btn block" data-a="cover-go">Los geht's</button></div></div>`);
   let i = 0; clearInterval(coverT);
   coverT = setInterval(() => { const sp = document.querySelectorAll('.sayings span'); if (!sp.length) return clearInterval(coverT); sp[i].classList.remove('on'); i = (i + 1) % sp.length; sp[i].classList.add('on'); }, 3200);
 }
