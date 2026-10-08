@@ -302,6 +302,7 @@ function vEssen() {
   }).join('');
   return sub + `<div class="week-nav"><button class="icon-btn" data-a="week" data-n="-1" aria-label="Vorherige Woche">${icon('left')}</button><h2>Woche vom ${fmtShort(wk)}<small>Rotation ${r + 1} von 4 <button style="color:var(--gold);font-weight:600;padding:6px 4px" data-a="rot-pick">ändern</button></small></h2><button class="icon-btn" data-a="week" data-n="1" aria-label="Nächste Woche">${icon('right')}</button></div>
     <div class="card"><div class="pots">${rot.pots.map((p, i) => `<div class="pot"><i style="--b:var(--pot${i});--l:var(--pot${i}-line)"></i><div><b>${esc(p[0])}</b><span>${p[1]}</span></div></div>`).join('')}</div></div>
+    <button class="btn ghost block" data-a="plan-ingr">Zutaten für die Woche auf die Einkaufsliste</button>
     <div class="meals-grid stack-s">${days}</div>`;
 }
 
@@ -319,7 +320,7 @@ function vShop() {
       <div class="card">${SEED.prep.map((p, i) => `<div class="row ${log.includes(i) ? 'done' : ''}">${chk(log.includes(i), `data-a="prep" data-i="${i}" aria-label="${esc(p)}"`)}<span class="row-body"><span class="t">${esc(p)}</span></span></div>`).join('')}</div>`;
   }
   const items = S.shopping, doneN = items.filter(i => i.done).length;
-  return sub + `<form class="card form" data-a="shop-add" style="gap:10px"><div style="display:flex;gap:8px"><input class="in" id="shop-t" placeholder="Was brauchst du?" enterkeyhint="done" autocomplete="off"><button class="btn" type="submit">Dazu</button></div>
+ return sub + `<button class="btn ghost block" data-a="plan-ingr">Zutaten aus dem Wochenplan holen</button><form class="card form" data-a="shop-add" style="gap:10px"><div style="display:flex;gap:8px"><input class="in" id="shop-t" placeholder="Was brauchst du?" enterkeyhint="done" autocomplete="off"><button class="btn" type="submit">Dazu</button></div>
       <select class="in" id="shop-c" aria-label="Kategorie">${SEED.shopCats.map(c => `<option>${c}</option>`).join('')}</select></form>
     ${items.length ? '' : '<div class="empty"><b>Liste ist leer.</b>Alles da, oder du hast noch nichts aufgeschrieben.</div>'}
     ${SEED.shopCats.filter(c => items.some(i => i.cat === c)).map(c => `<div class="card"><h3 class="group-title">${c}</h3>${items.filter(i => i.cat === c).map(i => `<div class="row ${i.done ? 'done' : ''}">${chk(i.done, `data-a="shop-tg" data-id="${i.id}" aria-label="${esc(i.text)}"`)}<span class="row-body"><span class="t">${esc(i.text)}</span></span><button class="icon-btn" data-a="shop-del" data-id="${i.id}" aria-label="${esc(i.text)} entfernen">${icon('x')}</button></div>`).join('')}</div>`).join('')}
@@ -423,6 +424,31 @@ function itemSheet(o) {
 
 const themeSheet = () => `<h2>Farben</h2>${themeOptions()}<button class="btn block" style="margin-top:20px" data-a="close">Fertig</button>`;
 
+/* ---------- Zutaten aus dem Wochenplan ---------- */
+function ingredientsFor(text) {
+  const out = new Map(); const t = text.toLowerCase();
+  INGR.forEach(([re, list]) => { if (new RegExp(re, 'i').test(t)) list.forEach(([n, c]) => out.set(n, c)); });
+  return out;
+}
+function weekIngredients(wk) {
+  const all = new Map();
+  for (let i = 0; i < 7; i++) for (let s = 0; s < 3; s++) { const c = cell(wk, i, s); if (c.text) ingredientsFor(c.text).forEach((cat, n) => all.set(n, cat)); }
+  return all;
+}
+const norm = s => s.toLowerCase().replace(/\(.*?\)/g, '').trim();
+let ingrSel = new Set(), ingrList = [];
+function ingrSheet() {
+  const wk = ui.week, all = weekIngredients(wk);
+  const onList = new Set(S.shopping.filter(x => !x.done).map(x => norm(x.text)));
+  const daNames = SEED.pantry.flatMap((g, gi) => g[2].map((x, xi) => [norm(x), S.pantry[`${gi}-${xi}`]])).filter(p => p[1] === 'da').map(p => p[0]);
+  ingrList = []; ingrSel = new Set();
+  const groups = SEED.shopCats.map(cat => ({ cat, items: [...all].filter(([n, c]) => c === cat && !onList.has(norm(n))).map(([n]) => n) })).filter(g => g.items.length);
+  groups.forEach(g => g.items.forEach(n => { const da = daNames.some(d => d && (norm(n).includes(d) || d.includes(norm(n)))); ingrList.push({ n, cat: g.cat, da }); if (!da) ingrSel.add(n); }));
+  const skipped = [...all].filter(([n]) => onList.has(norm(n))).length;
+  const body = groups.length ? groups.map(g => `<div class="card" style="margin-bottom:10px"><h3 class="group-title">${g.cat}</h3>${g.items.map(n => { const it = ingrList.find(x => x.n === n); return `<div class="row">${chk(!it.da, `data-a="ingr-tg" data-n="${esc(n)}" aria-label="${esc(n)}"`)}<span class="row-body"><span class="t">${esc(n)}</span>${it.da ? '<span class="m">Vorrat ist da</span>' : ''}</span></div>`; }).join('')}</div>`).join('') : `<div class="empty"><b>Nichts Neues.</b>Alles aus diesem Plan steht schon auf deiner Liste.</div>`;
+  return `<h2>Zutaten für die Woche</h2><p class="muted small" style="margin-bottom:14px">Aus deinem Kochplan, Woche vom ${fmtShort(wk)} Nimm raus, was du schon hast.${skipped ? ` ${skipped} stehen schon auf der Liste.` : ''}</p>${body}${groups.length ? `<button class="btn block" style="margin-top:6px" id="ingr-go" data-a="ingr-add">${ingrSel.size} auf die Einkaufsliste</button>` : `<button class="btn ghost block" data-a="close">Zu</button>`}`;
+}
+
 /* ---------- Aktionen ---------- */
 const toastEl = () => $('#toast');
 let toastT;
@@ -451,6 +477,9 @@ const A = {
   'cal-prev': () => calMove(-1), 'cal-next': () => calMove(1),
   'cal-today': () => { ui.calSel = isoOf(); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
   week: d => { ui.week = addDays(ui.week, 7 * +d.n); commit(); },
+  'plan-ingr': () => openSheet(ingrSheet()),
+  'ingr-tg': (d, el) => { const on = el.getAttribute('aria-checked') !== 'true'; el.setAttribute('aria-checked', on ? 'true' : 'false'); on ? ingrSel.add(d.n) : ingrSel.delete(d.n); const b = $('#ingr-go'); if (b) { b.textContent = `${ingrSel.size} auf die Einkaufsliste`; b.disabled = !ingrSel.size; } },
+  'ingr-add': () => { ingrList.filter(x => ingrSel.has(x.n)).forEach(x => S.shopping.push({ id: uid(), text: x.n, cat: x.cat, done: false, src: 'plan' })); const n = ingrSel.size; closeSheet(); commit(); toast(`${n} Zutaten auf der Liste`); },
   'rot-pick': () => {
     const cur = rotOf(ui.week);
     openSheet(`<h2>Welche Rotation?</h2><p class="muted small" style="margin-bottom:12px">Für die Woche vom ${fmtShort(ui.week)}. Die anderen Wochen zählen von da aus weiter.</p><div class="stack-s">${[0, 1, 2, 3].map(i => `<button class="btn ${i === cur ? '' : 'ghost'} block" data-a="rot-set" data-i="${i}">Rotation ${i + 1}: ${esc(SEED.rotation[i].pots.map(p => p[0]).join(', '))}</button>`).join('')}</div>`);

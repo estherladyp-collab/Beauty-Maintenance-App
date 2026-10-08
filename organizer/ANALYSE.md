@@ -11,4 +11,4 @@ Was alle gemeinsam haben: ein Einstieg mit "Heute", Kalender und Aufgaben auf ei
 
 Bewusst nicht übernommen: Teamfunktionen, KI-Zerlegung, Widgets, Erinnerungen per WhatsApp. Das wäre mehr Information pro Seite, und das wolltest du nicht.
 
-Mealime macht aus dem Wochenplan automatisch eine Einkaufsliste. Das geht bei uns erst, wenn Zutaten zu den Gerichten hinterlegt sind.
+Mealime macht aus dem Wochenplan automatisch eine Einkaufsliste. Umgesetzt: Zutaten pro Gericht (ohne Mengen), Auswahl vor dem Hinzufügen.

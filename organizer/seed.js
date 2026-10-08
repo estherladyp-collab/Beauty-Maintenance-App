@@ -126,3 +126,48 @@ const SEED = {
   ],
   quarterly: ['Fenster innen und außen', 'Wohnung entrümpeln', 'Abstellraum oder Keller ordnen', 'Heizung oder Klimagerät prüfen', 'Rauchmelder testen', 'Spendenrunde', 'Außenmöbel oder Balkon tief reinigen', 'Kleiderschrank Saisonwechsel', 'Gefrierschrank abtauen', 'Teppich oder Sofa reinigen']
 };
+
+/* Zutaten pro Gericht: nach Stichwort im Gerichtsnamen. [Muster, [[Zutat, Einkaufskategorie], ...]]
+   Das ist eine übliche Grundausstattung ohne Mengen. Passe sie an, wenn du anders kochst. */
+const INGR = (() => {
+const G = 'Obst & Gemüse', F = 'Fleisch & Fisch', M = 'Milch & Kühlung', T = 'Reis, Bohnen, Trockenes', W = 'Gewürze & Soßenzutaten', S = 'Sonstiges';
+return [
+  ['oilreis', [['Palmöl', W]]],
+  ['reis|rice|jollof|waakye', [['Reis (weiß)', T]]],
+  ['süßkartoffel', [['Süßkartoffeln', G]]],
+  ['(?<!süß)kartoffel', [['Kartoffeln', G]]],
+  ['yam', [['Yam', G]]],
+  ['fufu', [['Gari oder Fufu Mehl', T]]],
+  ['grieß', [['Grieß', T]]],
+  ['spaghetti', [['Nudeln, Spaghetti', T]]],
+  ['bolognese', [['Hackfleisch', F], ['Passierte Tomaten', T], ['Zwiebeln', G], ['Knoblauch', G]]],
+  ['tortellini', [['Tortellini', M], ['Sahne', M]]],
+  ['wraps', [['Wraps', S], ['Hackfleisch', F], ['Salat', G]]],
+  ['burger', [['Burger Brötchen', S], ['Hackfleisch', F], ['Salat', G], ['Tomaten', G]]],
+  ['döner', [['Fladenbrot', S], ['Hähnchen', F], ['Salat', G], ['Joghurt', M], ['Zwiebeln', G]]],
+  ['fried rice', [['Gemüse gemischt', G], ['Eier', M], ['Hähnchen', F]]],
+  ['jollof', [['Tomatenmark', T], ['Passierte Tomaten', T], ['Zwiebeln', G], ['Hähnchen', F]]],
+  ['waakye', [['Bohnen', T], ['Eier', M]]],
+  ['salat', [['Salat', G]]],
+  ['spinat', [['Spinat', G], ['Zwiebeln', G], ['Palmöl', W], ['Brühwürfel oder Brühpulver', W]]],
+  ['erdnuss', [['Erdnusspaste', T], ['Tomatenmark', T], ['Zwiebeln', G], ['Chili oder Scotch Bonnet', W]]],
+  ['chickenwings', [['Chickenwings', F], ['Zwiebeln', G], ['Tomaten', G], ['Paprikapulver', W]]],
+  ['fischstew', [['Fisch', F], ['Zwiebeln', G], ['Tomaten', G], ['Palmöl', W]]],
+  ['tunfisch', [['Tunfisch', T], ['Zwiebeln', G], ['Tomaten', G]]],
+  ['light ?soup', [['Tomaten', G], ['Zwiebeln', G], ['Ingwer', G], ['Hähnchen', F], ['Chili oder Scotch Bonnet', W]]],
+  ['okro', [['Okro', F]]],
+  ['palmoil', [['Palmöl', W], ['Zwiebeln', G], ['Chili oder Scotch Bonnet', W]]],
+  ['chicken gemüse', [['Hähnchen', F], ['Gemüse gemischt', G], ['Zwiebeln', G], ['Knoblauch', G]]],
+  ['plantain', [['Plantain', G]]],
+  ['meko|sardinen', [['Sardinen', T]]],
+  ['avocado', [['Avocado', G]]],
+  ['toast', [['Toastbrot', S]]],
+  ['schwarztee|tee', [['Schwarztee', S]]],
+  ['milch', [['Milch', M]]],
+  ['haferbrei', [['Haferflocken', T], ['Obst', G]]],
+  ['joghurt', [['Joghurt', M], ['Obst', G]]],
+  ['pfannkuchen', [['Mehl', T], ['Eier', M], ['Milch', M]]],
+  ['rührei|(^| )ei($| )|eiern|eggs', [['Eier', M]]],
+  ['hackfleisch', [['Hackfleisch', F]]]
+];
+})();
