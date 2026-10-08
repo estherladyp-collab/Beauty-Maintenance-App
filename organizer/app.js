@@ -170,37 +170,34 @@ function roundIds() { const ids = []; SEED.round.forEach((r, i) => r[2].forEach(
 function vToday() {
   const t = isoOf(), wk = mondayOf(t), h = new Date().getHours();
   const greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
-  const pr = S.priorities[wk] || ['', '', ''];
+  const pr = (S.priorities[wk] || []).filter(x => x);
   const { ev, td } = itemsOn(t);
   const over = S.todos.filter(x => (x.repeat || 'none') === 'none' && !x.done && x.date && x.date < t);
   const open = td.filter(x => !todoDone(x, t));
   const doneT = td.filter(x => todoDone(x, t));
   const empty = !ev.length && !open.length && !over.length && !doneT.length;
-  const log = S.cleanLog[t] || [], ids = roundIds(), deep = deepInfo(t);
+  const log = S.cleanLog[t] || [], ids = roundIds(), deep = deepInfo(t), st = streak();
   const focus = SEED.focus[dowOf(t)];
   const di = dowOf(t), lunch = cell(wk, di, 1), dinner = cell(wk, di, 2);
-  const slotLine = (k, c) => `<div class="slot p${c.pot < 0 ? 'x' : c.pot}" style="cursor:default;margin:0"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</div>`;
+  const meal = (k, c) => `<div class="hh-row"><span class="k">${k}</span><span>${esc(c.text) || 'Nichts geplant'}${c.koch ? ' <em class="kt">Kochtag</em>' : ''}</span></div>`;
   return `<div class="stack">
     <header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
-    <form class="qa" data-a="qa"><div class="qa-row"><input class="in" id="qa" type="text" placeholder="Schnell notieren: Angebot Hotel morgen vf" enterkeyhint="send" autocomplete="off" aria-label="Schnell notieren"><button class="btn" type="submit">Dazu</button></div><p class="qa-prev small muted" id="qa-prev" aria-live="polite"></p></form>
-    <section>${sec('Meine 3 Prioritäten', `<span class="small muted">Woche ab ${fmtShort(wk)}</span>`)}
-      <div class="stack-s">${[0, 1, 2].map(i => `<label class="prio"><span>${i + 1}.</span><input class="line-in" data-c="prio" data-i="${i}" value="${esc(pr[i])}" placeholder="${['Das Wichtigste diese Woche', 'Danach', 'Und noch eins'][i]}" enterkeyhint="done" autocomplete="off"></label>`).join('')}</div></section>
+    <form class="qa" data-a="qa"><div class="qa-row"><input class="in" id="qa" type="text" placeholder="Schnell notieren: Angebot Hotel morgen vf" enterkeyhint="send" autocomplete="off" aria-label="Schnell notieren"><button class="btn" type="submit">Dazu</button></div><p class="qa-prev small" id="qa-prev" aria-live="polite"></p></form>
+    <section>${sec('Diese Woche', `<button class="more" data-a="prio-edit">${pr.length ? 'Ändern' : 'Festlegen'}</button>`)}
+      ${pr.length ? `<ol class="prio-list">${pr.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : `<p class="muted">Was sind deine 3 Prioritäten?</p>`}</section>
     <section>${sec('Heute')}
-      ${empty ? `<div class="empty"><b>Heute ist frei.</b>Nichts geplant. Tippe auf das Plus, wenn doch etwas dazukommt.</div>` : ''}
+      ${empty ? `<p class="muted">Nichts geplant. Tippe auf das Plus.</p>` : ''}
       ${ev.map(eventRow).join('')}
       ${over.map(x => todoRow(x, x.date, { showDate: true })).join('')}
       ${open.map(x => todoRow(x, t)).join('')}
       ${doneT.map(x => todoRow(x, t)).join('')}
     </section>
-    <section>${sec('Im Haus', `<button class="more" data-a="goto" data-t="home" data-sub="essen">Haushalt</button>`)}
-      <div class="stack-s">
-        <button class="card today-card" data-a="goto" data-t="home" data-sub="clean">
-          <h3>${deep ? `Deep Clean, Woche ${deep}` : esc(focus[0])}</h3>
-          <span class="muted small" style="margin-top:-8px">${deep ? esc(SEED.deep[deep].title) : esc(focus[1])}</span>
-          <span class="bar" aria-hidden="true"><i style="--p:${log.length / ids.length}"></i></span>
-          <span class="small muted">Tägliche Runde: ${log.length} von ${ids.length} erledigt${streak() >= 2 ? `, ${streak()} Tage in Folge` : ''}</span></button>
-        <div class="stack-s">${slotLine('Mittag', lunch)}${slotLine('Abend', dinner)}</div>
-      </div></section></div>`;
+    <section>${sec('Im Haus')}
+      <button class="card today-card" data-a="goto" data-t="home" data-sub="clean">
+        <div class="hh-row"><span class="k">Fokus</span><span>${deep ? `Deep Clean, Woche ${deep}` : esc(focus[0])}</span></div>
+        ${meal('Mittag', lunch)}${meal('Abend', dinner)}
+        <span class="bar" aria-hidden="true"><i style="--p:${log.length / ids.length}"></i></span>
+        <span class="small muted">Runde ${log.length} von ${ids.length}${st >= 2 ? `, ${st} Tage in Folge` : ''}</span></button></section></div>`;
 }
 
 /* ---------- Kalender ---------- */
@@ -477,6 +474,7 @@ const A = {
   'cal-prev': () => calMove(-1), 'cal-next': () => calMove(1),
   'cal-today': () => { ui.calSel = isoOf(); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
   week: d => { ui.week = addDays(ui.week, 7 * +d.n); commit(); },
+  'prio-edit': () => { const p = S.priorities[mondayOf(isoOf())] || ['', '', '']; openSheet(`<h2>Diese Woche</h2><form class="form" data-a="prio-save">${[0, 1, 2].map(i => `<label class="field"><span>Priorität ${i + 1}</span><input class="in" id="pr${i}" value="${esc(p[i] || '')}" autocomplete="off" placeholder="${['Das Wichtigste', 'Danach', 'Und noch eins'][i]}"></label>`).join('')}<button class="btn block" type="submit">Speichern</button></form>`); },
   'plan-ingr': () => openSheet(ingrSheet()),
   'ingr-tg': (d, el) => { const on = el.getAttribute('aria-checked') !== 'true'; el.setAttribute('aria-checked', on ? 'true' : 'false'); on ? ingrSel.add(d.n) : ingrSel.delete(d.n); const b = $('#ingr-go'); if (b) { b.textContent = `${ingrSel.size} auf die Einkaufsliste`; b.disabled = !ingrSel.size; } },
   'ingr-add': () => { ingrList.filter(x => ingrSel.has(x.n)).forEach(x => S.shopping.push({ id: uid(), text: x.n, cat: x.cat, done: false, src: 'plan' })); const n = ingrSel.size; closeSheet(); commit(); toast(`${n} Zutaten auf der Liste`); },
@@ -561,6 +559,7 @@ function leadSheet(id) {
 
 /* Formulare */
 const SUBMIT = {
+  'prio-save': () => { S.priorities[mondayOf(isoOf())] = [0, 1, 2].map(i => $('#pr' + i).value.trim()); closeSheet(); commit(); },
   qa: () => {
     const q = parseQuick($('#qa').value); if (!q.title) return;
     const base = { title: q.title, area: q.area || defaultArea(), date: q.date, repeat: q.repeat };

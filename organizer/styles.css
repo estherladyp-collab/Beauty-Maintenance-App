@@ -268,4 +268,15 @@ select.in { background-image: linear-gradient(45deg, transparent 50%, var(--mute
 /* Schnell notieren */
 .qa-row { display: flex; gap: 8px; }
 .qa-row .in { flex: 1; min-width: 0; }
-.qa-prev { min-height: 22px; margin-top: 6px; color: var(--gold-text); }
+.qa-prev { margin-top: 6px; color: var(--gold-text); }
+.qa-prev:empty { display: none; }
+
+/* Heute: ruhig und kompakt */
+.prio-list { margin: 0; padding-left: 1.4em; font-family: var(--serif); font-size: 20px; line-height: 1.5; color: var(--ink); }
+.prio-list li::marker { color: var(--gold-text); }
+.hh-row { display: grid; grid-template-columns: 70px 1fr; gap: 8px; align-items: baseline; text-align: left; }
+.hh-row .k { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.hh-row .kt { font-style: normal; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-text); font-weight: 700; margin-left: 6px; }
+.today-card { gap: 10px; }
+.stack { --gap: 24px; }
+.stack > * + * { margin-top: var(--gap); }
