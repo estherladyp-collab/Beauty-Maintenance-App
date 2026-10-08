@@ -1120,3 +1120,10 @@ body.dragging{overflow-x:hidden;-webkit-user-select:none;user-select:none}
 .pf-ctl{display:grid;gap:8px;margin-top:10px}
 .pf-ctl label{display:grid;gap:2px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .pf-ctl input[type=range]{width:100%}
+
+/* dark photo stage behind the clothes of a look */
+.pbg.gc-o,.pbg.board,.pbg.lk-img{background:radial-gradient(ellipse 70% 55% at 50% 48%,rgba(255,232,196,.30),rgba(255,232,196,0) 72%),linear-gradient(rgba(18,10,6,.5),rgba(18,10,6,.58)),var(--pbg) center/cover no-repeat;border:1px solid rgba(217,178,115,.28)}
+.pbg .gc-p img.cut,.pbg .lk-p img.cut,.pbg .slot img.cut{object-fit:contain;border-radius:0;background:none;filter:drop-shadow(0 0 1px rgba(255,238,210,.7)) drop-shadow(0 8px 10px rgba(0,0,0,.5))}
+.pbg .gc-p svg,.pbg .slot svg{filter:drop-shadow(0 0 1px rgba(255,238,210,.6)) drop-shadow(0 6px 8px rgba(0,0,0,.45))}
+.pbg .slot.empty{border-color:rgba(255,238,210,.25);color:rgba(255,238,210,.6)}
+.pbg .slot img{background:none}

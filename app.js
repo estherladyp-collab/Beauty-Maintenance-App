@@ -363,6 +363,8 @@ function garment(cat, style, color){
   }
   return `<svg viewBox="0 0 100 100" aria-hidden="true">${gloss}${body}</svg>`;
 }
+function picCut(it, v){ v = v || vOf(it); const c = v.photo && v.rev>=3 && window.MUSE_CUTS && window.MUSE_CUTS[v.id]; return c ? `<img class="cut" src="${c}" alt="${esc(it.name)}">` : pic(it, v); }
+const stageOf = l => { const id = String((l&&l.id)||''); let h = 2; if(id){ h = 0; for(let i=0;i<id.length;i++) h = (h + id.charCodeAt(i)) % 4; } return 'pbg pbg'+h; };
 function pic(it, v){ v = v || vOf(it); return v.photo ? `<img src="${v.photo}" alt="${esc(it.name)}">` : garment(it.cat, it.style, v.color); }
 const colorName = hex => (COLORS.find(c => c[1]===hex)||[hex])[0];
 const rating = it => (STYLES[it.cat].find(s => s[0]===it.style)||[])[1] || 'ok';
@@ -372,14 +374,14 @@ function boardParts(look){
   const order = look.slots.dress ? ['outer','dress','scarf','belt','jewel','bag','shoes'] : ['outer','top','bottom','scarf','belt','jewel','bag','shoes'];
   const cells = order.map(s => {
     const it = state.items.find(i => i.id===look.slots[s]);
-    return it ? `<div class="slot s-${s}">${pic(it, vOf(it, look.vars&&look.vars[s]))}</div>` : `<div class="slot s-${s} empty">${SLOT_LABEL[s]}</div>`;
+    return it ? `<div class="slot s-${s}">${picCut(it, vOf(it, look.vars&&look.vars[s]))}</div>` : `<div class="slot s-${s} empty">${SLOT_LABEL[s]}</div>`;
   }).join('');
   const pics = (look.pics||[]).map(id => (state.pics||[]).find(p => p.id===id)).filter(Boolean);
   const hasSlots = Object.keys(look.slots).length > 0;
   const strip = beautyStrip(look.beauty);
   if (!hasSlots && pics.length) return {core:`<div class="collage n${Math.min(pics.length,4)}">${pics.slice(0,4).map(p=>`<img src="${p.src}" alt="">`).join('')}</div>`, mood:'', strip};
   const mood = pics.length ? `<div class="mood">${pics.slice(0,4).map(p=>`<img src="${p.src}" alt="">`).join('')}</div>` : '';
-  return {core:`<div class="board" role="img" aria-label="Look board">${cells}</div>`, mood, strip};
+  return {core:`<div class="board ${stageOf(look)}" role="img" aria-label="Look board">${cells}</div>`, mood, strip};
 }
 function board(look){ const p = boardParts(look); return p.core + p.mood + p.strip; }
 const scentOf = b => b && b.scent && (state.products||[]).find(p => p.id===b.scent && p.area==='scent');
@@ -523,7 +525,7 @@ function lookThumbs(l){ const ps = ((l&&l.pics)||[]).map(id => (state.pics||[]).
   return ps.length ? `<span class="gpics">${ps.map(p=>`<img src="${p.src}" alt="">`).join('')}</span>` : ''; }
 function lookPlanArt(l, extra){
   const order = l.slots.dress ? ['outer','dress','scarf','belt','jewel','bag','shoes'] : ['outer','top','bottom','scarf','belt','jewel','bag','shoes'];
-  const pieces = order.map(sl => { const it = state.items.find(i => i.id===l.slots[sl]); return it && `<span class="gc-p">${pic(it, vOf(it, l.vars&&l.vars[sl]))}</span>`; }).filter(Boolean);
+  const pieces = order.map(sl => { const it = state.items.find(i => i.id===l.slots[sl]); return it && `<span class="gc-p">${picCut(it, vOf(it, l.vars&&l.vars[sl]))}</span>`; }).filter(Boolean);
   const pics = [...new Set([...(l.pics||[]), ...(extra||[])])].map(id => (state.pics||[]).find(x => x.id===id)).filter(Boolean);
   const phIds = new Set(planHairPics().map(x=>x.id)), pnIds = new Set(planNailPics().map(x=>x.id)), hp = pics.find(x => x.tag==='Hair') || pics.find(x => phIds.has(x.id)), np = pics.find(x => x.tag==='Nails') || pics.find(x => pnIds.has(x.id)), b = l.beauty || {}, nc = NAILS.find(x => x[0]===b.nails);
   const tiles = [];
@@ -533,7 +535,7 @@ function lookPlanArt(l, extra){
   else if(nc) tiles.push(`<span class="gc-t swt"><i class="nail" style="background:${nc[1]}"></i><small>Nails · ${esc(nc[0])}</small></span>`);
   const other = pics.filter(x => x!==hp && x!==np);
   if(!pieces.length && !tiles.length) return '';
-  const left = pieces.length ? `<span class="gc-o n${Math.min(pieces.length,6)}">${pieces.join('')}</span>` : (other.length ? `<span class="gc-o ph">${other.slice(0,2).map(x=>`<img src="${x.src}" alt="">`).join('')}</span>` : '');
+  const left = pieces.length ? `<span class="gc-o ${stageOf(l)} n${Math.min(pieces.length,6)}">${pieces.join('')}</span>` : (other.length ? `<span class="gc-o ph">${other.slice(0,2).map(x=>`<img src="${x.src}" alt="">`).join('')}</span>` : '');
   return `<span class="gcomp ${left?'':'solo'} ${tiles.length?'':'nt'}">${left}<span class="gc-r n${tiles.length}">${tiles.join('')}</span></span>`;
 }
 function apptGCard(a){
@@ -835,8 +837,8 @@ function lookCover(l){
   const pics = (l.pics||[]).map(id => (state.pics||[]).find(p => p.id===id)).filter(Boolean).slice(0,4);
   if (pics.length) return `<div class="lk-img ph n${pics.length}">${pics.map(p=>`<img src="${p.src}" alt="">`).join('')}</div>`;
   const order = l.slots.dress ? ['outer','dress','scarf','belt','jewel','bag','shoes'] : ['outer','top','bottom','scarf','belt','jewel','bag','shoes'];
-  const its = order.map(sl => { const it = state.items.find(i => i.id===l.slots[sl]); return it && `<div class="lk-p">${pic(it, vOf(it, l.vars&&l.vars[sl]))}</div>`; }).filter(Boolean);
-  if (its.length) return `<div class="lk-img pc n${Math.min(its.length,6)}">${its.join('')}</div>`;
+  const its = order.map(sl => { const it = state.items.find(i => i.id===l.slots[sl]); return it && `<div class="lk-p">${picCut(it, vOf(it, l.vars&&l.vars[sl]))}</div>`; }).filter(Boolean);
+  if (its.length) return `<div class="lk-img pc ${stageOf(l)} n${Math.min(its.length,6)}">${its.join('')}</div>`;
   return `<div class="lk-img lk-empty"><span>Add pieces</span></div>`;
 }
 function lookMeta(l){
@@ -1705,6 +1707,7 @@ document.addEventListener('keydown', e => {
 const BGMAP = {home:3,calendar:3,today:3,beauty:1,mood:1,looks:0,snaps:0,wardrobe:2,closet:2};
 function paintBg(){
   const B = window.MUSE_BG; if(!B||!B.length) return;
+  if(!document.getElementById('pbgcss')){ const st = document.createElement('style'); st.id='pbgcss'; st.textContent = B.map((u,i)=>`.pbg${i}{--pbg:url(${u})}`).join(''); document.head.appendChild(st); }
   let fx = document.getElementById('bgfx');
   if(!fx){ fx = document.createElement('div'); fx.id='bgfx'; fx.setAttribute('aria-hidden','true'); fx.innerHTML = B.map((u,i)=>`<i data-i="${i}" style="background-image:url(${u})"></i>`).join(''); document.body.insertBefore(fx, document.body.firstChild); }
   const k = BGMAP[ui.tab]; const want = String(k===undefined ? 3 : k % B.length);
