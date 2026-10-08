@@ -1127,3 +1127,9 @@ body.dragging{overflow-x:hidden;-webkit-user-select:none;user-select:none}
 .pbg .gc-p svg,.pbg .slot svg{filter:drop-shadow(0 0 1px rgba(255,238,210,.6)) drop-shadow(0 6px 8px rgba(0,0,0,.45))}
 .pbg .slot.empty{border-color:rgba(255,238,210,.25);color:rgba(255,238,210,.6)}
 .pbg .slot img{background:none}
+
+/* lighter sand stage behind the clothes (replaces the dark photo stage) */
+.pbg.gc-o,.pbg.board,.pbg.lk-img{background:radial-gradient(ellipse 80% 65% at 50% 46%,#efe0cb 0%,#dcc8ab 58%,#c9b393 100%);border:1px solid rgba(255,248,236,.55)}
+.pbg .gc-p img.cut,.pbg .lk-p img.cut,.pbg .slot img.cut{filter:drop-shadow(0 8px 10px rgba(70,44,26,.28))}
+.pbg .gc-p svg,.pbg .slot svg{filter:drop-shadow(0 6px 8px rgba(70,44,26,.25))}
+.pbg .slot.empty{border-color:rgba(70,44,26,.3);color:rgba(70,44,26,.6)}
