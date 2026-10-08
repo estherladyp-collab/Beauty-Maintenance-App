@@ -203,7 +203,7 @@ function applyTheme(t){
   set('--milk',bg); set('--espresso',ink); set('--gold',ac); set('--goldtxt', dark ? ac : mixc(ac,'#241713',.32));
   if(dark){ set('--card',mixc(bg,'#ffffff',.06)); set('--blush',mixc(bg,'#ffffff',.14)); set('--mocha',mixc(ink,bg,.18)); set('--cocoa',mixc(ink,bg,.35)); set('--hero',mixc(bg,'#ffffff',.07)); }
   else { set('--card',mixc(bg,'#ffffff',.5)); set('--blush',mixc(bg,'#7a5240',.14)); set('--mocha','#4a3128'); set('--cocoa','#7a5240'); set('--hero','#241713'); }
-  set('--bgrgb',rgb(bg)); set('--veil', dark ? '.74' : '.88');
+  set('--bgrgb',rgb(bg)); set('--veil', dark ? '.8' : '.88');
   set('--line',`rgba(${rgb(ink)},.16)`); set('--muted',`rgba(${rgb(ink)},.62)`); set('--navbg',`rgba(${rgb(bg)},.93)`);
   document.documentElement.dataset.mode = dark ? 'dark' : 'light';
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = bg;
