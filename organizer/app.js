@@ -130,6 +130,41 @@ function eventRow(e) {
     <button class="grow" data-a="edit" data-k="event" data-id="${e.id}"><span>${esc(e.title)}</span><span class="m small muted" style="display:flex;gap:10px;margin-top:1px">${tagHtml(a)}${e.repeat && e.repeat !== 'none' ? `<span>${repLabel(e.repeat)}</span>` : ''}</span></button></div>`;
 }
 
+/* ---------- Schnell notieren (Quick Add) ---------- */
+const WDN = ['montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'];
+const AREA_WORDS = [['vf', /^(vf|victory|work|arbeit)$/i], ['vomi', /^vomi$/i], ['gls', /^gls$/i], ['choir', /^(choir|chor)$/i], ['church', /^(church|kirche)$/i], ['home', /^(home|haus|zuhause)$/i]];
+function parseQuick(raw) {
+  let s = ' ' + raw.trim() + ' ', date = '', time = '', repeat = 'none', areaId = null;
+  const today = isoOf();
+  const take = (re, fn) => { const m = s.match(re); if (m) { fn(m); s = s.replace(re, ' '); } };
+  take(/\s(übermorgen)\s/i, () => date = addDays(today, 2));
+  take(/\s(morgen)\s/i, () => date = addDays(today, 1));
+  take(/\s(heute)\s/i, () => date = today);
+  take(/\s(montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)\s/i, m => { const i = WDN.indexOf(m[1].toLowerCase()); date = addDays(today, ((i - dowOf(today) + 7) % 7) || 7); });
+  take(/\s(\d{1,2})\.(\d{1,2})\.(\d{4})?\s/, m => { const y = m[3] || today.slice(0, 4); let d = `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; if (!m[3] && d < today) d = `${+y + 1}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; if (!isNaN(parse(d))) date = d; });
+  take(/\s(?:um\s)?(\d{1,2}):(\d{2})(?:\s?uhr)?\s/i, m => time = `${m[1].padStart(2, '0')}:${m[2]}`);
+  if (!time) take(/\sum\s(\d{1,2})(?:\s?uhr)?\s/i, m => time = `${m[1].padStart(2, '0')}:00`);
+  take(/\s(alle 2 wochen|zweiwöchentlich)\s/i, () => repeat = 'biweekly');
+  take(/\s(wöchentlich|jede woche)\s/i, () => repeat = 'weekly');
+  take(/\s(täglich|jeden tag)\s/i, () => repeat = 'daily');
+  take(/\s(monatlich|jeden monat)\s/i, () => repeat = 'monthly');
+  const words = s.trim().split(/\s+/).filter(w => w);
+  const rest = words.filter(w => { const k = w.replace(/^#/, ''); const hit = AREA_WORDS.find(x => x[1].test(k)); if (hit && words.length > 1 && !areaId) { areaId = hit[0]; return false; } return true; });
+  let title = rest.join(' '); title = title.charAt(0).toUpperCase() + title.slice(1);
+  const kind = time ? 'event' : 'todo';
+  if ((kind === 'event' || repeat !== 'none') && !date) date = today;
+  return { title, date, time, repeat, area: areaId, kind };
+}
+const quickLabel = q => q.title ? `${q.kind === 'event' ? 'Termin' : 'Aufgabe'}${q.date ? ', ' + fmt(q.date, { weekday: 'short', day: 'numeric', month: 'short' }) : ''}${q.time ? ' ' + q.time : ''}${q.repeat !== 'none' ? ', ' + repLabel(q.repeat).toLowerCase() : ''}, ${areaName(area(q.area || defaultArea()))}` : '';
+const defaultArea = () => (ui.area !== 'all' && ui.area !== 'church') ? ui.area : 'home';
+
+function streak() {
+  const ok = x => (S.cleanLog[x] || []).length >= 10; let d = isoOf(), n = 0;
+  if (!ok(d)) d = addDays(d, -1);
+  while (ok(d)) { n++; d = addDays(d, -1); }
+  return n;
+}
+
 /* ---------- Heute ---------- */
 function roundIds() { const ids = []; SEED.round.forEach((r, i) => r[2].forEach((_, j) => ids.push(`r${i}-${j}`))); return ids; }
 function vToday() {
@@ -147,6 +182,7 @@ function vToday() {
   const slotLine = (k, c) => `<div class="slot p${c.pot < 0 ? 'x' : c.pot}" style="cursor:default;margin:0"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</div>`;
   return `<div class="stack">
     <header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
+    <form class="qa" data-a="qa"><div class="qa-row"><input class="in" id="qa" type="text" placeholder="Schnell notieren: Angebot Hotel morgen vf" enterkeyhint="send" autocomplete="off" aria-label="Schnell notieren"><button class="btn" type="submit">Dazu</button></div><p class="qa-prev small muted" id="qa-prev" aria-live="polite"></p></form>
     <section>${sec('Meine 3 Prioritäten', `<span class="small muted">Woche ab ${fmtShort(wk)}</span>`)}
       <div class="stack-s">${[0, 1, 2].map(i => `<label class="prio"><span>${i + 1}.</span><input class="line-in" data-c="prio" data-i="${i}" value="${esc(pr[i])}" placeholder="${['Das Wichtigste diese Woche', 'Danach', 'Und noch eins'][i]}" enterkeyhint="done" autocomplete="off"></label>`).join('')}</div></section>
     <section>${sec('Heute')}
@@ -162,7 +198,7 @@ function vToday() {
           <h3>${deep ? `Deep Clean, Woche ${deep}` : esc(focus[0])}</h3>
           <span class="muted small" style="margin-top:-8px">${deep ? esc(SEED.deep[deep].title) : esc(focus[1])}</span>
           <span class="bar" aria-hidden="true"><i style="--p:${log.length / ids.length}"></i></span>
-          <span class="small muted">Tägliche Runde: ${log.length} von ${ids.length} erledigt</span></button>
+          <span class="small muted">Tägliche Runde: ${log.length} von ${ids.length} erledigt${streak() >= 2 ? `, ${streak()} Tage in Folge` : ''}</span></button>
         <div class="stack-s">${slotLine('Mittag', lunch)}${slotLine('Abend', dinner)}</div>
       </div></section></div>`;
 }
@@ -186,7 +222,14 @@ function dayAgenda(d, compact) {
 function vCal() {
   const t = isoOf();
   let head, body;
-  if (ui.calMode === 'month') {
+  if (ui.calMode === 'agenda') {
+    const late = S.todos.filter(x => (x.repeat || 'none') === 'none' && !x.done && x.date && x.date < t);
+    const days = Array.from({ length: 21 }, (_, i) => addDays(t, i)).map(d => ({ d, i: itemsOn(d), deep: deepInfo(d) })).filter(o => o.i.ev.length || o.i.td.length || o.deep);
+    head = '';
+    body = (late.length ? `<section>${sec('Überfällig')}${late.map(x => todoRow(x, x.date, { showDate: true })).join('')}</section>` : '') +
+      days.map(o => `<section style="margin-top:22px">${sec(o.d === t ? 'Heute' : o.d === addDays(t, 1) ? 'Morgen' : fmt(o.d, { weekday: 'long', day: 'numeric', month: 'long' }))}${dayAgenda(o.d)}</section>`).join('') +
+      (!late.length && !days.length ? `<div class="empty"><b>Die nächsten 3 Wochen sind frei.</b>Tippe auf das Plus, um etwas einzutragen.</div>` : '');
+  } else if (ui.calMode === 'month') {
     const first = ui.calMonth + '-01', start = mondayOf(first);
     const label = fmt(first, { month: 'long', year: 'numeric' });
     const cells = [];
@@ -204,7 +247,7 @@ function vCal() {
     body = Array.from({ length: 7 }, (_, i) => { const d = addDays(mon, i); return `<div class="week-day ${d === t ? 'today' : ''}"><h3>${DAYS[i]}<small>${fmtShort(d)} <button class="more" style="color:var(--gold);padding:6px 0 6px 10px;font-weight:600" data-a="new" data-d="${d}" aria-label="Hinzufügen am ${fmtLong(d)}">+ Neu</button></small></h3>${dayAgenda(d, true)}</div>`; }).join('');
   }
   return `<div class="stack"><header style="display:flex;justify-content:space-between;align-items:end;gap:12px"><h1 class="title">Kalender</h1><button class="btn ghost small" data-a="cal-today">Heute</button></header>
-    <div class="seg" role="group" aria-label="Ansicht"><button data-a="cal-mode" data-m="month" aria-pressed="${ui.calMode === 'month'}">Monat</button><button data-a="cal-mode" data-m="week" aria-pressed="${ui.calMode === 'week'}">Woche</button></div>
+    <div class="seg" role="group" aria-label="Ansicht"><button data-a="cal-mode" data-m="month" aria-pressed="${ui.calMode === 'month'}">Monat</button><button data-a="cal-mode" data-m="week" aria-pressed="${ui.calMode === 'week'}">Woche</button><button data-a="cal-mode" data-m="agenda" aria-pressed="${ui.calMode === 'agenda'}">Agenda</button></div>
     <div>${head}${body}</div></div>`;
 }
 
@@ -309,7 +352,7 @@ function vClean() {
   const all = roundIds().length, pct = Math.round(log.length / all * 100);
   return sub + `<div class="card"><h3 style="font-size:24px">${deep ? `Heute: Deep Clean, Woche ${deep}` : 'Schwerpunkt heute: ' + esc(f[0])}</h3>
       <p class="muted small" style="margin-top:4px">${deep ? '' : '15 Min extra. '}${deep ? esc(SEED.deep[deep].title) + '. Mehr dazu im Tab Deep Clean.' : esc(f[1])}</p></div>
-    <div><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="small muted">45 Min Runde plus 15 Min Schwerpunkt</span><span class="small num">${log.length} von ${all}</span></div><div class="bar"><i style="--p:${pct / 100}"></i></div></div>
+    <div><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="small muted">45 Min Runde plus 15 Min Schwerpunkt</span><span class="small num">${log.length} von ${all}${streak() >= 2 ? `, ${streak()} Tage in Folge` : ''}</span></div><div class="bar"><i style="--p:${pct / 100}"></i></div></div>
     ${SEED.round.map((r, i) => `<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 class="group-title">${r[0]}</h3><span class="serif-i">${r[1]} Min</span></div>${r[2].map((x, j) => { const id = `r${i}-${j}`, on = log.includes(id); return `<div class="row ${on ? 'done' : ''}">${chk(on, `data-a="round" data-id="${id}" aria-label="${esc(x)}"`)}<span class="row-body"><span class="t">${esc(x)}</span></span></div>`; }).join('')}</div>`).join('')}
     <p class="note">${SEED.roundTip}</p><p class="note">${SEED.roundPanic}</p>
     <div class="card"><h3 class="group-title">Schwerpunkt der Woche</h3>${SEED.focus.map((x, i) => `<div class="plain-row ${i === dowOf(t) ? '' : ''}" style="align-items:flex-start"><b style="width:30px;color:var(--gold);flex:none">${DS[i]}</b><span class="grow"><b style="font-weight:600">${x[0]}</b><span class="small muted" style="display:block">${x[1]}</span></span></div>`).join('')}</div>`;
@@ -489,6 +532,12 @@ function leadSheet(id) {
 
 /* Formulare */
 const SUBMIT = {
+  qa: () => {
+    const q = parseQuick($('#qa').value); if (!q.title) return;
+    const base = { title: q.title, area: q.area || defaultArea(), date: q.date, repeat: q.repeat };
+    if (q.kind === 'event') S.events.push({ id: uid(), ...base, time: q.time }); else S.todos.push({ id: uid(), ...base, done: false, doneOn: {} });
+    commit(); toast(`${q.kind === 'event' ? 'Termin' : 'Aufgabe'} angelegt`);
+  },
   'save-item': (f, d) => {
     const title = $('#f-title').value.trim(); if (!title) return;
     const base = { title, area: $('#f-area').value, date: $('#f-date').value, repeat: $('#f-rep').value };
@@ -544,6 +593,7 @@ document.addEventListener('change', e => {
     save(); render();
   }
 });
+document.addEventListener('input', e => { if (e.target.id === 'qa') { const p = $('#qa-prev'); if (p) p.textContent = quickLabel(parseQuick(e.target.value)); } });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
 
 /* Farben: gleiche sechs Themes wie bei Maintaining You, dazu eigene Farben */
