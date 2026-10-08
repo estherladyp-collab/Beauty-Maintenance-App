@@ -24,7 +24,7 @@ const icon = n => `<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="t
 const CHECK = '<svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>';
 
 const ui = {
-  tab: 'today', calMode: 'week', calMonth: isoOf().slice(0, 7), calSel: isoOf(),
+  tab: 'today', calMode: 'month', calMonth: isoOf().slice(0, 7), calSel: isoOf(),
   area: 'all', home: null, open: new Set(['d-vf', 'd-church', 'd-home']), mealDay: null, cleanTouched: false, essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
   week: mondayIso(), budgetMonth: isoOf().slice(0, 7), showDone: false
 };
@@ -96,7 +96,7 @@ function render() {
   const bg = $('#bg'); if (bg) bg.className = 't-' + ui.tab;
   $('#app').innerHTML = `<main class="${animateNext ? 'page' : ''}">${V()}</main>`;
   animateNext = false;
-  const tabs = [['today', 'Start', 'today'], ['cal', 'Woche', 'week'], ['todos', 'To-dos', 'todo'], ['home', 'Haushalt', 'home'], ['more', 'Mehr', 'more']];
+  const tabs = [['today', 'Start', 'today'], ['cal', 'Kalender', 'week'], ['todos', 'To-dos', 'todo'], ['home', 'Haushalt', 'home'], ['more', 'Mehr', 'more']];
   const fab = ['today', 'cal', 'todos'].includes(ui.tab) ? `<button class="fab" data-a="new" aria-label="Neu anlegen">${icon('plus')}</button>` : '';
   $('#chrome').innerHTML = fab + `<nav class="nav" aria-label="Hauptmenü"><div class="nav-in">${tabs.map(t => `<button class="tab" data-a="tab" data-t="${t[0]}" ${ui.tab === t[0] ? 'aria-current="page"' : ''}>${icon(t[2])}<span>${t[1]}</span></button>`).join('')}</div></nav>`;
   window.scrollTo(0, y);
@@ -164,19 +164,27 @@ function openFor(pred) {
   return S.todos.filter(x => pred(x.area)).map(x => ({ x, d: nextOcc(x, t) })).filter(o => !todoDone(o.x, o.d || t)).sort((p, q) => (p.d || '9').localeCompare(q.d || '9'));
 }
 function listCard(key, title, img, pred, areaId) {
-  const t = isoOf(), items = openFor(pred), late = items.filter(o => o.d && o.d < t && (o.x.repeat || 'none') === 'none').length;
+  const t = isoOf(), sel = ui.calSel, items = openFor(pred), late = items.filter(o => o.d && o.d < t && (o.x.repeat || 'none') === 'none').length;
   const shown = items.slice(0, 6);
   const sub = !items.length ? 'Alles erledigt' : `${items.length} offen${late ? ', ' + late + ' überfällig' : ''}`;
-  const body = (shown.length ? shown.map(o => todoRow(o.x, o.d || t, { showDate: true })).join('') : '<p class="muted">Nichts offen.</p>') +
-    `<div class="card-actions"><button class="btn small" data-a="new-in" data-area="${areaId}">Neu</button>${items.length > 6 ? `<button class="btn ghost small" data-a="todos-for" data-area="${areaId}">Alle ${items.length} ansehen</button>` : (items.length ? `<button class="btn ghost small" data-a="todos-for" data-area="${areaId}">In To-dos öffnen</button>` : '')}</div>`;
+  const form = `<form class="inline-add" data-a="inline-add" data-area="${areaId}"><input class="in" id="ia-${areaId}" type="text" placeholder="Neu für ${sel === t ? 'heute' : DAYS[dowOf(sel)]}" enterkeyhint="send" autocomplete="off" aria-label="Neue Aufgabe ${esc(title)}"><button class="btn" type="submit" aria-label="Hinzufügen">${icon('plus')}</button></form>`;
+  const body = form + (shown.length ? shown.map(o => todoRow(o.x, o.d || t, { showDate: true })).join('') : '<p class="muted" style="margin-top:10px">Nichts offen.</p>') +
+    (items.length ? `<div class="card-actions"><button class="btn ghost small" data-a="todos-for" data-area="${areaId}">${items.length > 6 ? `Alle ${items.length} ansehen` : 'In To-dos öffnen'}</button></div>` : '');
   return fold(key, title, '', body, { img, sub });
 }
 function vToday() {
-  const t = isoOf(), h = new Date().getHours();
+  const t = isoOf(), h = new Date().getHours(), sel = ui.calSel, mon = mondayOf(sel), di = dowOf(sel);
   const greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
+  const slot = (k, s) => { const c = cell(mon, di, s); return `<button class="slot p${c.pot < 0 ? 'x' : c.pot} ${c.text ? '' : 'empty-slot'}" data-a="edit-meal" data-wk="${mon}" data-i="${di}" data-s="${s}"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</button>`; };
+  const strip = DS.map((n, i) => { const d = addDays(mon, i); return `<button class="dsb" data-a="pick-day" data-d="${d}" aria-pressed="${d === sel}" ${d === t ? 'aria-current="date"' : ''} aria-label="${fmtLong(d)}"><small>${n}</small><b>${+d.slice(8)}</b><span class="dots">${dotsFor(d)}</span></button>`; }).join('');
+  const essen = `<div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div>`;
   return `<div class="dash">
     <header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
-    <form class="qa" data-a="qa"><div class="qa-row"><input class="in" id="qa" type="text" placeholder="Schnell notieren: Angebot Hotel morgen vf" enterkeyhint="send" autocomplete="off" aria-label="Schnell notieren"><button class="btn" type="submit">Dazu</button></div><p class="qa-prev small" id="qa-prev" aria-live="polite"></p></form>
+    <div class="week-bar"><button class="icon-btn" data-a="wk-prev" aria-label="Vorherige Woche">${icon('left')}</button><span>${fmtShort(mon)} bis ${fmtShort(addDays(mon, 6))}</span><button class="icon-btn" data-a="wk-next" aria-label="Nächste Woche">${icon('right')}</button></div>
+    <div class="daystrip" role="group" aria-label="Tag wählen">${strip}</div>
+    <section><div class="sec"><h2>${sel === t ? 'Heute' : DAYS[di]}</h2>${sel !== t ? `<button class="more" data-a="cal-today">Zu heute</button>` : ''}</div><div class="card list">${dayAgenda(sel, true)}</div></section>
+    ${fold('d-essen', 'Essen', '', essen, { img: 'essen', sub: esc(cell(mon, di, 1).text) || 'Nichts geplant' })}
+    <h2 class="dash-h">Meine Listen</h2>
     ${listCard('d-vf', 'Victory Family', 'vf', a => a === 'vf', 'vf')}
     ${listCard('d-church', 'Church', 'church', a => a === 'church' || area(a).parent === 'church', 'church')}
     ${listCard('d-home', 'Home', 'homeroom', a => a === 'home', 'home')}
@@ -231,8 +239,8 @@ function vCal() {
       <section style="margin-top:22px"><div class="sec"><h2>Essen</h2></div><div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div></section>
       <div style="margin-top:22px">${fold('d-week', 'Prioritäten der Woche', pr.length ? '' : 'offen', pr.length ? `<ol class="prio-list">${pr.map(x => `<li>${esc(x)}</li>`).join('')}</ol><button class="btn ghost small" style="margin-top:12px" data-a="prio-edit">Ändern</button>` : `<p class="muted">Was sind deine 3 Prioritäten?</p><button class="btn small" style="margin-top:12px" data-a="prio-edit">Festlegen</button>`)}</div>`;
   }
-  return `<div class="stack"><header style="display:flex;justify-content:space-between;align-items:end;gap:12px"><h1 class="title">Woche</h1><button class="btn ghost small" data-a="cal-today">Heute</button></header>
-    <div class="seg" role="group" aria-label="Ansicht"><button data-a="cal-mode" data-m="week" aria-pressed="${ui.calMode === 'week'}">Woche</button><button data-a="cal-mode" data-m="month" aria-pressed="${ui.calMode === 'month'}">Monat</button><button data-a="cal-mode" data-m="agenda" aria-pressed="${ui.calMode === 'agenda'}">Agenda</button></div>
+  return `<div class="stack"><header style="display:flex;justify-content:space-between;align-items:end;gap:12px"><h1 class="title">Kalender</h1><button class="btn ghost small" data-a="cal-today">Heute</button></header>
+    <div class="seg" role="group" aria-label="Ansicht"><button data-a="cal-mode" data-m="month" aria-pressed="${ui.calMode === 'month'}">Monat</button><button data-a="cal-mode" data-m="week" aria-pressed="${ui.calMode === 'week'}">Woche</button><button data-a="cal-mode" data-m="agenda" aria-pressed="${ui.calMode === 'agenda'}">Agenda</button></div>
     <div>${head}${body}</div></div>`;
 }
 
@@ -476,6 +484,8 @@ const A = {
   seg: d => { ui[d.key] = d.v; commit(); },
   'new-in': d => itemSheet({ kind: 'todo', area: d.area === 'church' ? 'church' : d.area }),
   'todos-for': d => { ui.area = d.area; ui.tab = 'todos'; animateNext = true; commit(); window.scrollTo(0, 0); },
+  'wk-prev': () => { ui.calSel = addDays(ui.calSel, -7); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
+  'wk-next': () => { ui.calSel = addDays(ui.calSel, 7); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
   'hub-go': d => { ui.home = d.v || null; commit(); window.scrollTo(0, 0); },
   fold: (d, el) => { const f = el.closest('.fold'), on = !ui.open.has(d.k); on ? ui.open.add(d.k) : ui.open.delete(d.k); f.classList.toggle('open', on); el.setAttribute('aria-expanded', on); },
   mealday: d => { ui.mealDay = +d.i; commit(); },
@@ -582,6 +592,13 @@ function leadSheet(id) {
 
 /* Formulare */
 const SUBMIT = {
+  'inline-add': (f, d) => {
+    const inp = $('#ia-' + d.area); const q = parseQuick(inp.value); if (!q.title) return;
+    const base = { title: q.title, area: q.area || d.area, date: q.date || ui.calSel, repeat: q.repeat };
+    if (q.kind === 'event') S.events.push({ id: uid(), ...base, time: q.time }); else S.todos.push({ id: uid(), ...base, done: false, doneOn: {} });
+    commit(); toast(q.kind === 'event' ? 'Termin angelegt' : 'Aufgabe angelegt');
+    const n = $('#ia-' + d.area); if (n) n.focus();
+  },
   'prio-save': () => { S.priorities[mondayOf(ui.calSel)] = [0, 1, 2].map(i => $('#pr' + i).value.trim()); closeSheet(); commit(); },
   qa: () => {
     const q = parseQuick($('#qa').value); if (!q.title) return;

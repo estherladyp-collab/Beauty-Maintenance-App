@@ -407,3 +407,13 @@ h1, h2, h3 { font-weight: 500; letter-spacing: -.015em; }
 .fold.card.hero .foldh.photo:active { background-color: transparent; filter: brightness(.95); }
 .fold.card.hero .foldi { padding: 14px 18px 18px; }
 .fold.card { padding: 0; overflow: hidden; }
+
+/* Start: Wochenleiste und direkte Eingabe in den Listen */
+.week-bar { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 -4px; font-weight: 500; }
+.week-bar .icon-btn { margin: 0 -8px; }
+.dash-h { font-size: 20px; font-weight: 500; margin: 14px 0 -2px; }
+.inline-add { display: flex; gap: 8px; margin-bottom: 8px; }
+.inline-add .in { flex: 1; min-width: 0; }
+.inline-add .btn { width: 46px; padding: 0; flex: none; }
+.inline-add .btn svg { width: 22px; height: 22px; }
+.inline-add .btn svg path { stroke: currentColor; stroke-width: 10; stroke-linecap: round; }
