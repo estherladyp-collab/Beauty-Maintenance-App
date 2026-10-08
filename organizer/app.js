@@ -35,7 +35,7 @@ const CHECK = '<svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>'
 
 const ui = {
   tab: 'today', calMode: 'month', calMonth: isoOf().slice(0, 7), calSel: isoOf(),
-  area: 'all', home: 'essen', essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
+  area: 'all', home: null, open: new Set(), mealDay: null, cleanTouched: false, essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
   week: mondayIso(), budgetMonth: isoOf().slice(0, 7), showDone: false
 };
 
@@ -101,6 +101,7 @@ const pad = (a, n) => a.slice(0, n);
 let animateNext = true;
 function render() {
   const y = window.scrollY;
+  const ae = document.activeElement; if (ae && ae !== document.body && ae.blur && $('#app').contains(ae)) ae.blur();
   const V = { today: vToday, cal: vCal, todos: vTodos, home: vHome, more: vMore }[ui.tab];
   $('#app').innerHTML = `<main class="${animateNext ? 'page' : ''}">${V()}</main>`;
   animateNext = false;
@@ -277,51 +278,72 @@ function vTodos() {
     ${done.length ? `<section>${sec(`Erledigt (${done.length})`, `<button class="more" data-a="toggle-done">${ui.showDone ? 'Ausblenden' : 'Anzeigen'}</button>`)}${ui.showDone ? done.map(x => todoRow(x, x.date || t, { showDate: true })).join('') + `<button class="btn ghost small" style="margin-top:12px" data-a="clear-done">Erledigte löschen</button>` : ''}</section>` : ''}</div>`;
 }
 
-/* ---------- Haushalt ---------- */
-const seg = (key, opts, attr = 'sub') => `<div class="seg" role="group">${opts.map(o => `<button data-a="seg" data-key="${key}" data-v="${o[0]}" aria-pressed="${ui[key] === o[0]}">${o[1]}</button>`).join('')}</div>`;
+/* ---------- Haushalt: Übersicht und Unterseiten ---------- */
+const seg = (key, opts) => `<div class="seg" role="group">${opts.map(o => `<button data-a="seg" data-key="${key}" data-v="${o[0]}" aria-pressed="${ui[key] === o[0]}">${o[1]}</button>`).join('')}</div>`;
+function fold(k, title, meta, body) {
+  const o = ui.open.has(k);
+  return `<div class="fold"><button class="foldh" data-a="fold" data-k="${k}" aria-expanded="${o}"><span class="ft">${title}</span><span class="fm">${meta || ''}</span><i aria-hidden="true">${o ? '−' : '+'}</i></button>${o ? `<div class="foldb">${body}</div>` : ''}</div>`;
+}
+const HUBT = { essen: 'Essen', shop: 'Einkauf', clean: 'Reinigung', budget: 'Budget' };
 function vHome() {
+  if (!ui.home) return vHub();
   const body = { essen: vEssen, shop: vShop, clean: vClean, budget: vBudget }[ui.home]();
-  return `<div class="stack"><header><h1 class="title">Haushalt</h1></header>${seg('home', [['essen', 'Essen'], ['shop', 'Einkauf'], ['clean', 'Reinigung'], ['budget', 'Budget']])}${body}</div>`;
+  return `<div class="stack"><header><button class="back" data-a="hub-go" data-v="">${icon('left')}Haushalt</button><h1 class="title">${HUBT[ui.home]}</h1></header>${body}</div>`;
+}
+function vHub() {
+  const t = isoOf(), wk = mondayOf(t), lunch = cell(wk, dowOf(t), 1).text;
+  const open = S.shopping.filter(x => !x.done).length, miss = Object.values(S.pantry).filter(v => v === 'fehlt').length;
+  const log = (S.cleanLog[t] || []).length, all = roundIds().length, f = SEED.focus[dowOf(t)];
+  const mk = monthKey(t), b = S.budget[mk], spent = S.purchases.filter(p => p.date.startsWith(mk)).reduce((a, p) => a + num(p.amount), 0);
+  const row = (k, title, line) => `<button class="hub-row" data-a="hub-go" data-v="${k}"><span><b>${title}</b><span class="muted">${line}</span></span>${icon('right')}</button>`;
+  return `<div class="stack"><header><h1 class="title">Haushalt</h1></header><div class="hub">
+    ${row('essen', 'Essen', lunch ? 'Heute Mittag: ' + esc(lunch) : 'Heute nichts geplant')}
+    ${row('shop', 'Einkauf', open ? `${open} auf der Liste${miss ? ', ' + miss + ' im Vorrat fehlen' : ''}` : 'Liste ist leer')}
+    ${row('clean', 'Reinigung', `${esc(f[0])}, Runde ${log} von ${all}`)}
+    ${row('budget', 'Budget', b && num(b.budget) ? `${eur(num(b.budget) - spent)} übrig im ${fmt(mk + '-01', { month: 'long' })}` : 'Noch kein Budget')}
+  </div></div>`;
 }
 
 function vEssen() {
-  const t = isoOf();
-  const sub = seg('essen', [['plan', 'Kochplan'], ['gerichte', 'Gerichte']]);
+  const t = isoOf(), sub = seg('essen', [['plan', 'Kochplan'], ['gerichte', 'Gerichte']]);
   if (ui.essen === 'gerichte') {
-    const own = `<div class="card">${sec('Meine eigenen Ideen')}${S.myMeals.map((m, i) => `<div class="plain-row"><span class="grow">${esc(m)}</span><button class="icon-btn" data-a="del-idea" data-i="${i}" aria-label="${esc(m)} löschen">${icon('x')}</button></div>`).join('')}<div style="display:flex;gap:8px;margin-top:8px"><input class="in" id="idea" placeholder="Neues Gericht" enterkeyhint="done" autocomplete="off"><button class="btn" data-a="add-idea">Hinzufügen</button></div></div>`;
-    return sub + `<div class="stack-s">${SEED.meals.map(m => `<div class="card"><h3 class="group-title">${m[0]}</h3>${m[1].map(x => `<div class="plain-row" style="min-height:40px;padding:6px 0">${esc(x)}</div>`).join('')}${m[2] ? `<p class="serif-i" style="margin-top:8px">${m[2]}</p>` : ''}</div>`).join('')}${own}</div>`;
+    const own = `${S.myMeals.map((m, i) => `<div class="plain-row"><span class="grow">${esc(m)}</span><button class="icon-btn" data-a="del-idea" data-i="${i}" aria-label="${esc(m)} löschen">${icon('x')}</button></div>`).join('')}<div style="display:flex;gap:8px;margin-top:8px"><input class="in" id="idea" placeholder="Neues Gericht" enterkeyhint="done" autocomplete="off"><button class="btn" data-a="add-idea">Dazu</button></div>`;
+    return sub + `<div>${SEED.meals.map((m, i) => fold('m' + i, m[0], String(m[1].length), m[1].map(x => `<div class="plain-row" style="min-height:40px;padding:6px 0">${esc(x)}</div>`).join('') + (m[2] ? `<p class="serif-i" style="margin-top:8px">${m[2]}</p>` : ''))).join('')}${fold('own', 'Meine eigenen Ideen', String(S.myMeals.length), own)}</div>`;
   }
   const wk = ui.week, r = rotOf(wk), rot = SEED.rotation[r];
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = addDays(wk, i);
-    const row = (k, s) => { const c = cell(wk, i, s); return `<button class="slot p${c.pot < 0 ? 'x' : c.pot} ${c.text ? '' : 'empty-slot'}" data-a="edit-meal" data-i="${i}" data-s="${s}"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</button>`; };
-    return `<div class="meal-day ${d === t ? 'today' : ''}"><h3>${DAYS[i]}<small class="small muted" style="font-family:var(--sans);font-weight:400;font-size:13px">${fmtShort(d)}</small></h3>${row('Früh', 0)}${row('Mittag', 1)}${row('Abend', 2)}</div>`;
-  }).join('');
-  return sub + `<div class="week-nav"><button class="icon-btn" data-a="week" data-n="-1" aria-label="Vorherige Woche">${icon('left')}</button><h2>Woche vom ${fmtShort(wk)}<small>Rotation ${r + 1} von 4 <button style="color:var(--gold);font-weight:600;padding:6px 4px" data-a="rot-pick">ändern</button></small></h2><button class="icon-btn" data-a="week" data-n="1" aria-label="Nächste Woche">${icon('right')}</button></div>
-    <div class="card"><div class="pots">${rot.pots.map((p, i) => `<div class="pot"><i style="--b:var(--pot${i});--l:var(--pot${i}-line)"></i><div><b>${esc(p[0])}</b><span>${p[1]}</span></div></div>`).join('')}</div></div>
-    <button class="btn ghost block" data-a="plan-ingr">Zutaten für die Woche auf die Einkaufsliste</button>
-    <div class="meals-grid stack-s">${days}</div>`;
+  const di = ui.mealDay != null ? ui.mealDay : (wk === mondayOf(t) ? dowOf(t) : 0);
+  const row = (k, s) => { const c = cell(wk, di, s); return `<button class="slot p${c.pot < 0 ? 'x' : c.pot} ${c.text ? '' : 'empty-slot'}" data-a="edit-meal" data-i="${di}" data-s="${s}"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</button>`; };
+  return sub + `<div class="week-nav"><button class="icon-btn" data-a="week" data-n="-1" aria-label="Vorherige Woche">${icon('left')}</button><h2>Woche vom ${fmtShort(wk)}<small>Rotation ${r + 1} von 4 <button style="color:var(--gold-text);font-weight:600;padding:6px 4px" data-a="rot-pick">ändern</button></small></h2><button class="icon-btn" data-a="week" data-n="1" aria-label="Nächste Woche">${icon('right')}</button></div>
+    <div class="daystrip" role="group" aria-label="Tag wählen">${DS.map((n, i) => `<button class="dsb" data-a="mealday" data-i="${i}" aria-pressed="${i === di}" ${addDays(wk, i) === t ? 'aria-current="date"' : ''} aria-label="${DAYS[i]}"><small>${n}</small><b>${+addDays(wk, i).slice(8)}</b></button>`).join('')}</div>
+    <div class="stack-s"><h2 style="font-size:26px">${DAYS[di]}</h2>${row('Früh', 0)}${row('Mittag', 1)}${row('Abend', 2)}</div>
+    <div class="potline">${rot.pots.map((p, i) => `<span class="potpill"><i style="--b:var(--pot${i});--l:var(--pot${i}-line)"></i>${esc(p[0])}</span>`).join('')}</div>
+    <div>${fold('pots', 'Töpfe und Kochtage', '', `<div class="pots">${rot.pots.map((p, i) => `<div class="pot"><i style="--b:var(--pot${i});--l:var(--pot${i}-line)"></i><div><b>${esc(p[0])}</b><span>${p[1]}</span></div></div>`).join('')}</div>`)}</div>
+    <button class="btn ghost block" data-a="plan-ingr">Zutaten für die Woche</button>`;
 }
 
+function guessCat(text) {
+  const n = norm(text); if (n.length < 3) return 'Sonstiges';
+  for (const g of SEED.pantry) for (const x of g[2]) { const m = norm(x); if (m && (n.includes(m) || m.includes(n))) return g[1]; }
+  for (const [, list] of INGR) for (const [name, cat] of list) { const m = norm(name); if (m === n || (m.length > 3 && n.includes(m))) return cat; }
+  return 'Sonstiges';
+}
 function vShop() {
   const sub = seg('shop', [['liste', 'Liste'], ['vorrat', 'Vorräte'], ['prep', 'Sonntag Prep']]);
   if (ui.shop === 'vorrat') {
     const miss = Object.values(S.pantry).filter(v => v === 'fehlt').length;
-    return sub + `<p class="serif-i">Einmal im Monat komplett durchgehen, donnerstags kurz prüfen. Nur noch 1 übrig? Ab auf die Einkaufsliste.</p>
-      ${miss ? `<p class="small"><b>${miss}</b> ${miss === 1 ? 'fehlt' : 'fehlen'} und ${miss === 1 ? 'steht' : 'stehen'} auf der Einkaufsliste.</p>` : ''}
-      <div class="stack-s">${SEED.pantry.map((g, gi) => `<div class="card"><h3 class="group-title">${g[0]}</h3>${g[2].map((x, xi) => { const id = `${gi}-${xi}`, s = S.pantry[id]; return `<div class="pantry-row"><span class="grow">${esc(x)}</span><div class="mini-seg"><button class="da" data-a="pantry" data-id="${id}" data-v="da" aria-pressed="${s === 'da'}">Da</button><button class="fehlt" data-a="pantry" data-id="${id}" data-v="fehlt" aria-pressed="${s === 'fehlt'}">Fehlt</button></div></div>`; }).join('')}</div>`).join('')}</div>`;
+    return sub + `<p class="serif-i">Einmal im Monat durchgehen, donnerstags kurz prüfen. Fehlt etwas, kommt es auf die Einkaufsliste.</p>
+      <div>${SEED.pantry.map((g, gi) => { const m = g[2].filter((_, xi) => S.pantry[`${gi}-${xi}`] === 'fehlt').length; return fold('p' + gi, g[0], m ? `${m} fehlt` : '', g[2].map((x, xi) => { const id = `${gi}-${xi}`, s = S.pantry[id]; return `<div class="pantry-row"><span class="grow">${esc(x)}</span><div class="mini-seg"><button class="da" data-a="pantry" data-id="${id}" data-v="da" aria-pressed="${s === 'da'}">Da</button><button class="fehlt" data-a="pantry" data-id="${id}" data-v="fehlt" aria-pressed="${s === 'fehlt'}">Fehlt</button></div></div>`; }).join('')); }).join('')}</div>`;
   }
   if (ui.shop === 'prep') {
     const wk = mondayOf(isoOf()), log = S.prepLog[wk] || [];
     return sub + `<p class="serif-i">Sonntag vorbereiten, unter der Woche entspannen.</p>
-      <div class="card">${SEED.prep.map((p, i) => `<div class="row ${log.includes(i) ? 'done' : ''}">${chk(log.includes(i), `data-a="prep" data-i="${i}" aria-label="${esc(p)}"`)}<span class="row-body"><span class="t">${esc(p)}</span></span></div>`).join('')}</div>`;
+      <div>${SEED.prep.map((p, i) => `<div class="row ${log.includes(i) ? 'done' : ''}">${chk(log.includes(i), `data-a="prep" data-i="${i}" aria-label="${esc(p)}"`)}<span class="row-body"><span class="t">${esc(p)}</span></span></div>`).join('')}</div>`;
   }
   const items = S.shopping, doneN = items.filter(i => i.done).length;
- return sub + `<button class="btn ghost block" data-a="plan-ingr">Zutaten aus dem Wochenplan holen</button><form class="card form" data-a="shop-add" style="gap:10px"><div style="display:flex;gap:8px"><input class="in" id="shop-t" placeholder="Was brauchst du?" enterkeyhint="done" autocomplete="off"><button class="btn" type="submit">Dazu</button></div>
-      <select class="in" id="shop-c" aria-label="Kategorie">${SEED.shopCats.map(c => `<option>${c}</option>`).join('')}</select></form>
-    ${items.length ? '' : '<div class="empty"><b>Liste ist leer.</b>Alles da, oder du hast noch nichts aufgeschrieben.</div>'}
-    ${SEED.shopCats.filter(c => items.some(i => i.cat === c)).map(c => `<div class="card"><h3 class="group-title">${c}</h3>${items.filter(i => i.cat === c).map(i => `<div class="row ${i.done ? 'done' : ''}">${chk(i.done, `data-a="shop-tg" data-id="${i.id}" aria-label="${esc(i.text)}"`)}<span class="row-body"><span class="t">${esc(i.text)}</span></span><button class="icon-btn" data-a="shop-del" data-id="${i.id}" aria-label="${esc(i.text)} entfernen">${icon('x')}</button></div>`).join('')}</div>`).join('')}
-    ${doneN ? `<button class="btn ghost" data-a="shop-clear">${doneN} erledigte entfernen</button>` : ''}`;
+  return sub + `<form class="qa" data-a="shop-add"><div class="qa-row"><input class="in" id="shop-t" placeholder="Was brauchst du?" enterkeyhint="done" autocomplete="off" aria-label="Neuer Artikel"><button class="btn" type="submit">Dazu</button></div></form>
+    ${items.length ? '' : '<div class="empty"><b>Liste ist leer.</b>Schreib auf, was fehlt, oder hol die Zutaten aus dem Wochenplan.</div>'}
+    ${SEED.shopCats.filter(c => items.some(i => i.cat === c)).map(c => `<div><h3 class="group-title">${c}</h3>${items.filter(i => i.cat === c).map(i => `<div class="row ${i.done ? 'done' : ''}">${chk(i.done, `data-a="shop-tg" data-id="${i.id}" aria-label="${esc(i.text)}"`)}<span class="row-body"><span class="t">${esc(i.text)}</span></span><button class="icon-btn" data-a="shop-del" data-id="${i.id}" aria-label="${esc(i.text)} entfernen">${icon('x')}</button></div>`).join('')}</div>`).join('')}
+    <div class="stack-s"><button class="btn ghost block" data-a="plan-ingr">Zutaten aus dem Wochenplan holen</button>${doneN ? `<button class="btn ghost block" data-a="shop-clear">${doneN} erledigte entfernen</button>` : ''}</div>`;
 }
 
 function vClean() {
@@ -330,30 +352,28 @@ function vClean() {
   if (ui.clean === 'deep') {
     const cy = deepCycle(t), v = ui.deepV || cy.v, d = SEED.deep[v], key = cy.sat + v, log = S.deepLog[key] || [];
     const total = d.tasks.reduce((a, x) => a + x[1], 0);
-    return sub + `<div class="card"><h3 style="font-size:24px">Nächster Deep Clean: ${fmt(cy.sat, { weekday: 'long', day: 'numeric', month: 'long' })}</h3><p class="muted small">Alle 2 Wochen am Samstag, im Wechsel Woche A und B. Das ersetzt an diesem Samstag deine ganze Putzstunde. Schaffst du nicht alles, macht der nächste Samstag weiter.</p></div>
+    return sub + `<div><h2 style="font-size:26px">${fmt(cy.sat, { weekday: 'long', day: 'numeric', month: 'long' })}</h2><p class="muted small">Alle 2 Wochen am Samstag, im Wechsel Woche A und B. Schaffst du nicht alles, macht der nächste Samstag weiter.</p></div>
       <div class="seg" role="group">${['A', 'B'].map(x => `<button data-a="deepv" data-v="${x}" aria-pressed="${v === x}">Woche ${x}${x === cy.v ? ' (diese)' : ''}</button>`).join('')}</div>
-      <div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 class="group-title">${d.title}</h3><span class="serif-i">${total} Min</span></div>
-        ${d.tasks.map((x, i) => `<div class="row ${log.includes(i) ? 'done' : ''}">${chk(log.includes(i), `data-a="deep" data-k="${key}" data-i="${i}" aria-label="${esc(x[0])}"`)}<span class="row-body"><span class="t">${esc(x[0])}</span></span><span class="small muted num" style="padding:12px 4px 0;white-space:nowrap">${x[1]} Min</span></div>`).join('')}
-        <button class="btn block" style="margin-top:14px" data-a="deep-finish" data-v="${v}" data-d="${cy.sat}">Deep Clean abgeschlossen</button></div>
-      <div class="card"><h3 class="group-title">Bonus, wenn Zeit übrig ist</h3>${SEED.deep.bonus.map(b => `<div class="plain-row" style="min-height:40px">${b}</div>`).join('')}</div>
-      <div class="card"><h3 class="group-title">Mein Deep Clean Tracker</h3>${S.deepDone.length ? S.deepDone.slice(-8).reverse().map(x => `<div class="plain-row"><span class="grow">${fmt(x.date, { day: 'numeric', month: 'long', year: 'numeric' })}</span><span class="status">Woche ${x.v}</span></div>`).join('') : '<p class="muted small">Noch kein Deep Clean eingetragen.</p>'}</div>`;
+      <div><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 class="group-title">${d.title}</h3><span class="serif-i">${total} Min</span></div>
+        ${d.tasks.map((x, i) => `<div class="row ${log.includes(i) ? 'done' : ''}">${chk(log.includes(i), `data-a="deep" data-k="${key}" data-i="${i}" aria-label="${esc(x[0])}"`)}<span class="row-body"><span class="t">${esc(x[0])}</span></span><span class="small muted num" style="padding:12px 4px 0;white-space:nowrap">${x[1]} Min</span></div>`).join('')}</div>
+      <button class="btn block" data-a="deep-finish" data-v="${v}" data-d="${cy.sat}">Deep Clean abgeschlossen</button>
+      <div>${fold('bonus', 'Bonus, wenn Zeit übrig ist', '', SEED.deep.bonus.map(b => `<div class="plain-row" style="min-height:40px">${b}</div>`).join(''))}${fold('tracker', 'Mein Deep Clean Tracker', String(S.deepDone.length || ''), S.deepDone.length ? S.deepDone.slice(-8).reverse().map(x => `<div class="plain-row"><span class="grow">${fmt(x.date, { day: 'numeric', month: 'long', year: 'numeric' })}</span><span class="status">Woche ${x.v}</span></div>`).join('') : '<p class="muted small">Noch kein Deep Clean eingetragen.</p>')}</div>`;
   }
   if (ui.clean === 'monat') {
     const mk = monthKey(t), qk = quarterKey(t), ml = S.monthLog[mk] || [], ql = S.quarterLog[qk] || [];
-    let n = 0;
-    return sub + `<div class="stack-s"><h2 style="font-size:26px">Monatlich</h2><p class="serif-i" style="margin-top:-6px">Zusätzlich zum Deep Clean, wenn es passt. Setzt sich jeden Monat zurück.</p>
-      ${SEED.monthly.map((g, gi) => `<div class="card"><h3 class="group-title">${g[0]}</h3>${g[1].map((x, xi) => { const id = `${gi}-${xi}`; return `<div class="row ${ml.includes(id) ? 'done' : ''}">${chk(ml.includes(id), `data-a="mq" data-l="month" data-id="${id}" aria-label="${esc(x)}"`)}<span class="row-body"><span class="t">${esc(x)}</span></span></div>`; }).join('')}</div>`).join('')}
-      <h2 style="font-size:26px;margin-top:14px">Quartal</h2>
-      <div class="card">${SEED.quarterly.map((x, i) => `<div class="row ${ql.includes(String(i)) ? 'done' : ''}">${chk(ql.includes(String(i)), `data-a="mq" data-l="quarter" data-id="${i}" aria-label="${esc(x)}"`)}<span class="row-body"><span class="t">${esc(x)}</span></span></div>`).join('')}</div></div>`;
+    return sub + `<p class="serif-i">Zusätzlich zum Deep Clean, wenn es passt. Setzt sich jeden Monat zurück.</p>
+      <div>${SEED.monthly.map((g, gi) => { const n = g[1].filter((_, xi) => ml.includes(`${gi}-${xi}`)).length; return fold('mo' + gi, g[0], `${n} von ${g[1].length}`, g[1].map((x, xi) => { const id = `${gi}-${xi}`; return `<div class="row ${ml.includes(id) ? 'done' : ''}">${chk(ml.includes(id), `data-a="mq" data-l="month" data-id="${id}" aria-label="${esc(x)}"`)}<span class="row-body"><span class="t">${esc(x)}</span></span></div>`; }).join('')); }).join('')}
+      ${fold('qq', 'Quartal', `${ql.length} von ${SEED.quarterly.length}`, SEED.quarterly.map((x, i) => `<div class="row ${ql.includes(String(i)) ? 'done' : ''}">${chk(ql.includes(String(i)), `data-a="mq" data-l="quarter" data-id="${i}" aria-label="${esc(x)}"`)}<span class="row-body"><span class="t">${esc(x)}</span></span></div>`).join(''))}</div>`;
   }
   const log = S.cleanLog[t] || [], deep = deepInfo(t), f = SEED.focus[dowOf(t)];
-  const all = roundIds().length, pct = Math.round(log.length / all * 100);
-  return sub + `<div class="card"><h3 style="font-size:24px">${deep ? `Heute: Deep Clean, Woche ${deep}` : 'Schwerpunkt heute: ' + esc(f[0])}</h3>
-      <p class="muted small" style="margin-top:4px">${deep ? '' : '15 Min extra. '}${deep ? esc(SEED.deep[deep].title) + '. Mehr dazu im Tab Deep Clean.' : esc(f[1])}</p></div>
-    <div><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="small muted">45 Min Runde plus 15 Min Schwerpunkt</span><span class="small num">${log.length} von ${all}${streak() >= 2 ? `, ${streak()} Tage in Folge` : ''}</span></div><div class="bar"><i style="--p:${pct / 100}"></i></div></div>
-    ${SEED.round.map((r, i) => `<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 class="group-title">${r[0]}</h3><span class="serif-i">${r[1]} Min</span></div>${r[2].map((x, j) => { const id = `r${i}-${j}`, on = log.includes(id); return `<div class="row ${on ? 'done' : ''}">${chk(on, `data-a="round" data-id="${id}" aria-label="${esc(x)}"`)}<span class="row-body"><span class="t">${esc(x)}</span></span></div>`; }).join('')}</div>`).join('')}
-    <p class="note">${SEED.roundTip}</p><p class="note">${SEED.roundPanic}</p>
-    <div class="card"><h3 class="group-title">Schwerpunkt der Woche</h3>${SEED.focus.map((x, i) => `<div class="plain-row ${i === dowOf(t) ? '' : ''}" style="align-items:flex-start"><b style="width:30px;color:var(--gold);flex:none">${DS[i]}</b><span class="grow"><b style="font-weight:600">${x[0]}</b><span class="small muted" style="display:block">${x[1]}</span></span></div>`).join('')}</div>`;
+  const all = roundIds().length, st = streak();
+  const doneIn = i => SEED.round[i][2].filter((_, j) => log.includes(`r${i}-${j}`)).length;
+  if (!ui.cleanTouched) { const first = SEED.round.findIndex((r, i) => doneIn(i) < r[2].length); if (first >= 0) ui.open.add('c' + first); ui.cleanTouched = true; }
+  return sub + `<div><h2 style="font-size:26px">${deep ? `Deep Clean, Woche ${deep}` : esc(f[0])}</h2><p class="muted small">${deep ? esc(SEED.deep[deep].title) : esc(f[1]) + '. 15 Min extra.'}</p></div>
+    <div><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span class="small muted">Tägliche Runde</span><span class="small num">${log.length} von ${all}${st >= 2 ? `, ${st} Tage in Folge` : ''}</span></div><div class="bar"><i style="--p:${log.length / all}"></i></div></div>
+    <div>${SEED.round.map((r, i) => fold('c' + i, r[0], `${doneIn(i)} von ${r[2].length}, ${r[1]} Min`, r[2].map((x, j) => { const id = `r${i}-${j}`, on = log.includes(id); return `<div class="row ${on ? 'done' : ''}">${chk(on, `data-a="round" data-id="${id}" aria-label="${esc(x)}"`)}<span class="row-body"><span class="t">${esc(x)}</span></span></div>`; }).join(''))).join('')}
+    ${fold('tips', 'Tipp und Notfallplan', '', `<p class="note">${SEED.roundTip}</p><p class="note" style="margin-top:10px">${SEED.roundPanic}</p>`)}
+    ${fold('wfocus', 'Schwerpunkt der Woche', '', SEED.focus.map((x, i) => `<div class="plain-row" style="align-items:flex-start"><b style="width:30px;color:var(--gold-text);flex:none">${DS[i]}</b><span class="grow"><b style="font-weight:600">${x[0]}</b><span class="small muted" style="display:block">${x[1]}</span></span></div>`).join(''))}</div>`;
 }
 
 function budgetOf(mk) { return S.budget[mk] || (S.budget[mk] = { budget: '', goal: '', weeks: ['', '', '', '', ''], planned: {}, save: '' }); }
@@ -361,18 +381,18 @@ const wom = d => Math.min(5, Math.ceil(+d.slice(8) / 7));
 function vBudget() {
   const mk = ui.budgetMonth, b = budgetOf(mk), first = mk + '-01';
   const pu = S.purchases.filter(p => p.date.startsWith(mk)).sort((x, y) => y.date.localeCompare(x.date));
-  const spent = pu.reduce((a, p) => a + num(p.amount), 0), left = num(b.budget) - spent;
+  const spent = pu.reduce((a, p) => a + num(p.amount), 0), bud = num(b.budget), left = bud - spent;
   const wspent = [1, 2, 3, 4, 5].map(w => pu.filter(p => wom(p.date) === w).reduce((a, p) => a + num(p.amount), 0));
   const cspent = c => pu.filter(p => p.cat === c).reduce((a, p) => a + num(p.amount), 0);
   const inp = (path, v, ph = '0,00') => `<input inputmode="decimal" data-c="budget" data-p="${path}" value="${esc(v)}" placeholder="${ph}" aria-label="${path}">`;
   return `<div class="week-nav"><button class="icon-btn" data-a="bmonth" data-n="-1" aria-label="Vorheriger Monat">${icon('left')}</button><h2>${fmt(first, { month: 'long', year: 'numeric' })}</h2><button class="icon-btn" data-a="bmonth" data-n="1" aria-label="Nächster Monat">${icon('right')}</button></div>
-    <div class="stat-grid"><label class="stat"><span class="k">Monatsbudget (€)</span>${inp('budget', b.budget)}</label><label class="stat"><span class="k">Sparziel (€)</span>${inp('goal', b.goal)}</label>
-      <div class="stat"><span class="k">Ausgegeben</span><div class="v">${eur(spent)}</div></div><div class="stat"><span class="k">Übrig</span><div class="v ${left < 0 ? 'neg' : ''}">${eur(left)}</div></div></div>
-    <section>${sec('Pro Woche')}<table class="tbl"><thead><tr><th>Woche</th><th class="r">Budget</th><th class="r">Ausgegeben</th><th class="r">Differenz</th></tr></thead><tbody>${[0, 1, 2, 3, 4].map(i => `<tr><td>Woche ${i + 1}</td><td>${inp('w' + i, b.weeks[i])}</td><td class="r">${eur(wspent[i])}</td><td class="r ${num(b.weeks[i]) - wspent[i] < 0 ? 'late' : ''}">${b.weeks[i] === '' ? 'n/a' : eur(num(b.weeks[i]) - wspent[i])}</td></tr>`).join('')}</tbody></table></section>
-    <section>${sec('Wohin geht das Geld')}<table class="tbl"><thead><tr><th>Kategorie</th><th class="r">Geplant</th><th class="r">Tatsächlich</th></tr></thead><tbody>${SEED.budgetCats.map((c, i) => `<tr><td>${c}</td><td>${inp('c' + i, b.planned['c' + i] ?? '')}</td><td class="r">${eur(cspent(c))}</td></tr>`).join('')}</tbody></table></section>
-    <section>${sec('Einkaufsprotokoll', `<button class="more" data-a="buy-new">Einkauf eintragen</button>`)}
-      ${pu.length ? pu.map(p => `<div class="plain-row"><span class="small muted num" style="width:48px;flex:none">${fmtShort(p.date)}</span><button class="grow" data-a="buy-edit" data-id="${p.id}"><b style="font-weight:600">${esc(p.store || 'Einkauf')}</b><span class="small muted" style="display:block">${esc(p.cat)}${p.note ? ', ' + esc(p.note) : ''}</span></button><span class="num">${eur(p.amount)}</span></div>`).join('') + `<div class="plain-row" style="justify-content:flex-end;gap:16px"><span class="muted small">Summe Monat</span><b class="num" style="font-size:18px">${eur(spent)}</b></div>` : '<div class="empty"><b>Noch kein Bon.</b>2 Minuten am Abend, jeden Bon eintragen.</div>'}</section>
-    <section>${sec('Was spare ich nächsten Monat?')}<p class="serif-i" style="margin-bottom:8px">Ideen: Angebote nutzen, Eigenmarken, Großpackung Reis, Reste Tag, Wochenmarkt, Lieferdienst streichen.</p><textarea class="in" rows="3" data-c="budget" data-p="save" aria-label="Was spare ich nächsten Monat">${esc(b.save)}</textarea></section>`;
+    ${bud ? `<div class="bigfig"><span class="muted small">Übrig</span><div class="v ${left < 0 ? 'neg' : ''}">${eur(left)}</div><div class="bar"><i style="--p:${Math.min(1, spent / bud)}"></i></div><span class="small muted">${eur(spent)} von ${eur(bud)} ausgegeben</span></div>` : `<div class="bigfig"><span class="muted small">Ausgegeben</span><div class="v">${eur(spent)}</div><span class="small muted">Setz unten ein Monatsbudget, dann siehst du, was übrig bleibt.</span></div>`}
+    <section>${sec('Einkäufe', `<button class="more" data-a="buy-new">Eintragen</button>`)}
+      ${pu.length ? pu.map(p => `<div class="plain-row"><span class="small muted num" style="width:48px;flex:none">${fmtShort(p.date)}</span><button class="grow" data-a="buy-edit" data-id="${p.id}"><b style="font-weight:600">${esc(p.store || 'Einkauf')}</b><span class="small muted" style="display:block">${esc(p.cat)}${p.note ? ', ' + esc(p.note) : ''}</span></button><span class="num">${eur(p.amount)}</span></div>`).join('') : '<p class="muted">Noch kein Bon. 2 Minuten am Abend, jeden Bon eintragen.</p>'}</section>
+    <div>${fold('bset', 'Budget und Sparziel', bud ? eur(bud) : '', `<div class="two"><label class="field"><span>Monatsbudget (€)</span><div class="stat" style="padding:0;background:none">${inp('budget', b.budget)}</div></label><label class="field"><span>Sparziel (€)</span><div class="stat" style="padding:0;background:none">${inp('goal', b.goal)}</div></label></div>`)}
+    ${fold('bweek', 'Pro Woche', '', `<table class="tbl"><thead><tr><th>Woche</th><th class="r">Budget</th><th class="r">Ausgegeben</th><th class="r">Differenz</th></tr></thead><tbody>${[0, 1, 2, 3, 4].map(i => `<tr><td>Woche ${i + 1}</td><td>${inp('w' + i, b.weeks[i])}</td><td class="r">${eur(wspent[i])}</td><td class="r ${num(b.weeks[i]) - wspent[i] < 0 ? 'late' : ''}">${b.weeks[i] === '' ? 'n/a' : eur(num(b.weeks[i]) - wspent[i])}</td></tr>`).join('')}</tbody></table>`)}
+    ${fold('bcat', 'Wohin geht das Geld', '', `<table class="tbl"><thead><tr><th>Kategorie</th><th class="r">Geplant</th><th class="r">Tatsächlich</th></tr></thead><tbody>${SEED.budgetCats.map((c, i) => `<tr><td>${c}</td><td>${inp('c' + i, b.planned['c' + i] ?? '')}</td><td class="r">${eur(cspent(c))}</td></tr>`).join('')}</tbody></table>`)}
+    ${fold('bsave', 'Was spare ich nächsten Monat?', '', `<p class="serif-i" style="margin-bottom:8px">Ideen: Angebote nutzen, Eigenmarken, Großpackung Reis, Reste Tag, Wochenmarkt, Lieferdienst streichen.</p><textarea class="in" rows="3" data-c="budget" data-p="save" aria-label="Was spare ich nächsten Monat">${esc(b.save)}</textarea>`)}</div>`;
 }
 
 /* ---------- Mehr ---------- */
@@ -453,9 +473,12 @@ function toast(m) { const e = toastEl(); e.textContent = m; e.classList.add('on'
 function toggleIn(map, key, id) { const a = map[key] || (map[key] = []); const i = a.indexOf(id); i >= 0 ? a.splice(i, 1) : a.push(id); }
 
 const A = {
-  tab: d => { ui.tab = d.t; animateNext = true; commit(); window.scrollTo(0, 0); },
+  tab: d => { if (d.t === 'home' && ui.tab === 'home') ui.home = null; ui.tab = d.t; animateNext = true; commit(); window.scrollTo(0, 0); },
   goto: d => { ui.tab = d.t; if (d.sub) ui.home = d.sub; animateNext = true; commit(); window.scrollTo(0, 0); },
   seg: d => { ui[d.key] = d.v; commit(); },
+  'hub-go': d => { ui.home = d.v || null; commit(); window.scrollTo(0, 0); },
+  fold: d => { ui.open.has(d.k) ? ui.open.delete(d.k) : ui.open.add(d.k); commit(); },
+  mealday: d => { ui.mealDay = +d.i; commit(); },
   area: d => { ui.area = d.id; commit(); },
   'toggle-done': () => { ui.showDone = !ui.showDone; commit(); },
   'clear-done': () => { S.todos = S.todos.filter(t => !((t.repeat || 'none') === 'none' && t.done)); commit(); },
@@ -473,7 +496,7 @@ const A = {
   'cal-mode': d => { ui.calMode = d.m; commit(); },
   'cal-prev': () => calMove(-1), 'cal-next': () => calMove(1),
   'cal-today': () => { ui.calSel = isoOf(); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
-  week: d => { ui.week = addDays(ui.week, 7 * +d.n); commit(); },
+  week: d => { ui.week = addDays(ui.week, 7 * +d.n); ui.mealDay = null; commit(); },
   'prio-edit': () => { const p = S.priorities[mondayOf(isoOf())] || ['', '', '']; openSheet(`<h2>Diese Woche</h2><form class="form" data-a="prio-save">${[0, 1, 2].map(i => `<label class="field"><span>Priorität ${i + 1}</span><input class="in" id="pr${i}" value="${esc(p[i] || '')}" autocomplete="off" placeholder="${['Das Wichtigste', 'Danach', 'Und noch eins'][i]}"></label>`).join('')}<button class="btn block" type="submit">Speichern</button></form>`); },
   'plan-ingr': () => openSheet(ingrSheet()),
   'ingr-tg': (d, el) => { const on = el.getAttribute('aria-checked') !== 'true'; el.setAttribute('aria-checked', on ? 'true' : 'false'); on ? ingrSel.add(d.n) : ingrSel.delete(d.n); const b = $('#ingr-go'); if (b) { b.textContent = `${ingrSel.size} auf die Einkaufsliste`; b.disabled = !ingrSel.size; } },
@@ -581,7 +604,7 @@ const SUBMIT = {
     closeSheet(); commit(); toast('Gespeichert');
   },
   'save-meal': (f, d) => { const p = S.plan[ui.week] || (S.plan[ui.week] = {}); (p[d.i] || (p[d.i] = {}))[d.s] = $('#m-t').value.trim(); closeSheet(); commit(); },
-  'shop-add': () => { const t = $('#shop-t').value.trim(); if (!t) return; S.shopping.push({ id: uid(), text: t, cat: $('#shop-c').value, done: false }); commit(); $('#shop-t')?.focus(); },
+  'shop-add': () => { const t = $('#shop-t').value.trim(); if (!t) return; S.shopping.push({ id: uid(), text: t, cat: guessCat(t), done: false }); commit(); $('#shop-t')?.focus(); },
   'save-buy': (f, d) => {
     const v = { store: $('#b-store').value.trim(), amount: num($('#b-amt').value), date: $('#b-date').value || isoOf(), cat: $('#b-cat').value, note: $('#b-note').value.trim() };
     const p = S.purchases.find(x => x.id === d.id); p ? Object.assign(p, v) : S.purchases.push({ id: uid(), ...v });

@@ -280,3 +280,34 @@ select.in { background-image: linear-gradient(45deg, transparent 50%, var(--mute
 .today-card { gap: 10px; }
 .stack { --gap: 24px; }
 .stack > * + * { margin-top: var(--gap); }
+
+/* Haushalt: Übersicht, Falten, Tagesleiste */
+.back { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; margin-left: -8px; padding: 0 8px; color: var(--gold-text); font-weight: 500; }
+.back svg { width: 20px; height: 20px; }
+.hub { border-top: 1px solid var(--line); }
+.hub-row { width: 100%; padding-inline: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 0; border-bottom: 1px solid var(--line); text-align: left; }
+.hub-row > span { display: grid; gap: 4px; min-width: 0; }
+.hub-row b { font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1.1; }
+.hub-row .muted { font-size: 14px; overflow-wrap: anywhere; }
+.hub-row svg { width: 22px; height: 22px; flex: none; color: var(--gold-text); }
+.hub-row:active { background: var(--gold-soft); }
+.fold { border-top: 1px solid var(--line); }
+.fold:last-child { border-bottom: 1px solid var(--line); }
+.foldh { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 0; text-align: left; }
+.foldh .ft { flex: 1; font-family: var(--serif); font-size: 21px; line-height: 1.2; }
+.foldh .fm { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.foldh i { font: 300 24px/1 var(--sans); font-style: normal; color: var(--gold-text); width: 22px; text-align: center; }
+.foldb { padding: 0 0 16px; }
+.daystrip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.dsb { display: grid; justify-items: center; gap: 2px; padding: 8px 0; border-radius: 999px; min-height: 58px; color: var(--muted); }
+.dsb small { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.dsb b { font: 400 22px/1 var(--serif); color: var(--ink); }
+.dsb[aria-current="date"] b { color: var(--gold-text); }
+.dsb[aria-pressed="true"] { background: var(--gold); }
+.dsb[aria-pressed="true"] small, .dsb[aria-pressed="true"] b { color: var(--gold-ink); }
+.potline { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.potpill { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
+.potpill i { width: 14px; height: 14px; border-radius: 5px; background: var(--b); border: 1px solid var(--l); }
+.bigfig { display: grid; gap: 6px; }
+.bigfig .v { font-family: var(--serif); font-size: 52px; line-height: 1.05; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.bigfig .v.neg { color: var(--danger); }
