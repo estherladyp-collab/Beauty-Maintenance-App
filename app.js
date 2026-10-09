@@ -1035,10 +1035,10 @@ function beauty(){
   const open = (k, label, inner) => `<div class="fold"><button class="foldh" data-act="fold" data-v="${k}" aria-expanded="${!!ui.fold[k]}"><span>${label}</span><i aria-hidden="true">${ui.fold[k]?'−':'+'}</i></button>${ui.fold[k]?`<div class="foldb">${inner}</div>`:''}</div>`;
   return `<header class="dayhead"><span class="eyebrow">Grooming</span><h1 class="page-title">Care</h1></header>
   ${todayCard()}
-  ${weekReview()}
-  ${careProgress()}
   ${soon.length?`<section class="tight"><h2>Coming due</h2><div class="list" style="margin-top:14px">${soon.map(x=>taskP(x.r)).join('')}</div></section>`:`<section class="tight"><div class="blank slim"><span>✦</span>Tap the check on anything below once. After that I keep count and tell you when it is due.</div></section>`}
   <section><h2>${soon.length?'Everything else':'Your routine'}</h2><div class="list" style="margin-top:14px">${rest.map(x=>taskP(x.r)).join('')}</div></section>
+  ${weekReview()}
+  ${careProgress()}
   <section class="folds">${open('prod','My products',`${(state.products||[]).length?`<div class="prodlist">${state.products.map(p=>`<div><span class="eyebrow">${esc(areaName(p.area))}</span>${prodCard(p)}</div>`).join('')}</div>`:'<p class="lede">Nothing saved yet.</p>'}<div style="margin-top:14px"><button class="btn small" data-act="addprod">＋ Add product</button></div>`)}
   ${open('guide','Style guide',`<div class="guide"><div><div class="eyebrow">Inverted triangle</div><h3>Balance the shoulders</h3><ul><li>V-necks, wraps and scoop necks open up the top.</li><li>Wide-leg trousers, A-line and pleated skirts add volume below.</li><li>Belt at the waist, keep detail on the bottom half.</li><li>Go easy on boat necks, puff sleeves and halters.</li></ul></div><div><div class="eyebrow">Warm undertone</div><h3>Gold, earth and glow</h3><ul><li>Gold jewelry over silver.</li><li>Bronze, terracotta and coral blush. Brown and rosewood lips.</li><li>Milky nude and sheer pink nails.</li></ul></div></div><div class="palette" style="margin-top:18px">${warm.map(c=>`<div class="pal"><i style="background:${c[1]}"></i>${c[0]}</div>`).join('')}</div>`)}
   ${open('backup','Backup',`<p class="lede" style="margin-bottom:14px">Your plans are saved to your account. This file is an extra copy, or a way to move to another device.</p><div class="row"><button class="btn small" data-act="export">Save backup</button><label class="btn small ghost" style="cursor:pointer">Load backup<input type="file" id="import" accept="application/json" hidden></label></div>`)}</section>`;
