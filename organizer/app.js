@@ -159,47 +159,50 @@ function streak() {
 
 /* ---------- Heute ---------- */
 function roundIds() { const ids = []; SEED.round.forEach((r, i) => r[2].forEach((_, j) => ids.push(`r${i}-${j}`))); return ids; }
-function openFor(pred) {
+function openFor(pred, sun) {
   const t = isoOf();
-  return S.todos.filter(x => pred(x.area)).map(x => ({ x, d: nextOcc(x, t) })).filter(o => !todoDone(o.x, o.d || t)).sort((p, q) => (p.d || '9').localeCompare(q.d || '9'));
+  return S.todos.filter(x => pred(x.area)).map(x => ({ x, d: nextOcc(x, t) })).filter(o => !todoDone(o.x, o.d || t) && !(o.d && o.d <= sun)).sort((p, q) => (p.d || '9').localeCompare(q.d || '9'));
 }
-function listCard(key, title, img, pred, areaId) {
-  const t = isoOf(), sel = ui.calSel, items = openFor(pred), late = items.filter(o => o.d && o.d < t && (o.x.repeat || 'none') === 'none').length;
-  const shown = items.slice(0, 6);
-  const sub = !items.length ? 'Alles erledigt' : `${items.length} offen${late ? ', ' + late + ' überfällig' : ''}`;
-  const form = `<form class="inline-add" data-a="inline-add" data-area="${areaId}"><input class="in" id="ia-${areaId}" type="text" placeholder="Neu für ${sel === t ? 'heute' : DAYS[dowOf(sel)]}" enterkeyhint="send" autocomplete="off" aria-label="Neue Aufgabe ${esc(title)}"><button class="btn" type="submit" aria-label="Hinzufügen">${icon('plus')}</button></form>`;
-  const body = form + (shown.length ? shown.map(o => todoRow(o.x, o.d || t, { showDate: true })).join('') : '<p class="muted" style="margin-top:10px">Nichts offen.</p>') +
-    (items.length ? `<div class="card-actions"><button class="btn ghost small" data-a="todos-for" data-area="${areaId}">${items.length > 6 ? `Alle ${items.length} ansehen` : 'In To-dos öffnen'}</button></div>` : '');
+function listCard(key, title, img, pred, areaId, sun, inWeek) {
+  const t = isoOf(), items = openFor(pred, sun), shown = items.slice(0, 6);
+  const sub = items.length ? `${items.length} offen${inWeek ? ', ' + inWeek + ' diese Woche' : ''}` : (inWeek ? `${inWeek} diese Woche` : 'Alles erledigt');
+  const form = `<form class="inline-add" data-a="inline-add" data-area="${areaId}"><input class="in" id="ia-${areaId}" type="text" placeholder="Neu, z. B. Hotel anrufen morgen" enterkeyhint="send" autocomplete="off" aria-label="Neue Aufgabe ${esc(title)}"><button class="btn" type="submit" aria-label="Hinzufügen">${icon('plus')}</button></form>`;
+  const body = form + (shown.length ? shown.map(o => todoRow(o.x, o.d || t, { showDate: true })).join('') : `<p class="muted" style="margin-top:10px">${inWeek ? 'Alles Weitere steht oben unter Diese Woche.' : 'Nichts offen.'}</p>`) +
+    ((items.length || inWeek) ? `<div class="card-actions"><button class="btn ghost small" data-a="todos-for" data-area="${areaId}">${items.length > 6 ? `Alle ${items.length} ansehen` : 'In To-dos öffnen'}</button></div>` : '');
   return fold(key, title, '', body, { img, sub });
 }
 function vToday() {
-  const t = isoOf(), h = new Date().getHours(), sel = ui.calSel, mon = mondayOf(sel), di = dowOf(sel);
+  const t = isoOf(), h = new Date().getHours();
   const greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
-  const slot = (k, s) => { const c = cell(mon, di, s); return `<button class="slot p${c.pot < 0 ? 'x' : c.pot} ${c.text ? '' : 'empty-slot'}" data-a="edit-meal" data-wk="${mon}" data-i="${di}" data-s="${s}"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</button>`; };
-  const strip = DS.map((n, i) => { const d = addDays(mon, i); return `<button class="dsb" data-a="pick-day" data-d="${d}" aria-pressed="${d === sel}" ${d === t ? 'aria-current="date"' : ''} aria-label="${fmtLong(d)}"><small>${n}</small><b>${+d.slice(8)}</b><span class="dots">${dotsFor(d)}</span></button>`; }).join('');
-  const essen = `<div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div>`;
   const wkNow = mondayOf(t), sun = addDays(wkNow, 6), dnow = dowOf(t);
   const revWk = dnow === 0 ? addDays(wkNow, -7) : wkNow, rv = reviewFor(revWk);
   const banner = (dnow >= 4 || dnow === 0) ? `<button class="card rev-banner" data-a="goto-review" data-wk="${revWk}"><span><b>Wochenrückblick</b><span class="muted">${rv.done.length} erledigt${rv.pTotal ? `, ${rv.pDone} von ${rv.pTotal} Prioritäten` : ''}</span></span>${icon('right')}</button>` : '';
   const pr = S.dayPrio[t] || [], pd = S.dayPrioDone[t] || [];
   const prios = [0, 1, 2].filter(i => pr[i]).map(i => `<div class="prio-row ${pd[i] ? 'done' : ''}"><span class="pn">${i + 1}</span><span class="pt">${esc(pr[i])}</span>${chk(!!pd[i], `data-a="prio-tg" data-date="${t}" data-i="${i}" aria-label="${esc(pr[i])} erledigt"`)}</div>`).join('');
-  const dl = S.todos.map(x => ({ x, d: nextOcc(x, t) })).filter(o => o.d && o.d <= sun && !todoDone(o.x, o.d)).sort((p, q) => p.d.localeCompare(q.d));
-  const dlShown = dl.slice(0, 6);
+  /* Diese Woche: jede Aufgabe und jeder Termin steht genau einmal hier, nach Tag gruppiert */
+  const overdue = S.todos.filter(x => (x.repeat || 'none') === 'none' && !x.done && x.date && x.date < t);
+  const groups = [];
+  if (overdue.length) groups.push({ label: 'Überfällig', late: true, ev: [], td: overdue.map(x => ({ x, d: x.date })) });
+  for (let d = t; d <= sun; d = addDays(d, 1)) {
+    const it = itemsOn(d), td = it.td.filter(x => d === t || !todoDone(x, d)).map(x => ({ x, d }));
+    if (it.ev.length || td.length) groups.push({ label: d === t ? 'Heute' : d === addDays(t, 1) ? 'Morgen' : fmt(d, { weekday: 'long', day: 'numeric', month: 'short' }), ev: it.ev, td });
+  }
+  const inWeekFor = pred => groups.reduce((n, g) => n + g.td.filter(o => pred(o.x.area) && !todoDone(o.x, o.d)).length, 0);
+  const week = groups.length ? groups.map(g => `<div class="day-group"><h3 class="${g.late ? 'late' : ''}">${g.label}</h3>${g.ev.map(eventRow).join('')}${g.td.map(o => todoRow(o.x, o.d)).join('')}</div>`).join('') : '<p class="muted">Diese Woche ist nichts geplant.</p>';
+  const slot = (k, s) => { const c = cell(wkNow, dnow, s); return `<button class="slot p${c.pot < 0 ? 'x' : c.pot} ${c.text ? '' : 'empty-slot'}" data-a="edit-meal" data-wk="${wkNow}" data-i="${dnow}" data-s="${s}"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</button>`; };
+  const essen = `<div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div>`;
+  const isVf = a => a === 'vf', isCh = a => a === 'church' || area(a).parent === 'church', isHome = a => a === 'home';
   return `<div class="dash">
     <header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
     ${banner}
     <section><div class="sec"><h2>Top 3 heute</h2><button class="more" data-a="prio-edit" data-date="${t}">${prios ? 'Ändern' : 'Festlegen'}</button></div>
-      <div class="card list">${prios || `<p class="muted">Was sind deine drei wichtigsten Dinge diese Woche?</p>`}</div></section>
-    <section><div class="sec"><h2>Deadlines diese Woche</h2>${dl.length > 6 ? `<button class="more" data-a="goto-todos">Alle ${dl.length}</button>` : ''}</div>
-      <div class="card list">${dlShown.length ? dlShown.map(o => todoRow(o.x, o.d, { showDate: true })).join('') : `<p class="muted">Keine Deadlines diese Woche.</p>`}</div></section>
-    <div class="week-bar"><button class="icon-btn" data-a="wk-prev" aria-label="Vorherige Woche">${icon('left')}</button><span>${fmtShort(mon)} bis ${fmtShort(addDays(mon, 6))}</span><button class="icon-btn" data-a="wk-next" aria-label="Nächste Woche">${icon('right')}</button></div>
-    <div class="daystrip" role="group" aria-label="Tag wählen">${strip}</div>
-    <section><div class="sec"><h2>${sel === t ? 'Heute' : DAYS[di]}</h2>${sel !== t ? `<button class="more" data-a="cal-today">Zu heute</button>` : ''}</div><div class="card list">${dayAgenda(sel, true)}</div></section>
-    ${fold('d-essen', 'Essen', '', essen, { img: 'essen', sub: esc(cell(mon, di, 1).text) || 'Nichts geplant' })}
+      <div class="card list">${prios || `<p class="muted">Was sind deine drei wichtigsten Dinge heute?</p>`}</div></section>
+    <section><div class="sec"><h2>Diese Woche</h2></div><div class="card list week-card">${week}</div></section>
+    ${fold('d-essen', 'Essen heute', '', essen, { img: 'essen', sub: esc(cell(wkNow, dnow, 1).text) || 'Nichts geplant' })}
     <h2 class="dash-h">Meine Listen</h2>
-    ${listCard('d-vf', 'Victory Family', 'vf', a => a === 'vf', 'vf')}
-    ${listCard('d-church', 'Church', 'church', a => a === 'church' || area(a).parent === 'church', 'church')}
-    ${listCard('d-home', 'Home', 'homeroom', a => a === 'home', 'home')}
+    ${listCard('d-vf', 'Victory Family', 'vf', isVf, 'vf', sun, inWeekFor(isVf))}
+    ${listCard('d-church', 'Church', 'church', isCh, 'church', sun, inWeekFor(isCh))}
+    ${listCard('d-home', 'Home', 'homeroom', isHome, 'home', sun, inWeekFor(isHome))}
   </div>`;
 }
 
@@ -670,9 +673,9 @@ function leadSheet(id) {
 const SUBMIT = {
   'inline-add': (f, d) => {
     const inp = $('#ia-' + d.area); const q = parseQuick(inp.value); if (!q.title) return;
-    const base = { title: q.title, area: q.area || d.area, date: q.date || ui.calSel, repeat: q.repeat };
+    const base = { title: q.title, area: q.area || d.area, date: q.date || '', repeat: q.repeat };
     if (q.kind === 'event') S.events.push({ id: uid(), ...base, time: q.time }); else S.todos.push({ id: uid(), ...base, done: false, doneOn: {} });
-    commit(); toast(q.kind === 'event' ? 'Termin angelegt' : 'Aufgabe angelegt');
+    commit(); toast(q.kind === 'event' ? 'Termin angelegt' : q.date ? 'Gelegt auf ' + (q.date === isoOf() ? 'heute' : fmt(q.date, { weekday: 'long' })) : 'Zur Liste hinzugefügt');
     const n = $('#ia-' + d.area); if (n) n.focus();
   },
   'prio-save': (f, d) => { const date = d.date || isoOf(); const old = S.dayPrio[date] || []; S.dayPrio[date] = [0, 1, 2].map(i => $('#pr' + i).value.trim()); const dn = S.dayPrioDone[date]; if (dn) [0, 1, 2].forEach(i => { if (old[i] !== S.dayPrio[date][i]) { dn[i] = false; S.history = S.history.filter(h => !(h.k === 'prio' && h.date === date && h.i === i)); } }); closeSheet(); commit(); },

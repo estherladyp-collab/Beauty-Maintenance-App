@@ -440,3 +440,13 @@ h1, h2, h3 { font-weight: 500; letter-spacing: -.015em; }
 .rev-banner svg { width: 22px; height: 22px; color: var(--gold-text); flex: none; }
 .mk { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--gold-text); flex: none; }
 .mk.ok { background: var(--gold); box-shadow: none; }
+
+/* Diese Woche: nach Tag gruppiert, jede Sache nur einmal */
+.day-group { padding: 10px 0 4px; border-bottom: 1px solid var(--line); }
+.day-group:last-child { border-bottom: 0; }
+.day-group h3 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--gold-text); font-weight: 600; margin: 0 0 2px; }
+.day-group h3.late { color: var(--danger); }
+.day-group .row { border-bottom: 0; }
+.day-group .plain-row { border-bottom: 0; }
+.week-card > p { padding: 14px 0; margin: 0; }
+.tnote { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; }
