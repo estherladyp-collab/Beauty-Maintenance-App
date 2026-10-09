@@ -1146,3 +1146,21 @@ body.dragging{overflow-x:hidden;-webkit-user-select:none;user-select:none}
 .cw.fut .cwc{opacity:.5}
 .cstats{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:16px;font-size:13px;color:var(--muted)}
 .cstats b{color:var(--goldtxt);font-weight:600}
+
+/* daily chips + week review */
+.dchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.dchip{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--espresso);font:500 14px var(--body);cursor:pointer;transition:background .2s,transform .15s}
+.dchip i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--gold);color:transparent;flex:none}
+.dchip i svg{width:12px;height:12px}
+.dchip:active{transform:scale(.96)}
+.dchip.on{background:color-mix(in srgb,var(--gold) 16%,transparent);border-color:var(--gold)}
+.dchip.on i{background:var(--gold);color:#241713}
+.dnote{margin-top:10px;font-size:12px}
+.cwnav{display:inline-flex;align-items:center;gap:8px;font-size:13px}
+.cwnav button{font-size:20px;padding:0 6px}.cwnav button[disabled]{opacity:.3}
+.cmh,.cmr{display:grid;grid-template-columns:minmax(92px,1.6fr) repeat(7,1fr);align-items:center;gap:4px}
+.cmh small{text-align:center;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.cmh small.now{color:var(--goldtxt);font-weight:600}
+.cmr{margin-top:9px;font-size:13px}.cmr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmr i{justify-self:center;width:16px;height:16px;border-radius:50%;border:1px dashed var(--line)}
+.cmr i.got{background:var(--gold);border:1px solid var(--gold)}.cmr i.fut{opacity:.4}

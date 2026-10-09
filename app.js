@@ -331,7 +331,8 @@ async function boot(){
   applyTheme(); booted = true; render(); window.MUSE_BOOTED = true;
   if(restored) setToast('Picked up where you left off.');
 }
-document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); syncUp(); } });
+let lastDay = isoDay();
+document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); syncUp(); } else if(isoDay()!==lastDay){ lastDay = isoDay(); render(); } });
 window.addEventListener('pagehide', () => { persist(); flushDraft(); syncUp(); });
 
 let ui = {fold:{}, tab:'home', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', lcat:'all', lsub:'all', pcat:'all', psub:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
@@ -594,25 +595,49 @@ function ringIcon(r,c){ return `<span class="ringw ${c.over?'over':''} ${c.left=
 const doneToday = id => rl(id).includes(isoDay());
 const rl = id => (state.rlog && state.rlog[id]) || [];
 function rlogAdd(id, d){ state.rlog = state.rlog || {}; const a = state.rlog[id] = state.rlog[id] || []; if(!a.includes(d)){ a.push(d); a.sort(); } }
-function careWeek(mon){ const days = DAYS.map((n,i) => { const iso = addDays(mon,i); return {n, iso, k: ROUTINE.filter(r => rl(r[0]).includes(iso)).length}; }); return {days, total: days.reduce((a,d) => a+d.k, 0)}; }
-function careStreak(){ const all = ROUTINE.flatMap(r => rl(r[0])).sort(); if(!all.length) return {cur:0,best:0,maxWeek:0};
+const DAILY = [['d_skinam','Skincare AM'],['d_skinpm','Skincare PM'],['d_hair','Hair care'],['d_nails','Nails + cuticle oil'],['d_body','Body oil'],['d_scent','Scent']];
+const RSHORT = {nails:'Nail set',lashes:'Lashes',brows:'Brows',hairwash:'Hair wash',hairtrim:'Trim',face:'Face mask',body:'Body scrub',lips:'Lips',pedi:'Pedi',scent:'Scent pick'};
+const HABITS = () => DAILY.concat(ROUTINE.map(r => [r[0], RSHORT[r[0]]||r[1]]));
+const habName = id => (HABITS().find(h => h[0]===id)||[0,'Routine'])[1];
+function careWeek(mon){ const hs = HABITS(), days = DAYS.map((n,i) => { const iso = addDays(mon,i); return {n, iso, k: hs.filter(h => rl(h[0]).includes(iso)).length}; });
+  return {days, total: days.reduce((a,d) => a+d.k, 0), active: days.filter(d => d.k).length}; }
+function careStreak(){ const all = HABITS().flatMap(h => rl(h[0])).sort(); if(!all.length) return {cur:0,best:0,maxWeek:0};
   let mon = mondayOf(all[0]), now = mondayOf(isoDay()), run = 0, best = 0, maxWeek = 0;
-  while(mon <= now){ const t = careWeek(mon).total; maxWeek = Math.max(maxWeek,t); if(t>=3){ run++; best = Math.max(best,run); } else if(mon!==now) run = 0; mon = addDays(mon,7); }
+  while(mon <= now){ const t = careWeek(mon).active; maxWeek = Math.max(maxWeek,t); if(t>=3){ run++; best = Math.max(best,run); } else if(mon!==now) run = 0; mon = addDays(mon,7); }
   return {cur:run, best, maxWeek}; }
 const CBADGES = [
   ['cfirst','First check','Your first routine ticked',c=>c.total>=1],
-  ['cglow','Glow week','5 checks in one week',c=>c.maxWeek>=5],
-  ['c3','3 weeks running','3 weeks with 3+ checks',c=>c.best>=3],
+  ['cglow','Glow week','5 active days in one week',c=>c.maxWeek>=5],
+  ['c3','3 weeks running','3 weeks with 3+ active days',c=>c.best>=3],
   ['cskin','Skin habit','Face care 10 times',c=>c.face>=10]
 ];
+const CHKSVG = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function todayCard(){
+  const n = DAILY.filter(h => doneToday(h[0])).length;
+  return `<section class="tight"><div class="row between" style="flex-wrap:nowrap"><h2>Today</h2><span class="smsg">${n} of ${DAILY.length}${n===DAILY.length?' · all done':''}</span></div>
+    <div class="dchips">${DAILY.map(h => `<button class="dchip ${doneToday(h[0])?'on':''}" data-act="done" data-v="${h[0]}" aria-pressed="${doneToday(h[0])}"><i>${CHKSVG}</i>${esc(h[1])}</button>`).join('')}</div>
+    <p class="lede dnote">Starts fresh every morning. Tap what you did. Your week review is below.</p></section>`;
+}
+function weekReview(){
+  const off = Math.min(0, ui.cwk||0), mon = addDays(mondayOf(isoDay()), off*7), w = careWeek(mon), pv = careWeek(addDays(mon,-7)), td = isoDay();
+  const rows = HABITS().map(h => ({h, on: w.days.map(d => rl(h[0]).includes(d.iso)), n: w.days.filter(d => rl(h[0]).includes(d.iso)).length})).filter(x => x.n || DAILY.some(d => d[0]===x.h[0]));
+  const top = rows.filter(x => x.n).sort((a,b) => b.n-a.n)[0], diff = w.total - pv.total;
+  const f = iso => new Date(iso+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  const label = off===0 ? 'This week' : off===-1 ? 'Last week' : f(mon)+' to '+f(addDays(mon,6));
+  const msg = !w.total ? 'Nothing ticked this week. A fresh start is always one tap away.' : `${w.total} check${w.total===1?'':'s'} on ${w.active} of 7 days.${top && top.n>=2?` Most consistent: ${esc(top.h[1])} (${top.n}×).`:''}${pv.total?` ${diff>=0?'+':''}${diff} vs the week before.`:''}`;
+  return `<section class="tight"><div class="row between" style="flex-wrap:nowrap"><h2>Week review</h2><span class="cwnav"><button class="linkbtn" data-act="cwk" data-v="-1" aria-label="Previous week">‹</button><b>${esc(label)}</b><button class="linkbtn" data-act="cwk" data-v="1" aria-label="Next week" ${off===0?'disabled':''}>›</button></span></div>
+    <div class="weekcard cmat"><div class="cmh"><span></span>${w.days.map(d => `<small class="${d.iso===td?'now':''}">${d.n[0]}</small>`).join('')}</div>
+    ${rows.map(x => `<div class="cmr"><span>${esc(x.h[1])}</span>${x.on.map((o,i) => `<i class="${o?'got':''} ${w.days[i].iso>td?'fut':''}"></i>`).join('')}</div>`).join('')}
+    <p class="smsg" style="margin-top:14px">${msg}</p></div></section>`;
+}
 function careProgress(){
-  const td = isoDay(), w = careWeek(mondayOf(td)), st = careStreak(), ctx = {total: ROUTINE.reduce((a,r) => a+rl(r[0]).length, 0), maxWeek: st.maxWeek, best: st.best, face: rl('face').length};
+  const td = isoDay(), w = careWeek(mondayOf(td)), st = careStreak(), ctx = {total: HABITS().reduce((a,h) => a+rl(h[0]).length, 0), maxWeek: st.maxWeek, best: st.best, face: rl('face').length};
   const cells = w.days.map(d => `<div class="cw ${d.k?'got':''} ${d.iso===td?'now':''} ${d.iso>td?'fut':''}"><small>${d.n[0]}</small><span class="cwc">${d.k?d.k:''}</span></div>`).join('');
-  const msg = !w.total ? 'Tick something off today. Every check counts.' : w.total>=5 ? `Glow week. ${w.total} checks.` : `${w.total} check${w.total===1?'':'s'} this week${w.total<3?'. Three makes a streak week.':'.'}`;
-  const rows = ROUTINE.map(r => ({r, n: rl(r[0]).filter(d => daysSince(d)<=90).length})).filter(x => x.n);
+  const msg = !w.total ? 'Tick something off today. Every check counts.' : w.active>=5 ? `Glow week. ${w.active} active days.` : `${w.active} active day${w.active===1?'':'s'} this week${w.active<3?'. Three make a streak week.':'.'}`;
+  const rows = HABITS().map(h => ({h, n: rl(h[0]).filter(d => daysSince(d)<=90).length})).filter(x => x.n);
   return `<section class="tight"><div class="weekcard cprog"><div class="sweek">${cells}</div>
     <div class="row between" style="margin-top:14px;flex-wrap:nowrap"><span class="smsg">${msg}</span>${st.cur?`<span class="streak">${st.cur} week${st.cur===1?'':'s'} running</span>`:''}</div>
-    ${rows.length?`<div class="cstats">${rows.map(x => `<span><b>${x.n}×</b> ${esc(x.r[1].split(' ')[0].replace(/[+,]/g,''))}</span>`).join('')}</div><div class="eyebrow" style="margin-top:6px">Last 90 days</div>`:''}</div>
+    ${rows.length?`<div class="cstats">${rows.map(x => `<span><b>${x.n}×</b> ${esc(x.h[1])}</span>`).join('')}</div><div class="eyebrow" style="margin-top:6px">Last 90 days</div>`:''}</div>
     <div class="badges" style="margin-top:14px">${CBADGES.map(b => { const on = b[3](ctx); return `<div class="badge ${on?'on':''}"><span class="bi">${STAR}</span><b>${b[1]}</b><small>${b[2]}</small></div>`; }).join('')}</div></section>`;
 }
 function plannedFor(rid){ const t = TYPE_OF_ROUTINE[rid]; if(!t) return null; const td = isoDay();
@@ -1009,6 +1034,8 @@ function beauty(){
   const soon = rows.filter(x => x.c.soon).sort((a,b) => a.c.left-b.c.left), rest = rows.filter(x => !x.c.soon);
   const open = (k, label, inner) => `<div class="fold"><button class="foldh" data-act="fold" data-v="${k}" aria-expanded="${!!ui.fold[k]}"><span>${label}</span><i aria-hidden="true">${ui.fold[k]?'−':'+'}</i></button>${ui.fold[k]?`<div class="foldb">${inner}</div>`:''}</div>`;
   return `<header class="dayhead"><span class="eyebrow">Grooming</span><h1 class="page-title">Care</h1></header>
+  ${todayCard()}
+  ${weekReview()}
   ${careProgress()}
   ${soon.length?`<section class="tight"><h2>Coming due</h2><div class="list" style="margin-top:14px">${soon.map(x=>taskP(x.r)).join('')}</div></section>`:`<section class="tight"><div class="blank slim"><span>✦</span>Tap the check on anything below once. After that I keep count and tell you when it is due.</div></section>`}
   <section><h2>${soon.length?'Everything else':'Your routine'}</h2><div class="list" style="margin-top:14px">${rest.map(x=>taskP(x.r)).join('')}</div></section>
@@ -1406,11 +1433,13 @@ const actions = {
       const vv = vOf(it, look.vars && look.vars[slot]), w = state.wears[vv.id] = state.wears[vv.id] || {n:0,last:null};
       if(w.last!==isoDay()){ w.n++; w.last = isoDay(); } });
     logToday(); save(); setToast('Logged. Wear counts are updated.'); },
-  done(v){ const t = isoDay(); state.rlog = state.rlog || {};
-    if(rl(v).includes(t)){ state.rlog[v] = rl(v).filter(x => x!==t); const prev = state.rlog[v][state.rlog[v].length-1]; if(prev) state.routine[v] = prev; else delete state.routine[v]; save(); return; }
-    rlogAdd(v,t); state.routine[v] = t; logToday(); ui.celebrate = true; save();
-    const name = (ROUTINE.find(r => r[0]===v)||[0,'Routine'])[1], n = rl(v).length, mo = rl(v).filter(d => d.slice(0,7)===t.slice(0,7)).length, wk = careWeek(mondayOf(t)).total;
-    setToast(n===1 ? 'First one on record. This is where the habit starts.' : wk===5 ? 'Glow week. Five checks, you are showing up.' : wk===3 ? 'Three this week. That is a streak in the making.' : `${name}: done. That is ${mo}× this month.`); }
+  done(v){ const t = isoDay(), isR = ROUTINE.some(r => r[0]===v); state.rlog = state.rlog || {};
+    if(rl(v).includes(t)){ state.rlog[v] = rl(v).filter(x => x!==t); if(isR){ const prev = state.rlog[v][state.rlog[v].length-1]; if(prev) state.routine[v] = prev; else delete state.routine[v]; } save(); return; }
+    const before = careWeek(mondayOf(t)).active;
+    rlogAdd(v,t); if(isR){ state.routine[v] = t; } logToday(); ui.celebrate = true; save();
+    const w = careWeek(mondayOf(t)), n = rl(v).length, mo = rl(v).filter(d => d.slice(0,7)===t.slice(0,7)).length, all = DAILY.every(h => doneToday(h[0]));
+    setToast(n===1 ? 'First one on record. This is where the habit starts.' : all ? 'Everything ticked today. That is how habits get built.' : w.active>before && w.active===5 ? 'Glow week. Five days of showing up.' : w.active>before && w.active===3 ? 'Three days this week. That is a streak in the making.' : `${habName(v)}: done. That is ${mo}× this month.`); },
+  cwk(v){ ui.cwk = Math.min(0, (ui.cwk||0) + Number(v)); }
 };
 function syncAppt(){
   const a=ui.adraft, g=id=>document.getElementById(id);
