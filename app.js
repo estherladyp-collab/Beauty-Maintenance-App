@@ -210,7 +210,7 @@ function applyTheme(t){
   if(window.MUSE_SPLASH) window.MUSE_SPLASH({bg, ink, ac, dark});
 }
 /* ---------- cloud backup of plans/looks/status (private per person, survives cleared browser data) ---------- */
-const LIGHT = ['order','appts','looks','plan','routine','log','wears','theme','shops','snaps','products','series'];
+const LIGHT = ['order','appts','looks','plan','routine','rlog','log','wears','theme','shops','snaps','products','series'];
 let dbc = null, lastSent = {}, upTimer = null, cloudOk = false, assetsNs = null, dlNs = null;
 const withTimeout = (p,ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
 async function dbInit(){
@@ -242,9 +242,10 @@ async function syncUp(){
   for(const k of Object.keys(l)){ const str = JSON.stringify(l[k]); if(str===lastSent[k] || str.length>240000) continue;
     try { await dbc.doc('muse_'+k).set({j:str}); lastSent[k] = str; } catch(e){} }
 }
-let state = {items:[], looks:[], plan:{}, routine:{}, log:[], pics:[], appts:[], snaps:[], products:[], series:{}, order:{}};
+let state = {items:[], looks:[], plan:{}, routine:{}, rlog:{}, log:[], pics:[], appts:[], snaps:[], products:[], series:{}, order:{}};
 let booted = false;
 function init(){
+  state.rlog = state.rlog || {}; Object.keys(state.routine||{}).forEach(id => { if(state.routine[id] && !(state.rlog[id]||[]).length) state.rlog[id] = [state.routine[id]]; });
   state.appts = state.appts || []; state.snaps = state.snaps || []; state.products = state.products || []; state.series = state.series || {}; state.order = state.order || {};
   if(window.MUSE_PRODUCTS){ state.seedProd = state.seedProd || {}; if(state.seedProd1) state.seedProd['prod-bq-venus'] = true; window.MUSE_PRODUCTS.forEach(p => { if(state.seedProd[p.id]) return; state.seedProd[p.id] = true; if(!state.products.some(x => x.id===p.id)) state.products.push({...p}); }); }
   if(!state.seededItems && window.MUSE_SEED_ITEMS){ state.items.unshift(...JSON.parse(JSON.stringify(window.MUSE_SEED_ITEMS))); state.seededItems=true; }
@@ -590,6 +591,30 @@ function careState(r){ const last = state.routine[r[0]], left = last ? r[2]-days
   const pct = left===null ? 0 : Math.max(0, Math.min(1, (r[2]-left)/r[2]));
   return {left, txt, pct, over: left!==null && left<0, soon: left!==null && left<=7}; }
 function ringIcon(r,c){ return `<span class="ringw ${c.over?'over':''} ${c.left===null?'idle':''}" style="--p:${Math.round((c.over?1:c.pct)*100)}">${ticon(ROUTINE_ICON[r[0]]||'other', false)}</span>`; }
+const doneToday = id => rl(id).includes(isoDay());
+const rl = id => (state.rlog && state.rlog[id]) || [];
+function rlogAdd(id, d){ state.rlog = state.rlog || {}; const a = state.rlog[id] = state.rlog[id] || []; if(!a.includes(d)){ a.push(d); a.sort(); } }
+function careWeek(mon){ const days = DAYS.map((n,i) => { const iso = addDays(mon,i); return {n, iso, k: ROUTINE.filter(r => rl(r[0]).includes(iso)).length}; }); return {days, total: days.reduce((a,d) => a+d.k, 0)}; }
+function careStreak(){ const all = ROUTINE.flatMap(r => rl(r[0])).sort(); if(!all.length) return {cur:0,best:0,maxWeek:0};
+  let mon = mondayOf(all[0]), now = mondayOf(isoDay()), run = 0, best = 0, maxWeek = 0;
+  while(mon <= now){ const t = careWeek(mon).total; maxWeek = Math.max(maxWeek,t); if(t>=3){ run++; best = Math.max(best,run); } else if(mon!==now) run = 0; mon = addDays(mon,7); }
+  return {cur:run, best, maxWeek}; }
+const CBADGES = [
+  ['cfirst','First check','Your first routine ticked',c=>c.total>=1],
+  ['cglow','Glow week','5 checks in one week',c=>c.maxWeek>=5],
+  ['c3','3 weeks running','3 weeks with 3+ checks',c=>c.best>=3],
+  ['cskin','Skin habit','Face care 10 times',c=>c.face>=10]
+];
+function careProgress(){
+  const td = isoDay(), w = careWeek(mondayOf(td)), st = careStreak(), ctx = {total: ROUTINE.reduce((a,r) => a+rl(r[0]).length, 0), maxWeek: st.maxWeek, best: st.best, face: rl('face').length};
+  const cells = w.days.map(d => `<div class="cw ${d.k?'got':''} ${d.iso===td?'now':''} ${d.iso>td?'fut':''}"><small>${d.n[0]}</small><span class="cwc">${d.k?d.k:''}</span></div>`).join('');
+  const msg = !w.total ? 'Tick something off today. Every check counts.' : w.total>=5 ? `Glow week. ${w.total} checks.` : `${w.total} check${w.total===1?'':'s'} this week${w.total<3?'. Three makes a streak week.':'.'}`;
+  const rows = ROUTINE.map(r => ({r, n: rl(r[0]).filter(d => daysSince(d)<=90).length})).filter(x => x.n);
+  return `<section class="tight"><div class="weekcard cprog"><div class="sweek">${cells}</div>
+    <div class="row between" style="margin-top:14px;flex-wrap:nowrap"><span class="smsg">${msg}</span>${st.cur?`<span class="streak">${st.cur} week${st.cur===1?'':'s'} running</span>`:''}</div>
+    ${rows.length?`<div class="cstats">${rows.map(x => `<span><b>${x.n}×</b> ${esc(x.r[1].split(' ')[0].replace(/[+,]/g,''))}</span>`).join('')}</div><div class="eyebrow" style="margin-top:6px">Last 90 days</div>`:''}</div>
+    <div class="badges" style="margin-top:14px">${CBADGES.map(b => { const on = b[3](ctx); return `<div class="badge ${on?'on':''}"><span class="bi">${STAR}</span><b>${b[1]}</b><small>${b[2]}</small></div>`; }).join('')}</div></section>`;
+}
 function plannedFor(rid){ const t = TYPE_OF_ROUTINE[rid]; if(!t) return null; const td = isoDay();
   return (state.appts||[]).filter(a => a.type===t && !a.done && a.date>=td).sort((x,y) => (x.date+(x.time||'')).localeCompare(y.date+(y.time||'')))[0] || null; }
 function task(r){
@@ -597,7 +622,7 @@ function task(r){
   const stat = pl ? `<button class="plannedl" data-act="editappt" data-v="${pl.id}">Planned ${esc(fmtDate(pl.date))}${pl.time?' · '+esc(pl.time):''}</button>` : `<div class="status ${c.over?'over':''}">${c.txt}</div>`;
   return `<div class="task">${ringIcon(r,c)}
     <div class="grow"><h3>${esc(r[1])}</h3>${stat}${pl?`<div class="status ${c.over?'over':''}" style="font-size:11px">${c.txt}</div>`:''}</div>
-    <div class="row" style="gap:14px;flex-wrap:nowrap">${t?`<button class="linkbtn" data-act="${pl?'editappt':'newappt'}" data-v="${pl?pl.id:t}">${pl?'Change':'Plan'}</button>`:''}<button class="btn small ${c.soon?'':'ghost'}" data-act="done" data-v="${r[0]}">Done</button></div></div>`;
+    <div class="row" style="gap:14px;flex-wrap:nowrap">${t?`<button class="linkbtn" data-act="${pl?'editappt':'newappt'}" data-v="${pl?pl.id:t}">${pl?'Change':'Plan'}</button>`:''}<button class="chk ${doneToday(r[0])?'on':''}" data-act="done" data-v="${r[0]}" aria-pressed="${doneToday(r[0])}" aria-label="${doneToday(r[0])?'Undo ':'Mark '}${esc(r[1])} done today"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div></div>`;
 }
 function stayReady(){
   const rows = ROUTINE.map(r => ({r, c: careState(r)})).filter(x => x.c.soon).sort((a,b) => a.c.left-b.c.left).slice(0,3);
@@ -984,7 +1009,8 @@ function beauty(){
   const soon = rows.filter(x => x.c.soon).sort((a,b) => a.c.left-b.c.left), rest = rows.filter(x => !x.c.soon);
   const open = (k, label, inner) => `<div class="fold"><button class="foldh" data-act="fold" data-v="${k}" aria-expanded="${!!ui.fold[k]}"><span>${label}</span><i aria-hidden="true">${ui.fold[k]?'−':'+'}</i></button>${ui.fold[k]?`<div class="foldb">${inner}</div>`:''}</div>`;
   return `<header class="dayhead"><span class="eyebrow">Grooming</span><h1 class="page-title">Care</h1></header>
-  ${soon.length?`<section class="tight"><h2>Coming due</h2><div class="list" style="margin-top:14px">${soon.map(x=>taskP(x.r)).join('')}</div></section>`:`<section class="tight"><div class="blank slim"><span>✦</span>Tap Done on anything below once. After that I keep count and tell you when it is due.</div></section>`}
+  ${careProgress()}
+  ${soon.length?`<section class="tight"><h2>Coming due</h2><div class="list" style="margin-top:14px">${soon.map(x=>taskP(x.r)).join('')}</div></section>`:`<section class="tight"><div class="blank slim"><span>✦</span>Tap the check on anything below once. After that I keep count and tell you when it is due.</div></section>`}
   <section><h2>${soon.length?'Everything else':'Your routine'}</h2><div class="list" style="margin-top:14px">${rest.map(x=>taskP(x.r)).join('')}</div></section>
   <section class="folds">${open('prod','My products',`${(state.products||[]).length?`<div class="prodlist">${state.products.map(p=>`<div><span class="eyebrow">${esc(areaName(p.area))}</span>${prodCard(p)}</div>`).join('')}</div>`:'<p class="lede">Nothing saved yet.</p>'}<div style="margin-top:14px"><button class="btn small" data-act="addprod">＋ Add product</button></div>`)}
   ${open('guide','Style guide',`<div class="guide"><div><div class="eyebrow">Inverted triangle</div><h3>Balance the shoulders</h3><ul><li>V-necks, wraps and scoop necks open up the top.</li><li>Wide-leg trousers, A-line and pleated skirts add volume below.</li><li>Belt at the waist, keep detail on the bottom half.</li><li>Go easy on boat necks, puff sleeves and halters.</li></ul></div><div><div class="eyebrow">Warm undertone</div><h3>Gold, earth and glow</h3><ul><li>Gold jewelry over silver.</li><li>Bronze, terracotta and coral blush. Brown and rosewood lips.</li><li>Milky nude and sheer pink nails.</li></ul></div></div><div class="palette" style="margin-top:18px">${warm.map(c=>`<div class="pal"><i style="background:${c[1]}"></i>${c[0]}</div>`).join('')}</div>`)}
@@ -1274,7 +1300,7 @@ const actions = {
     if(every) extendSeries();
     hairFromPlan(); const p=a.date.split('-'); ui.cal={y:+p[0],m:+p[1]-1}; ui.calSel=a.date; save(); ui.sheet=null; ui.adraft=null; },
   doneappt(){ syncAppt(); const a=ui.adraft; a.done=!a.done;
-    if(a.done && ROUTINE_OF[a.type]){ state.routine[ROUTINE_OF[a.type]]=a.date; }
+    if(a.done && ROUTINE_OF[a.type]){ state.routine[ROUTINE_OF[a.type]]=a.date; rlogAdd(ROUTINE_OF[a.type], a.date); }
     if(a.done){ logToday(); }
     const i=state.appts.findIndex(x=>x.id===a.id); if(i>=0) state.appts[i]=a; else state.appts.push(a);
     save(); ui.sheet=null; ui.adraft=null; },
@@ -1354,7 +1380,7 @@ const actions = {
     const note = (document.getElementById('snnote')||{}).value || s.note || '';
     const before = new Set(earnedIds()); const sn = {id:uid(), date:day, note, apptIds:(s.sel||plans.map(a=>a.id)), photo:s.photo, at:new Date().toISOString(), fav:false};
     state.snaps.push(sn); const wk = mondayOf(day);
-    plans.filter(a=>sn.apptIds.includes(a.id)).forEach(a => { a.done = true; if(ROUTINE_OF[a.type]) state.routine[ROUTINE_OF[a.type]] = a.date; });
+    plans.filter(a=>sn.apptIds.includes(a.id)).forEach(a => { a.done = true; if(ROUTINE_OF[a.type]){ state.routine[ROUTINE_OF[a.type]] = a.date; rlogAdd(ROUTINE_OF[a.type], a.date); } });
     logToday(); save(); ui.sheet=null; ui.celebrate = true;
     const w = weekInfo(wk), gained = BADGES.filter(b => b[3](badgeCtx()) && !before.has(b[0]));
     setToast(gained.length ? 'New badge: '+gained[0][1] : w.complete ? 'Full week. Nice.' : `Snapped. ${w.snapped} of ${w.planned||w.snapped} this week.`);
@@ -1380,7 +1406,11 @@ const actions = {
       const vv = vOf(it, look.vars && look.vars[slot]), w = state.wears[vv.id] = state.wears[vv.id] || {n:0,last:null};
       if(w.last!==isoDay()){ w.n++; w.last = isoDay(); } });
     logToday(); save(); setToast('Logged. Wear counts are updated.'); },
-  done(v){ state.routine[v]=isoDay(); logToday(); save(); }
+  done(v){ const t = isoDay(); state.rlog = state.rlog || {};
+    if(rl(v).includes(t)){ state.rlog[v] = rl(v).filter(x => x!==t); const prev = state.rlog[v][state.rlog[v].length-1]; if(prev) state.routine[v] = prev; else delete state.routine[v]; save(); return; }
+    rlogAdd(v,t); state.routine[v] = t; logToday(); ui.celebrate = true; save();
+    const name = (ROUTINE.find(r => r[0]===v)||[0,'Routine'])[1], n = rl(v).length, mo = rl(v).filter(d => d.slice(0,7)===t.slice(0,7)).length, wk = careWeek(mondayOf(t)).total;
+    setToast(n===1 ? 'First one on record. This is where the habit starts.' : wk===5 ? 'Glow week. Five checks, you are showing up.' : wk===3 ? 'Three this week. That is a streak in the making.' : `${name}: done. That is ${mo}× this month.`); }
 };
 function syncAppt(){
   const a=ui.adraft, g=id=>document.getElementById(id);
@@ -1683,7 +1713,7 @@ document.addEventListener('change', async e => {
     const fr=new FileReader();
     fr.onload=()=>{ try{ const s=JSON.parse(fr.result); if(!Array.isArray(s.items)||!Array.isArray(s.looks)) throw 0;
       if(!confirm('Replace what is on this device with the backup?')) return;
-      state={plan:{},routine:{},log:[],pics:[],appts:[],...s}; state.items.forEach(migrate); save(); render(); setToast('Backup loaded.'); }
+      state={plan:{},routine:{},rlog:{},log:[],pics:[],appts:[],...s}; state.items.forEach(migrate); save(); render(); setToast('Backup loaded.'); }
       catch(err){ setToast('That file is not a Maintaining You backup.'); } };
     fr.readAsText(e.target.files[0]);
   }

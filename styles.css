@@ -1133,3 +1133,16 @@ body.dragging{overflow-x:hidden;-webkit-user-select:none;user-select:none}
 .pbg .gc-p img.cut,.pbg .lk-p img.cut,.pbg .slot img.cut{filter:drop-shadow(0 8px 10px rgba(70,44,26,.28))}
 .pbg .gc-p svg,.pbg .slot svg{filter:drop-shadow(0 6px 8px rgba(70,44,26,.25))}
 .pbg .slot.empty{border-color:rgba(70,44,26,.3);color:rgba(70,44,26,.6)}
+
+/* care progress + check */
+.chk{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--gold);background:transparent;color:transparent;cursor:pointer;flex:none;transition:background .2s,color .2s,transform .15s}
+.chk:active{transform:scale(.92)}
+.chk.on{background:var(--gold);color:#241713}
+.cw{display:grid;justify-items:center;gap:7px;color:var(--muted)}
+.cw small{font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.cw.now small{color:var(--goldtxt);font-weight:600}
+.cwc{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:1px dashed var(--line);font:600 13px var(--body);color:#241713}
+.cw.got .cwc{background:var(--gold);border:1px solid var(--gold)}
+.cw.fut .cwc{opacity:.5}
+.cstats{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:16px;font-size:13px;color:var(--muted)}
+.cstats b{color:var(--goldtxt);font-weight:600}
