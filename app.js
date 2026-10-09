@@ -335,7 +335,7 @@ let lastDay = isoDay();
 document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); syncUp(); } else if(isoDay()!==lastDay){ lastDay = isoDay(); render(); } });
 window.addEventListener('pagehide', () => { persist(); flushDraft(); syncUp(); });
 
-let ui = {fold:{}, tab:'home', cat:'all', draft:null, sheet:null, ptag:'all', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', lcat:'all', lsub:'all', pcat:'all', psub:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
+let ui = {fold:{}, tab:'home', cat:'all', draft:null, sheet:null, ptag:'fav', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', lcat:'all', lsub:'all', pcat:'all', psub:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
 let toast = '';
 
 /* ---------- garments ---------- */
@@ -964,10 +964,11 @@ function builder(){
 function isNew(p){ return p.at && daysSince(p.at)<=7; }
 function lastAdded(){ const d=(state.pics||[]).map(p=>p.at).filter(Boolean).sort().pop(); return d ? daysSince(d) : null; }
 function mood(){
+  if(ui.ptag==='all') ui.ptag = 'fav';
   const all = state.pics||[];
   const list = all.filter(p => inTag(p, ui.ptag)).filter(p => !(ui.ptag==='Hair' && ui.hc!=='all') || (p.hcat||'Natural')===ui.hc);
   return `<header class="dayhead"><span class="eyebrow">Hair, nails, makeup, outfits</span><div class="row between" style="flex-wrap:nowrap"><h1 class="page-title">Inspiration</h1><label class="roundbtn" aria-label="Upload pictures" title="Upload pictures">＋<input type="file" id="picup" accept="image/*" multiple hidden></label></div></header>
-  <div class="chips catrow" role="group" aria-label="Filter">${PCHIPS.map(c=>`<button class="chip" aria-pressed="${ui.ptag===c[0]}" data-act="ptag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
+  <div class="chips catrow" role="group" aria-label="Filter">${PCHIPS.filter(c=>c[0]!=='all').map(c=>`<button class="chip" aria-pressed="${ui.ptag===c[0]}" data-act="ptag" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>
   ${ui.ptag==='Hair'?`<div class="chips" style="margin-top:2px" role="group" aria-label="Hair type">${[['all','All hair'],...HCATS].map(c=>`<button class="chip s" aria-pressed="${ui.hc===c[0]}" data-act="hc" data-v="${c[0]}">${c[1]}</button>`).join('')}</div>`:''}
   <div id="dropzone" style="height:6px"></div>
   ${list.length?`<div class="pics" style="margin-top:12px">${(()=>{ const seen=new Set(); return list.map(p=>{ if(p.tag==='Hair'){ const k=(p.hcat||'Natural')+'|'+(p.style||'Other'); if(seen.has(k)) return ''; seen.add(k); const g=list.filter(x=>x.tag==='Hair'&&((x.hcat||'Natural')+'|'+(x.style||'Other'))===k); return `<button class="pic-tile" data-act="hairopen" data-v="${esc(k)}" aria-label="${esc(k.split('|')[1])}, ${esc(hcatName(k.split('|')[0]))}, ${g.length} variation${g.length===1?'':'s'}"><img src="${g[0].src}" alt=""><span class="tag">${esc(k.split('|')[1])}</span>${g.length>1?`<span class="count">${g.length}</span>`:''}${g.some(isNew)?'<span class="new">New</span>':''}</button>`; } return `<button class="pic-tile" data-act="picopen" data-v="${p.id}" aria-label="Open picture, ${esc(p.tag)}"><img src="${p.src}" alt=""><span class="tag">${esc(p.tag)}</span>${p.fav?'<span class="heart" aria-label="Favorite">♥</span>':''}${isNew(p)?'<span class="new">New</span>':''}</button>`; }).join(''); })()}</div>`
