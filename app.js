@@ -245,6 +245,11 @@ async function syncUp(){
 let state = {items:[], looks:[], plan:{}, routine:{}, rlog:{}, log:[], pics:[], appts:[], snaps:[], products:[], series:{}, order:{}};
 let booted = false;
 function init(){
+  if(!state.mergedDr){ const MG = {x26:['x24','Square-neck midi dress'], x27:['x25','Square-neck mini dress']};
+    Object.entries(MG).forEach(([from,[to,nm]]) => { const a = (state.items||[]).find(i => i.id===from), b = (state.items||[]).find(i => i.id===to); if(!a || !b) return;
+      a.variants.forEach(v => { if(!b.variants.some(x => x.id===v.id)) b.variants.push(v); }); b.name = nm; syncHave(b);
+      state.items = state.items.filter(i => i!==a); (state.looks||[]).forEach(l => { Object.keys(l.slots||{}).forEach(k => { if(l.slots[k]===from) l.slots[k] = to; }); }); });
+    state.mergedDr = true; }
   state.rlog = state.rlog || {}; Object.keys(state.routine||{}).forEach(id => { if(state.routine[id] && !(state.rlog[id]||[]).length) state.rlog[id] = [state.routine[id]]; });
   state.appts = state.appts || []; state.snaps = state.snaps || []; state.products = state.products || []; state.series = state.series || {}; state.order = state.order || {};
   if(window.MUSE_PRODUCTS){ state.seedProd = state.seedProd || {}; if(state.seedProd1) state.seedProd['prod-bq-venus'] = true; window.MUSE_PRODUCTS.forEach(p => { if(state.seedProd[p.id]) return; state.seedProd[p.id] = true; if(!state.products.some(x => x.id===p.id)) state.products.push({...p}); }); }
