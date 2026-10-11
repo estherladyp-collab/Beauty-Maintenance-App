@@ -467,3 +467,4 @@ h1, h2, h3 { font-weight: 500; letter-spacing: -.015em; }
 .rev-go svg { width: 18px; height: 18px; }
 .embedded .top-chips { display: none; }
 .embedded > .inline-add { margin-bottom: 0; }
+.i-kalender { background-image: url(img/kalender.jpg); }

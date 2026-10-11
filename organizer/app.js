@@ -24,7 +24,7 @@ const icon = n => `<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="t
 const CHECK = '<svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>';
 
 const ui = {
-  tab: 'today', calMode: 'week', calMonth: isoOf().slice(0, 7), calSel: isoOf(),
+  tab: 'menu', calMode: 'week', calMonth: isoOf().slice(0, 7), calSel: isoOf(),
   area: 'all', page: null, revWk: mondayIso(), home: null, open: new Set(['d-vf', 'd-church', 'd-home']), mealDay: null, cleanTouched: false, essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
   week: mondayIso(), budgetMonth: isoOf().slice(0, 7), showDone: false
 };
@@ -92,11 +92,11 @@ let animateNext = true;
 function render() {
   const y = window.scrollY;
   const ae = document.activeElement; if (ae && ae !== document.body && ae.blur && $('#app').contains(ae)) ae.blur();
-  const V = { today: vToday, menu: vMenu, more: vMore }[ui.tab];
-  const bg = $('#bg'); if (bg) bg.className = 't-' + (ui.tab === 'menu' ? (['vf', 'church', 'home'].includes(ui.page) ? 'todos' : ui.page === 'cal' ? 'cal' : 'home') : ui.tab);
+  const V = { menu: vMenu, more: vMore }[ui.tab];
+  const bg = $('#bg'); if (bg) bg.className = 't-' + (ui.tab === 'menu' ? (!ui.page || ui.page === 'top3' ? 'today' : ['vf', 'church', 'home'].includes(ui.page) ? 'todos' : ui.page === 'cal' ? 'cal' : 'home') : ui.tab);
   $('#app').innerHTML = `<main class="${animateNext ? 'page' : ''}">${V()}</main>`;
   animateNext = false;
-  const tabs = [['today', 'Start', 'today'], ['menu', 'Bereiche', 'grid'], ['more', 'Mehr', 'more']];
+  const tabs = [['menu', 'Start', 'grid'], ['more', 'Mehr', 'more']];
   const fab = (ui.tab === 'menu' && ['vf', 'church', 'home', 'cal'].includes(ui.page)) ? `<button class="fab" data-a="new" aria-label="Neu anlegen">${icon('plus')}</button>` : '';
   $('#chrome').innerHTML = fab + `<nav class="nav" aria-label="Hauptmenü"><div class="nav-in">${tabs.map(t => `<button class="tab" data-a="tab" data-t="${t[0]}" ${ui.tab === t[0] ? 'aria-current="page"' : ''}>${icon(t[2])}<span>${t[1]}</span></button>`).join('')}</div></nav>`;
   window.scrollTo(0, y);
@@ -159,28 +159,22 @@ function streak() {
 
 /* ---------- Heute ---------- */
 function roundIds() { const ids = []; SEED.round.forEach((r, i) => r[2].forEach((_, j) => ids.push(`r${i}-${j}`))); return ids; }
-function vToday() {
-  const t = isoOf(), h = new Date().getHours();
-  const greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
-  const wkNow = mondayOf(t), dnow = dowOf(t);
-  const revWk = dnow === 0 ? addDays(wkNow, -7) : wkNow, rv = reviewFor(revWk);
-  const pr = S.dayPrio[t] || [], pd = S.dayPrioDone[t] || [];
+function vTop3() {
+  const t = isoOf(), pr = S.dayPrio[t] || [], pd = S.dayPrioDone[t] || [];
   const prios = [0, 1, 2].filter(i => pr[i]).map(i => `<div class="prio-row ${pd[i] ? 'done' : ''}"><span class="pn">${i + 1}</span><span class="pt">${esc(pr[i])}</span>${chk(!!pd[i], `data-a="prio-tg" data-date="${t}" data-i="${i}" aria-label="${esc(pr[i])} erledigt"`)}</div>`).join('');
-  return `<div class="dash">
-    <header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
-    <section><div class="sec"><h2>Top 3 heute</h2><button class="more" data-a="prio-edit" data-date="${t}">${prios ? 'Ändern' : 'Festlegen'}</button></div>
-      <div class="card list">${prios || `<p class="muted">Was sind deine drei wichtigsten Dinge heute?</p>`}</div></section>
-    <section><div class="sec"><h2>Wochenrückblick</h2><span class="small muted">${fmtShort(rv.mon)} bis ${fmtShort(rv.sun)}</span></div>
-      <button class="card rev-card" data-a="goto-review" data-wk="${revWk}"><p class="rsum">${esc(reviewSentence(rv))}</p><span class="rev-go">Rückblick öffnen ${icon('right')}</span></button></section>
-  </div>`;
+  return `<p class="lead" style="margin-top:6px">${fmtLong(t)}</p>
+    <div class="card list">${prios || `<p class="muted">Was sind deine drei wichtigsten Dinge heute?</p>`}</div>
+    <button class="btn block" data-a="prio-edit" data-date="${t}">${prios ? 'Prioritäten ändern' : 'Prioritäten festlegen'}</button>`;
 }
 
 /* ---------- Bereiche: Auswahlmenü, jede Seite hat nur eine Aufgabe ---------- */
-const PAGES = { vf: ['Victory Family', 'vf'], church: ['Church', 'church'], home: ['Home', 'homeroom'], plan: ['Essensplan', 'essen'], cal: ['Kalender', 'today'], shop: ['Einkauf', 'shop'], clean: ['Reinigung', 'clean'], budget: ['Budget', 'budget'] };
+const PAGES = { top3: ['Top 3 heute', 'week'], rueck: ['Wochenrückblick', 'today'], vf: ['Victory Family', 'vf'], church: ['Church', 'church'], home: ['Home', 'homeroom'], plan: ['Essensplan', 'essen'], cal: ['Kalender', 'kalender'], shop: ['Einkauf', 'shop'], clean: ['Reinigung', 'clean'], budget: ['Budget', 'budget'] };
 const areaPred = { vf: a => a === 'vf', church: a => a === 'church' || area(a).parent === 'church', home: a => a === 'home' };
 function navSub(k) {
   const t = isoOf(), wk = mondayOf(t);
   if (areaPred[k]) { const n = S.todos.filter(x => areaPred[k](x.area) && !todoDone(x, nextOcc(x, t) || t)).length; return n ? `${n} offen` : 'Alles erledigt'; }
+  if (k === 'top3') { const pr = S.dayPrio[t] || [], pd = S.dayPrioDone[t] || [], n = [0, 1, 2].filter(i => pr[i]), left = n.find(i => !pd[i]); return !n.length ? 'Noch nichts festgelegt' : left === undefined ? 'Alle ' + n.length + ' geschafft' : `${n.filter(i => pd[i]).length} von ${n.length} erledigt, nächste: ${esc(pr[left])}`; }
+  if (k === 'rueck') { const r = reviewFor(dowOf(t) === 0 ? addDays(wk, -7) : wk); return `${r.done.length} erledigt${r.pTotal ? ', ' + r.pDone + ' von ' + r.pTotal + ' Prioritäten' : ''}`; }
   if (k === 'plan') return esc(cell(wk, dowOf(t), 1).text) || 'Heute nichts geplant';
   if (k === 'cal') { let n = 0; for (let d = t; d <= addDays(wk, 6); d = addDays(d, 1)) { const it = itemsOn(d); n += it.ev.length + it.td.filter(x => !todoDone(x, d)).length; } return n ? `${n} Termine und Fristen diese Woche` : 'Diese Woche ist frei'; }
   if (k === 'shop') { const n = S.shopping.filter(x => !x.done).length; return n ? `${n} auf der Liste` : 'Liste ist leer'; }
@@ -191,14 +185,17 @@ function navSub(k) {
 const navCard = k => `<button class="navcard photo i-${PAGES[k][1]}" data-a="page-go" data-v="${k}"><span class="ft"><b>${PAGES[k][0]}</b><span class="fs">${navSub(k)}</span></span><span class="chev">${icon('right')}</span></button>`;
 function vMenu() {
   if (!ui.page) {
-    return `<div class="dash"><header><h1 class="title">Bereiche</h1></header>
+    const t = isoOf(), h = new Date().getHours();
+    const greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
+    return `<div class="dash"><header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
+      <h2 class="dash-h">Überblick</h2>${['top3', 'rueck'].map(navCard).join('')}
       <h2 class="dash-h">Aufgaben</h2>${['vf', 'church', 'home'].map(navCard).join('')}
       <h2 class="dash-h">Planung</h2>${['cal', 'plan'].map(navCard).join('')}
       <h2 class="dash-h">Haushalt</h2>${['shop', 'clean', 'budget'].map(navCard).join('')}</div>`;
   }
-  const back = `<button class="back" data-a="page-go" data-v="">${icon('left')}Bereiche</button>`;
+  const back = `<button class="back" data-a="page-go" data-v="">${icon('left')}Start</button>`;
   if (ui.page === 'cal') return `<div class="stack"><header>${back}</header>${vCal()}</div>`;
-  const body = areaPred[ui.page] ? vTodos(true) : { plan: vEssen, shop: vShop, clean: vClean, budget: vBudget }[ui.page]();
+  const body = areaPred[ui.page] ? vTodos(true) : { top3: vTop3, rueck: vReview, plan: vEssen, shop: vShop, clean: vClean, budget: vBudget }[ui.page]();
   return `<div class="stack"><header>${back}<h1 class="title">${PAGES[ui.page][0]}</h1></header>${body}</div>`;
 }
 
@@ -294,7 +291,7 @@ function vCal() {
       <section style="margin-top:22px"><div class="sec"><h2>Essen</h2></div><div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div></section>`;
   }
   return `<div class="stack"><header style="display:flex;justify-content:space-between;align-items:end;gap:12px"><h1 class="title">Kalender</h1><button class="btn ghost small" data-a="cal-today">Heute</button></header>
-    <div class="seg" role="group" aria-label="Ansicht"><button data-a="cal-mode" data-m="month" aria-pressed="${ui.calMode === 'month'}">Monat</button><button data-a="cal-mode" data-m="week" aria-pressed="${ui.calMode === 'week'}">Woche</button><button data-a="cal-mode" data-m="agenda" aria-pressed="${ui.calMode === 'agenda'}">Agenda</button><button data-a="cal-mode" data-m="review" aria-pressed="${ui.calMode === 'review'}">Rückblick</button></div>
+    <div class="seg" role="group" aria-label="Ansicht"><button data-a="cal-mode" data-m="month" aria-pressed="${ui.calMode === 'month'}">Monat</button><button data-a="cal-mode" data-m="week" aria-pressed="${ui.calMode === 'week'}">Woche</button><button data-a="cal-mode" data-m="agenda" aria-pressed="${ui.calMode === 'agenda'}">Agenda</button></div>
     <div>${head}${body}</div></div>`;
 }
 
@@ -510,10 +507,10 @@ function toast(m) { const e = toastEl(); e.textContent = m; e.classList.add('on'
 function toggleIn(map, key, id) { const a = map[key] || (map[key] = []); const i = a.indexOf(id); i >= 0 ? a.splice(i, 1) : a.push(id); }
 
 const A = {
-  tab: d => { if (d.t === 'menu' && ui.tab === 'menu') ui.page = null; ui.tab = d.t; animateNext = true; commit(); window.scrollTo(0, 0); },
+  tab: d => { if (d.t === 'menu') ui.page = null; ui.tab = d.t; animateNext = true; commit(); window.scrollTo(0, 0); },
   seg: d => { ui[d.key] = d.v; commit(); },
   'new-in': d => itemSheet({ kind: 'todo', area: d.area === 'church' ? 'church' : d.area }),
-  'page-go': d => { ui.page = d.v || null; if (areaPred[ui.page]) ui.area = ui.page; commit(); window.scrollTo(0, 0); },
+  'page-go': d => { ui.page = d.v || null; if (areaPred[ui.page]) ui.area = ui.page; if (ui.page === 'rueck') ui.revWk = dowOf(isoOf()) === 0 ? addDays(mondayIso(), -7) : mondayIso(); commit(); window.scrollTo(0, 0); },
   'todos-for': d => { ui.area = d.area; ui.page = d.area; ui.tab = 'menu'; animateNext = true; commit(); window.scrollTo(0, 0); },
   'wk-prev': () => { ui.calSel = addDays(ui.calSel, -7); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
   'wk-next': () => { ui.calSel = addDays(ui.calSel, 7); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
@@ -527,7 +524,7 @@ const A = {
   'goto-todos': () => { ui.area = 'all'; ui.page = null; ui.tab = 'menu'; animateNext = true; commit(); window.scrollTo(0, 0); },
   'rev-prev': () => { ui.revWk = addDays(ui.revWk, -7); commit(); },
   'rev-next': () => { ui.revWk = addDays(ui.revWk, 7); commit(); },
-  'goto-review': d => { ui.revWk = d.wk; ui.calMode = 'review'; ui.tab = 'menu'; ui.page = 'cal'; animateNext = true; commit(); window.scrollTo(0, 0); },
+  'goto-review': d => { ui.revWk = d.wk; ui.tab = 'menu'; ui.page = 'rueck'; animateNext = true; commit(); window.scrollTo(0, 0); },
   'rev-copy': async () => { const txt = reviewText(reviewFor(ui.revWk)); try { await navigator.clipboard.writeText(txt); toast('Rückblick kopiert'); } catch (e) { toast('Kopieren hat nicht geklappt'); } },
   'hub-go': d => { ui.home = d.v || null; commit(); window.scrollTo(0, 0); },
   fold: (d, el) => { const f = el.closest('.fold'), on = !ui.open.has(d.k); on ? ui.open.add(d.k) : ui.open.delete(d.k); f.classList.toggle('open', on); el.setAttribute('aria-expanded', on); },
