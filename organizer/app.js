@@ -19,13 +19,13 @@ const num = v => parseFloat(String(v ?? '').replace(',', '.')) || 0;
 const monthKey = d => d.slice(0, 7);
 const quarterKey = d => d.slice(0, 4) + '-Q' + (Math.floor((+d.slice(5, 7) - 1) / 3) + 1);
 
-const IC = {"today": "<path d=\"M240,154H197.28a70.91,70.91,0,0,0,.72-10,70,70,0,0,0-140,0,70.91,70.91,0,0,0,.72,10H16a6,6,0,0,0,0,12H240a6,6,0,0,0,0-12ZM70,144a58,58,0,1,1,115.13,10H70.87A58.63,58.63,0,0,1,70,144Zm144,56a6,6,0,0,1-6,6H48a6,6,0,0,1,0-12H208A6,6,0,0,1,214,200ZM74.63,42.69a6,6,0,0,1,10.74-5.37l8,16a6,6,0,0,1-10.74,5.36Zm-56,50.63a6,6,0,0,1,8.05-2.69l16,8a6,6,0,0,1-5.36,10.74l-16-8A6,6,0,0,1,18.63,93.32Zm192,13.36a6,6,0,0,1,2.69-8.05l16-8a6,6,0,1,1,5.36,10.74l-16,8a6,6,0,0,1-8.05-2.69Zm-48-53.36,8-16a6,6,0,0,1,10.74,5.37l-8,16a6,6,0,1,1-10.74-5.36Z\"/>", "cal": "<path d=\"M208,34H182V24a6,6,0,0,0-12,0V34H86V24a6,6,0,0,0-12,0V34H48A14,14,0,0,0,34,48V208a14,14,0,0,0,14,14H208a14,14,0,0,0,14-14V48A14,14,0,0,0,208,34ZM48,46H74V56a6,6,0,0,0,12,0V46h84V56a6,6,0,0,0,12,0V46h26a2,2,0,0,1,2,2V82H46V48A2,2,0,0,1,48,46ZM208,210H48a2,2,0,0,1-2-2V94H210V208A2,2,0,0,1,208,210Z\"/>", "week": "<path d=\"M208,34H182V24a6,6,0,0,0-12,0V34H86V24a6,6,0,0,0-12,0V34H48A14,14,0,0,0,34,48V208a14,14,0,0,0,14,14H208a14,14,0,0,0,14-14V48A14,14,0,0,0,208,34ZM48,46H74V56a6,6,0,0,0,12,0V46h84V56a6,6,0,0,0,12,0V46h26a2,2,0,0,1,2,2V82H46V48A2,2,0,0,1,48,46ZM208,210H48a2,2,0,0,1-2-2V94H210V208A2,2,0,0,1,208,210Zm-70-78a10,10,0,1,1-10-10A10,10,0,0,1,138,132Zm44,0a10,10,0,1,1-10-10A10,10,0,0,1,182,132ZM94,172a10,10,0,1,1-10-10A10,10,0,0,1,94,172Zm44,0a10,10,0,1,1-10-10A10,10,0,0,1,138,172Zm44,0a10,10,0,1,1-10-10A10,10,0,0,1,182,172Z\"/>", "todo": "<path d=\"M222,128a6,6,0,0,1-6,6H128a6,6,0,0,1,0-12h88A6,6,0,0,1,222,128ZM128,70h88a6,6,0,0,0,0-12H128a6,6,0,0,0,0,12Zm88,116H128a6,6,0,0,0,0,12h88a6,6,0,0,0,0-12ZM83.76,43.76,56,71.51,44.24,59.76a6,6,0,0,0-8.48,8.48l16,16a6,6,0,0,0,8.48,0l32-32a6,6,0,0,0-8.48-8.48Zm0,64L56,135.51,44.24,123.76a6,6,0,1,0-8.48,8.48l16,16a6,6,0,0,0,8.48,0l32-32a6,6,0,0,0-8.48-8.48Zm0,64L56,199.51,44.24,187.76a6,6,0,0,0-8.48,8.48l16,16a6,6,0,0,0,8.48,0l32-32a6,6,0,0,0-8.48-8.48Z\"/>", "home": "<path d=\"M240,210H222V131.17l5.76,5.76a6,6,0,0,0,8.48-8.49L137.9,30.09a14,14,0,0,0-19.8,0L19.76,128.44a6,6,0,0,0,8.48,8.49L34,131.17V210H16a6,6,0,0,0,0,12H240a6,6,0,0,0,0-12ZM46,119.17l80.58-80.59a2,2,0,0,1,2.84,0L210,119.17V210H158V152a6,6,0,0,0-6-6H104a6,6,0,0,0-6,6v58H46ZM146,210H110V158h36Z\"/>", "more": "<path d=\"M40,86H74.6a30,30,0,0,0,58.8,0H216a6,6,0,0,0,0-12H133.4a30,30,0,0,0-58.8,0H40a6,6,0,0,0,0,12Zm64-24A18,18,0,1,1,86,80,18,18,0,0,1,104,62ZM216,170H197.4a30,30,0,0,0-58.8,0H40a6,6,0,0,0,0,12h98.6a30,30,0,0,0,58.8,0H216a6,6,0,0,0,0-12Zm-48,24a18,18,0,1,1,18-18A18,18,0,0,1,168,194Z\"/>", "dots": "<path d=\"M138,128a10,10,0,1,1-10-10A10,10,0,0,1,138,128ZM60,118a10,10,0,1,0,10,10A10,10,0,0,0,60,118Zm136,0a10,10,0,1,0,10,10A10,10,0,0,0,196,118Z\"/>", "plus": "<path d=\"M222,128a6,6,0,0,1-6,6H134v82a6,6,0,0,1-12,0V134H40a6,6,0,0,1,0-12h82V40a6,6,0,0,1,12,0v82h82A6,6,0,0,1,222,128Z\"/>", "left": "<path d=\"M164.24,203.76a6,6,0,1,1-8.48,8.48l-80-80a6,6,0,0,1,0-8.48l80-80a6,6,0,0,1,8.48,8.48L88.49,128Z\"/>", "right": "<path d=\"M180.24,132.24l-80,80a6,6,0,0,1-8.48-8.48L167.51,128,91.76,52.24a6,6,0,0,1,8.48-8.48l80,80A6,6,0,0,1,180.24,132.24Z\"/>", "down": "<path d=\"M212.24,100.24l-80,80a6,6,0,0,1-8.48,0l-80-80a6,6,0,0,1,8.48-8.48L128,167.51l75.76-75.75a6,6,0,0,1,8.48,8.48Z\"/>", "x": "<path d=\"M204.24,195.76a6,6,0,1,1-8.48,8.48L128,136.49,60.24,204.24a6,6,0,0,1-8.48-8.48L119.51,128,51.76,60.24a6,6,0,0,1,8.48-8.48L128,119.51l67.76-67.75a6,6,0,0,1,8.48,8.48L136.49,128Z\"/>", "flag": "<path d=\"M237.07,52.8A6,6,0,0,0,232,50H40a6,6,0,0,0-4.24,10.24L79.51,104,35.76,147.76A6,6,0,0,0,40,158H176.78l-30.2,63.42a6,6,0,0,0,10.84,5.16l80-168A6,6,0,0,0,237.07,52.8ZM182.5,146h-128l37.75-37.76a6,6,0,0,0,0-8.48L54.49,62h168Z\"/>", "food": "<path d=\"M74,88V40a6,6,0,0,1,12,0V88a6,6,0,0,1-12,0ZM214,40V224a6,6,0,0,1-12,0V174H152a6,6,0,0,1-6-6c0-4.41.68-108.25,59.64-133.51A6,6,0,0,1,214,40ZM202,50c-36.79,24.29-42.82,91.48-43.81,112H202ZM117.92,39a6,6,0,1,0-11.84,2L114,88.48a34,34,0,0,1-68,0L53.92,41a6,6,0,0,0-11.84-2l-8,48A6.61,6.61,0,0,0,34,88a46.06,46.06,0,0,0,40,45.6V224a6,6,0,0,0,12,0V133.6A46.06,46.06,0,0,0,126,88a6.61,6.61,0,0,0-.08-1Z\"/>", "cart": "<path d=\"M236.78,68.37A6,6,0,0,0,232,66H55.67L45.78,30.39A6,6,0,0,0,40,26H16a6,6,0,0,0,0,12H35.44L71,165.89A22.08,22.08,0,0,0,92.16,182H191a22.08,22.08,0,0,0,21.2-16.11l25.63-92.28A6,6,0,0,0,236.78,68.37Zm-36.2,94.31A10,10,0,0,1,191,170H92.16a10,10,0,0,1-9.63-7.32L59,78H224.11ZM102,216a14,14,0,1,1-14-14A14,14,0,0,1,102,216Zm104,0a14,14,0,1,1-14-14A14,14,0,0,1,206,216Z\"/>", "sparkle": "<path d=\"M196.89,130.94,144.4,111.6,125.06,59.11a13.92,13.92,0,0,0-26.12,0L79.6,111.6,27.11,130.94a13.92,13.92,0,0,0,0,26.12L79.6,176.4l19.34,52.49a13.92,13.92,0,0,0,26.12,0L144.4,176.4l52.49-19.34a13.92,13.92,0,0,0,0-26.12Zm-4.15,14.86-55.08,20.3a6,6,0,0,0-3.56,3.56l-20.3,55.08a1.92,1.92,0,0,1-3.6,0L89.9,169.66a6,6,0,0,0-3.56-3.56L31.26,145.8a1.92,1.92,0,0,1,0-3.6l55.08-20.3a6,6,0,0,0,3.56-3.56l20.3-55.08a1.92,1.92,0,0,1,3.6,0l20.3,55.08a6,6,0,0,0,3.56,3.56l55.08,20.3a1.92,1.92,0,0,1,0,3.6ZM146,40a6,6,0,0,1,6-6h18V16a6,6,0,0,1,12,0V34h18a6,6,0,0,1,0,12H182V64a6,6,0,0,1-12,0V46H152A6,6,0,0,1,146,40ZM246,88a6,6,0,0,1-6,6H230v10a6,6,0,0,1-12,0V94H208a6,6,0,0,1,0-12h10V72a6,6,0,0,1,12,0V82h10A6,6,0,0,1,246,88Z\"/>", "wallet": "<path d=\"M216,66H56a10,10,0,0,1,0-20H192a6,6,0,0,0,0-12H56A22,22,0,0,0,34,56V184a22,22,0,0,0,22,22H216a14,14,0,0,0,14-14V80A14,14,0,0,0,216,66Zm2,126a2,2,0,0,1-2,2H56a10,10,0,0,1-10-10V75.59A21.84,21.84,0,0,0,56,78H216a2,2,0,0,1,2,2Zm-28-60a10,10,0,1,1-10-10A10,10,0,0,1,190,132Z\"/>", "vf": "<path d=\"M106,112a6,6,0,0,1,6-6h32a6,6,0,0,1,0,12H112A6,6,0,0,1,106,112ZM230,72V200a14,14,0,0,1-14,14H40a14,14,0,0,1-14-14V72A14,14,0,0,1,40,58H82V48a22,22,0,0,1,22-22h48a22,22,0,0,1,22,22V58h42A14,14,0,0,1,230,72ZM94,58h68V48a10,10,0,0,0-10-10H104A10,10,0,0,0,94,48ZM38,72v42.79A186,186,0,0,0,128,138a185.91,185.91,0,0,0,90-23.22V72a2,2,0,0,0-2-2H40A2,2,0,0,0,38,72ZM218,200V128.37A198.12,198.12,0,0,1,128,150a198.05,198.05,0,0,1-90-21.62V200a2,2,0,0,0,2,2H216A2,2,0,0,0,218,200Z\"/>", "church": "<path d=\"M227.09,146.86,190,124.6V104a6,6,0,0,0-3-5.21L134,68.52V46h18a6,6,0,0,0,0-12H134V16a6,6,0,0,0-12,0V34H104a6,6,0,0,0,0,12h18V68.52L69,98.79A6,6,0,0,0,66,104v20.6L28.91,146.86A6,6,0,0,0,26,152v64a6,6,0,0,0,6,6h80a6,6,0,0,0,6-6V168a10,10,0,0,1,20,0v48a6,6,0,0,0,6,6h80a6,6,0,0,0,6-6V152A6,6,0,0,0,227.09,146.86ZM38,155.4l28-16.8V210H38Zm90-9.4a22,22,0,0,0-22,22v42H78V107.48l50-28.57,50,28.57V210H150V168A22,22,0,0,0,128,146Zm90,64H190V138.6l28,16.8Z\"/>", "homei": "<path d=\"M217.9,110.1l-80-80a14,14,0,0,0-19.8,0l-80,80A13.92,13.92,0,0,0,34,120v96a6,6,0,0,0,6,6h64a6,6,0,0,0,6-6V158h36v58a6,6,0,0,0,6,6h64a6,6,0,0,0,6-6V120A13.92,13.92,0,0,0,217.9,110.1ZM210,210H158V152a6,6,0,0,0-6-6H104a6,6,0,0,0-6,6v58H46V120a2,2,0,0,1,.58-1.42l80-80a2,2,0,0,1,2.84,0l80,80A2,2,0,0,1,210,120Z\"/>", "trash": "<path d=\"M216,50H174V40a22,22,0,0,0-22-22H104A22,22,0,0,0,82,40V50H40a6,6,0,0,0,0,12H50V208a14,14,0,0,0,14,14H192a14,14,0,0,0,14-14V62h10a6,6,0,0,0,0-12ZM94,40a10,10,0,0,1,10-10h48a10,10,0,0,1,10,10V50H94ZM194,208a2,2,0,0,1-2,2H64a2,2,0,0,1-2-2V62H194ZM110,104v64a6,6,0,0,1-12,0V104a6,6,0,0,1,12,0Zm48,0v64a6,6,0,0,1-12,0V104a6,6,0,0,1,12,0Z\"/>"};
+const IC = { grid: "<path d=\"M104,42H56A14,14,0,0,0,42,56v48a14,14,0,0,0,14,14h48a14,14,0,0,0,14-14V56A14,14,0,0,0,104,42Zm2,62a2,2,0,0,1-2,2H56a2,2,0,0,1-2-2V56a2,2,0,0,1,2-2h48a2,2,0,0,1,2,2Zm94-62H152a14,14,0,0,0-14,14v48a14,14,0,0,0,14,14h48a14,14,0,0,0,14-14V56A14,14,0,0,0,200,42Zm2,62a2,2,0,0,1-2,2H152a2,2,0,0,1-2-2V56a2,2,0,0,1,2-2h48a2,2,0,0,1,2,2Zm-98,34H56a14,14,0,0,0-14,14v48a14,14,0,0,0,14,14h48a14,14,0,0,0,14-14V152A14,14,0,0,0,104,138Zm2,62a2,2,0,0,1-2,2H56a2,2,0,0,1-2-2V152a2,2,0,0,1,2-2h48a2,2,0,0,1,2,2Zm94-62H152a14,14,0,0,0-14,14v48a14,14,0,0,0,14,14h48a14,14,0,0,0,14-14V152A14,14,0,0,0,200,138Zm2,62a2,2,0,0,1-2,2H152a2,2,0,0,1-2-2V152a2,2,0,0,1,2-2h48a2,2,0,0,1,2,2Z\"/>","today": "<path d=\"M240,154H197.28a70.91,70.91,0,0,0,.72-10,70,70,0,0,0-140,0,70.91,70.91,0,0,0,.72,10H16a6,6,0,0,0,0,12H240a6,6,0,0,0,0-12ZM70,144a58,58,0,1,1,115.13,10H70.87A58.63,58.63,0,0,1,70,144Zm144,56a6,6,0,0,1-6,6H48a6,6,0,0,1,0-12H208A6,6,0,0,1,214,200ZM74.63,42.69a6,6,0,0,1,10.74-5.37l8,16a6,6,0,0,1-10.74,5.36Zm-56,50.63a6,6,0,0,1,8.05-2.69l16,8a6,6,0,0,1-5.36,10.74l-16-8A6,6,0,0,1,18.63,93.32Zm192,13.36a6,6,0,0,1,2.69-8.05l16-8a6,6,0,1,1,5.36,10.74l-16,8a6,6,0,0,1-8.05-2.69Zm-48-53.36,8-16a6,6,0,0,1,10.74,5.37l-8,16a6,6,0,1,1-10.74-5.36Z\"/>", "cal": "<path d=\"M208,34H182V24a6,6,0,0,0-12,0V34H86V24a6,6,0,0,0-12,0V34H48A14,14,0,0,0,34,48V208a14,14,0,0,0,14,14H208a14,14,0,0,0,14-14V48A14,14,0,0,0,208,34ZM48,46H74V56a6,6,0,0,0,12,0V46h84V56a6,6,0,0,0,12,0V46h26a2,2,0,0,1,2,2V82H46V48A2,2,0,0,1,48,46ZM208,210H48a2,2,0,0,1-2-2V94H210V208A2,2,0,0,1,208,210Z\"/>", "week": "<path d=\"M208,34H182V24a6,6,0,0,0-12,0V34H86V24a6,6,0,0,0-12,0V34H48A14,14,0,0,0,34,48V208a14,14,0,0,0,14,14H208a14,14,0,0,0,14-14V48A14,14,0,0,0,208,34ZM48,46H74V56a6,6,0,0,0,12,0V46h84V56a6,6,0,0,0,12,0V46h26a2,2,0,0,1,2,2V82H46V48A2,2,0,0,1,48,46ZM208,210H48a2,2,0,0,1-2-2V94H210V208A2,2,0,0,1,208,210Zm-70-78a10,10,0,1,1-10-10A10,10,0,0,1,138,132Zm44,0a10,10,0,1,1-10-10A10,10,0,0,1,182,132ZM94,172a10,10,0,1,1-10-10A10,10,0,0,1,94,172Zm44,0a10,10,0,1,1-10-10A10,10,0,0,1,138,172Zm44,0a10,10,0,1,1-10-10A10,10,0,0,1,182,172Z\"/>", "todo": "<path d=\"M222,128a6,6,0,0,1-6,6H128a6,6,0,0,1,0-12h88A6,6,0,0,1,222,128ZM128,70h88a6,6,0,0,0,0-12H128a6,6,0,0,0,0,12Zm88,116H128a6,6,0,0,0,0,12h88a6,6,0,0,0,0-12ZM83.76,43.76,56,71.51,44.24,59.76a6,6,0,0,0-8.48,8.48l16,16a6,6,0,0,0,8.48,0l32-32a6,6,0,0,0-8.48-8.48Zm0,64L56,135.51,44.24,123.76a6,6,0,1,0-8.48,8.48l16,16a6,6,0,0,0,8.48,0l32-32a6,6,0,0,0-8.48-8.48Zm0,64L56,199.51,44.24,187.76a6,6,0,0,0-8.48,8.48l16,16a6,6,0,0,0,8.48,0l32-32a6,6,0,0,0-8.48-8.48Z\"/>", "home": "<path d=\"M240,210H222V131.17l5.76,5.76a6,6,0,0,0,8.48-8.49L137.9,30.09a14,14,0,0,0-19.8,0L19.76,128.44a6,6,0,0,0,8.48,8.49L34,131.17V210H16a6,6,0,0,0,0,12H240a6,6,0,0,0,0-12ZM46,119.17l80.58-80.59a2,2,0,0,1,2.84,0L210,119.17V210H158V152a6,6,0,0,0-6-6H104a6,6,0,0,0-6,6v58H46ZM146,210H110V158h36Z\"/>", "more": "<path d=\"M40,86H74.6a30,30,0,0,0,58.8,0H216a6,6,0,0,0,0-12H133.4a30,30,0,0,0-58.8,0H40a6,6,0,0,0,0,12Zm64-24A18,18,0,1,1,86,80,18,18,0,0,1,104,62ZM216,170H197.4a30,30,0,0,0-58.8,0H40a6,6,0,0,0,0,12h98.6a30,30,0,0,0,58.8,0H216a6,6,0,0,0,0-12Zm-48,24a18,18,0,1,1,18-18A18,18,0,0,1,168,194Z\"/>", "dots": "<path d=\"M138,128a10,10,0,1,1-10-10A10,10,0,0,1,138,128ZM60,118a10,10,0,1,0,10,10A10,10,0,0,0,60,118Zm136,0a10,10,0,1,0,10,10A10,10,0,0,0,196,118Z\"/>", "plus": "<path d=\"M222,128a6,6,0,0,1-6,6H134v82a6,6,0,0,1-12,0V134H40a6,6,0,0,1,0-12h82V40a6,6,0,0,1,12,0v82h82A6,6,0,0,1,222,128Z\"/>", "left": "<path d=\"M164.24,203.76a6,6,0,1,1-8.48,8.48l-80-80a6,6,0,0,1,0-8.48l80-80a6,6,0,0,1,8.48,8.48L88.49,128Z\"/>", "right": "<path d=\"M180.24,132.24l-80,80a6,6,0,0,1-8.48-8.48L167.51,128,91.76,52.24a6,6,0,0,1,8.48-8.48l80,80A6,6,0,0,1,180.24,132.24Z\"/>", "down": "<path d=\"M212.24,100.24l-80,80a6,6,0,0,1-8.48,0l-80-80a6,6,0,0,1,8.48-8.48L128,167.51l75.76-75.75a6,6,0,0,1,8.48,8.48Z\"/>", "x": "<path d=\"M204.24,195.76a6,6,0,1,1-8.48,8.48L128,136.49,60.24,204.24a6,6,0,0,1-8.48-8.48L119.51,128,51.76,60.24a6,6,0,0,1,8.48-8.48L128,119.51l67.76-67.75a6,6,0,0,1,8.48,8.48L136.49,128Z\"/>", "flag": "<path d=\"M237.07,52.8A6,6,0,0,0,232,50H40a6,6,0,0,0-4.24,10.24L79.51,104,35.76,147.76A6,6,0,0,0,40,158H176.78l-30.2,63.42a6,6,0,0,0,10.84,5.16l80-168A6,6,0,0,0,237.07,52.8ZM182.5,146h-128l37.75-37.76a6,6,0,0,0,0-8.48L54.49,62h168Z\"/>", "food": "<path d=\"M74,88V40a6,6,0,0,1,12,0V88a6,6,0,0,1-12,0ZM214,40V224a6,6,0,0,1-12,0V174H152a6,6,0,0,1-6-6c0-4.41.68-108.25,59.64-133.51A6,6,0,0,1,214,40ZM202,50c-36.79,24.29-42.82,91.48-43.81,112H202ZM117.92,39a6,6,0,1,0-11.84,2L114,88.48a34,34,0,0,1-68,0L53.92,41a6,6,0,0,0-11.84-2l-8,48A6.61,6.61,0,0,0,34,88a46.06,46.06,0,0,0,40,45.6V224a6,6,0,0,0,12,0V133.6A46.06,46.06,0,0,0,126,88a6.61,6.61,0,0,0-.08-1Z\"/>", "cart": "<path d=\"M236.78,68.37A6,6,0,0,0,232,66H55.67L45.78,30.39A6,6,0,0,0,40,26H16a6,6,0,0,0,0,12H35.44L71,165.89A22.08,22.08,0,0,0,92.16,182H191a22.08,22.08,0,0,0,21.2-16.11l25.63-92.28A6,6,0,0,0,236.78,68.37Zm-36.2,94.31A10,10,0,0,1,191,170H92.16a10,10,0,0,1-9.63-7.32L59,78H224.11ZM102,216a14,14,0,1,1-14-14A14,14,0,0,1,102,216Zm104,0a14,14,0,1,1-14-14A14,14,0,0,1,206,216Z\"/>", "sparkle": "<path d=\"M196.89,130.94,144.4,111.6,125.06,59.11a13.92,13.92,0,0,0-26.12,0L79.6,111.6,27.11,130.94a13.92,13.92,0,0,0,0,26.12L79.6,176.4l19.34,52.49a13.92,13.92,0,0,0,26.12,0L144.4,176.4l52.49-19.34a13.92,13.92,0,0,0,0-26.12Zm-4.15,14.86-55.08,20.3a6,6,0,0,0-3.56,3.56l-20.3,55.08a1.92,1.92,0,0,1-3.6,0L89.9,169.66a6,6,0,0,0-3.56-3.56L31.26,145.8a1.92,1.92,0,0,1,0-3.6l55.08-20.3a6,6,0,0,0,3.56-3.56l20.3-55.08a1.92,1.92,0,0,1,3.6,0l20.3,55.08a6,6,0,0,0,3.56,3.56l55.08,20.3a1.92,1.92,0,0,1,0,3.6ZM146,40a6,6,0,0,1,6-6h18V16a6,6,0,0,1,12,0V34h18a6,6,0,0,1,0,12H182V64a6,6,0,0,1-12,0V46H152A6,6,0,0,1,146,40ZM246,88a6,6,0,0,1-6,6H230v10a6,6,0,0,1-12,0V94H208a6,6,0,0,1,0-12h10V72a6,6,0,0,1,12,0V82h10A6,6,0,0,1,246,88Z\"/>", "wallet": "<path d=\"M216,66H56a10,10,0,0,1,0-20H192a6,6,0,0,0,0-12H56A22,22,0,0,0,34,56V184a22,22,0,0,0,22,22H216a14,14,0,0,0,14-14V80A14,14,0,0,0,216,66Zm2,126a2,2,0,0,1-2,2H56a10,10,0,0,1-10-10V75.59A21.84,21.84,0,0,0,56,78H216a2,2,0,0,1,2,2Zm-28-60a10,10,0,1,1-10-10A10,10,0,0,1,190,132Z\"/>", "vf": "<path d=\"M106,112a6,6,0,0,1,6-6h32a6,6,0,0,1,0,12H112A6,6,0,0,1,106,112ZM230,72V200a14,14,0,0,1-14,14H40a14,14,0,0,1-14-14V72A14,14,0,0,1,40,58H82V48a22,22,0,0,1,22-22h48a22,22,0,0,1,22,22V58h42A14,14,0,0,1,230,72ZM94,58h68V48a10,10,0,0,0-10-10H104A10,10,0,0,0,94,48ZM38,72v42.79A186,186,0,0,0,128,138a185.91,185.91,0,0,0,90-23.22V72a2,2,0,0,0-2-2H40A2,2,0,0,0,38,72ZM218,200V128.37A198.12,198.12,0,0,1,128,150a198.05,198.05,0,0,1-90-21.62V200a2,2,0,0,0,2,2H216A2,2,0,0,0,218,200Z\"/>", "church": "<path d=\"M227.09,146.86,190,124.6V104a6,6,0,0,0-3-5.21L134,68.52V46h18a6,6,0,0,0,0-12H134V16a6,6,0,0,0-12,0V34H104a6,6,0,0,0,0,12h18V68.52L69,98.79A6,6,0,0,0,66,104v20.6L28.91,146.86A6,6,0,0,0,26,152v64a6,6,0,0,0,6,6h80a6,6,0,0,0,6-6V168a10,10,0,0,1,20,0v48a6,6,0,0,0,6,6h80a6,6,0,0,0,6-6V152A6,6,0,0,0,227.09,146.86ZM38,155.4l28-16.8V210H38Zm90-9.4a22,22,0,0,0-22,22v42H78V107.48l50-28.57,50,28.57V210H150V168A22,22,0,0,0,128,146Zm90,64H190V138.6l28,16.8Z\"/>", "homei": "<path d=\"M217.9,110.1l-80-80a14,14,0,0,0-19.8,0l-80,80A13.92,13.92,0,0,0,34,120v96a6,6,0,0,0,6,6h64a6,6,0,0,0,6-6V158h36v58a6,6,0,0,0,6,6h64a6,6,0,0,0,6-6V120A13.92,13.92,0,0,0,217.9,110.1ZM210,210H158V152a6,6,0,0,0-6-6H104a6,6,0,0,0-6,6v58H46V120a2,2,0,0,1,.58-1.42l80-80a2,2,0,0,1,2.84,0l80,80A2,2,0,0,1,210,120Z\"/>", "trash": "<path d=\"M216,50H174V40a22,22,0,0,0-22-22H104A22,22,0,0,0,82,40V50H40a6,6,0,0,0,0,12H50V208a14,14,0,0,0,14,14H192a14,14,0,0,0,14-14V62h10a6,6,0,0,0,0-12ZM94,40a10,10,0,0,1,10-10h48a10,10,0,0,1,10,10V50H94ZM194,208a2,2,0,0,1-2,2H64a2,2,0,0,1-2-2V62H194ZM110,104v64a6,6,0,0,1-12,0V104a6,6,0,0,1,12,0Zm48,0v64a6,6,0,0,1-12,0V104a6,6,0,0,1,12,0Z\"/>"};
 const icon = n => `<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">${IC[n]}</svg>`;
 const CHECK = '<svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>';
 
 const ui = {
-  tab: 'today', calMode: 'month', calMonth: isoOf().slice(0, 7), calSel: isoOf(),
-  area: 'all', revWk: mondayIso(), home: null, open: new Set(['d-vf', 'd-church', 'd-home']), mealDay: null, cleanTouched: false, essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
+  tab: 'today', calMode: 'week', calMonth: isoOf().slice(0, 7), calSel: isoOf(),
+  area: 'all', page: null, revWk: mondayIso(), home: null, open: new Set(['d-vf', 'd-church', 'd-home']), mealDay: null, cleanTouched: false, essen: 'plan', shop: 'liste', clean: 'heute', deepV: null,
   week: mondayIso(), budgetMonth: isoOf().slice(0, 7), showDone: false
 };
 
@@ -92,12 +92,12 @@ let animateNext = true;
 function render() {
   const y = window.scrollY;
   const ae = document.activeElement; if (ae && ae !== document.body && ae.blur && $('#app').contains(ae)) ae.blur();
-  const V = { today: vToday, cal: vCal, todos: vTodos, home: vHome, more: vMore }[ui.tab];
-  const bg = $('#bg'); if (bg) bg.className = 't-' + ui.tab;
+  const V = { today: vToday, menu: vMenu, more: vMore }[ui.tab];
+  const bg = $('#bg'); if (bg) bg.className = 't-' + (ui.tab === 'menu' ? (['vf', 'church', 'home'].includes(ui.page) ? 'todos' : ui.page === 'cal' ? 'cal' : 'home') : ui.tab);
   $('#app').innerHTML = `<main class="${animateNext ? 'page' : ''}">${V()}</main>`;
   animateNext = false;
-  const tabs = [['today', 'Start', 'today'], ['cal', 'Kalender', 'week'], ['todos', 'To-dos', 'todo'], ['home', 'Haushalt', 'home'], ['more', 'Mehr', 'more']];
-  const fab = ['today', 'cal', 'todos'].includes(ui.tab) ? `<button class="fab" data-a="new" aria-label="Neu anlegen">${icon('plus')}</button>` : '';
+  const tabs = [['today', 'Start', 'today'], ['menu', 'Bereiche', 'grid'], ['more', 'Mehr', 'more']];
+  const fab = (ui.tab === 'menu' && ['vf', 'church', 'home', 'cal'].includes(ui.page)) ? `<button class="fab" data-a="new" aria-label="Neu anlegen">${icon('plus')}</button>` : '';
   $('#chrome').innerHTML = fab + `<nav class="nav" aria-label="Hauptmenü"><div class="nav-in">${tabs.map(t => `<button class="tab" data-a="tab" data-t="${t[0]}" ${ui.tab === t[0] ? 'aria-current="page"' : ''}>${icon(t[2])}<span>${t[1]}</span></button>`).join('')}</div></nav>`;
   window.scrollTo(0, y);
 }
@@ -159,51 +159,47 @@ function streak() {
 
 /* ---------- Heute ---------- */
 function roundIds() { const ids = []; SEED.round.forEach((r, i) => r[2].forEach((_, j) => ids.push(`r${i}-${j}`))); return ids; }
-function openFor(pred, sun) {
-  const t = isoOf();
-  return S.todos.filter(x => pred(x.area)).map(x => ({ x, d: nextOcc(x, t) })).filter(o => !todoDone(o.x, o.d || t) && !(o.d && o.d <= sun)).sort((p, q) => (p.d || '9').localeCompare(q.d || '9'));
-}
-function listCard(key, title, img, pred, areaId, sun, inWeek) {
-  const t = isoOf(), items = openFor(pred, sun), shown = items.slice(0, 6);
-  const sub = items.length ? `${items.length} offen${inWeek ? ', ' + inWeek + ' diese Woche' : ''}` : (inWeek ? `${inWeek} diese Woche` : 'Alles erledigt');
-  const form = `<form class="inline-add" data-a="inline-add" data-area="${areaId}"><input class="in" id="ia-${areaId}" type="text" placeholder="Neu, z. B. Hotel anrufen morgen" enterkeyhint="send" autocomplete="off" aria-label="Neue Aufgabe ${esc(title)}"><button class="btn" type="submit" aria-label="Hinzufügen">${icon('plus')}</button></form>`;
-  const body = form + (shown.length ? shown.map(o => todoRow(o.x, o.d || t, { showDate: true })).join('') : `<p class="muted" style="margin-top:10px">${inWeek ? 'Alles Weitere steht oben unter Diese Woche.' : 'Nichts offen.'}</p>`) +
-    ((items.length || inWeek) ? `<div class="card-actions"><button class="btn ghost small" data-a="todos-for" data-area="${areaId}">${items.length > 6 ? `Alle ${items.length} ansehen` : 'In To-dos öffnen'}</button></div>` : '');
-  return fold(key, title, '', body, { img, sub });
-}
 function vToday() {
   const t = isoOf(), h = new Date().getHours();
   const greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
-  const wkNow = mondayOf(t), sun = addDays(wkNow, 6), dnow = dowOf(t);
+  const wkNow = mondayOf(t), dnow = dowOf(t);
   const revWk = dnow === 0 ? addDays(wkNow, -7) : wkNow, rv = reviewFor(revWk);
-  const banner = (dnow >= 4 || dnow === 0) ? `<button class="card rev-banner" data-a="goto-review" data-wk="${revWk}"><span><b>Wochenrückblick</b><span class="muted">${rv.done.length} erledigt${rv.pTotal ? `, ${rv.pDone} von ${rv.pTotal} Prioritäten` : ''}</span></span>${icon('right')}</button>` : '';
   const pr = S.dayPrio[t] || [], pd = S.dayPrioDone[t] || [];
   const prios = [0, 1, 2].filter(i => pr[i]).map(i => `<div class="prio-row ${pd[i] ? 'done' : ''}"><span class="pn">${i + 1}</span><span class="pt">${esc(pr[i])}</span>${chk(!!pd[i], `data-a="prio-tg" data-date="${t}" data-i="${i}" aria-label="${esc(pr[i])} erledigt"`)}</div>`).join('');
-  /* Diese Woche: jede Aufgabe und jeder Termin steht genau einmal hier, nach Tag gruppiert */
-  const overdue = S.todos.filter(x => (x.repeat || 'none') === 'none' && !x.done && x.date && x.date < t);
-  const groups = [];
-  if (overdue.length) groups.push({ label: 'Überfällig', late: true, ev: [], td: overdue.map(x => ({ x, d: x.date })) });
-  for (let d = t; d <= sun; d = addDays(d, 1)) {
-    const it = itemsOn(d), td = it.td.filter(x => d === t || !todoDone(x, d)).map(x => ({ x, d }));
-    if (it.ev.length || td.length) groups.push({ label: d === t ? 'Heute' : d === addDays(t, 1) ? 'Morgen' : fmt(d, { weekday: 'long', day: 'numeric', month: 'short' }), ev: it.ev, td });
-  }
-  const inWeekFor = pred => groups.reduce((n, g) => n + g.td.filter(o => pred(o.x.area) && !todoDone(o.x, o.d)).length, 0);
-  const week = groups.length ? groups.map(g => `<div class="day-group"><h3 class="${g.late ? 'late' : ''}">${g.label}</h3>${g.ev.map(eventRow).join('')}${g.td.map(o => todoRow(o.x, o.d)).join('')}</div>`).join('') : '<p class="muted">Diese Woche ist nichts geplant.</p>';
-  const slot = (k, s) => { const c = cell(wkNow, dnow, s); return `<button class="slot p${c.pot < 0 ? 'x' : c.pot} ${c.text ? '' : 'empty-slot'}" data-a="edit-meal" data-wk="${wkNow}" data-i="${dnow}" data-s="${s}"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</button>`; };
-  const essen = `<div class="stack-s">${slot('Früh', 0)}${slot('Mittag', 1)}${slot('Abend', 2)}</div>`;
-  const isVf = a => a === 'vf', isCh = a => a === 'church' || area(a).parent === 'church', isHome = a => a === 'home';
   return `<div class="dash">
     <header class="top-row"><div><h1 class="title">${greet}, ${esc(S.settings.name)}</h1><p class="lead">${fmtLong(t)}</p></div><button class="themebtn" data-a="themes" aria-label="Farben wählen"><i></i></button></header>
-    ${banner}
     <section><div class="sec"><h2>Top 3 heute</h2><button class="more" data-a="prio-edit" data-date="${t}">${prios ? 'Ändern' : 'Festlegen'}</button></div>
       <div class="card list">${prios || `<p class="muted">Was sind deine drei wichtigsten Dinge heute?</p>`}</div></section>
-    <section><div class="sec"><h2>Diese Woche</h2></div><div class="card list week-card">${week}</div></section>
-    ${fold('d-essen', 'Essen heute', '', essen, { img: 'essen', sub: esc(cell(wkNow, dnow, 1).text) || 'Nichts geplant' })}
-    <h2 class="dash-h">Meine Listen</h2>
-    ${listCard('d-vf', 'Victory Family', 'vf', isVf, 'vf', sun, inWeekFor(isVf))}
-    ${listCard('d-church', 'Church', 'church', isCh, 'church', sun, inWeekFor(isCh))}
-    ${listCard('d-home', 'Home', 'homeroom', isHome, 'home', sun, inWeekFor(isHome))}
+    <section><div class="sec"><h2>Wochenrückblick</h2><span class="small muted">${fmtShort(rv.mon)} bis ${fmtShort(rv.sun)}</span></div>
+      <button class="card rev-card" data-a="goto-review" data-wk="${revWk}"><p class="rsum">${esc(reviewSentence(rv))}</p><span class="rev-go">Rückblick öffnen ${icon('right')}</span></button></section>
   </div>`;
+}
+
+/* ---------- Bereiche: Auswahlmenü, jede Seite hat nur eine Aufgabe ---------- */
+const PAGES = { vf: ['Victory Family', 'vf'], church: ['Church', 'church'], home: ['Home', 'homeroom'], plan: ['Essensplan', 'essen'], cal: ['Kalender', 'today'], shop: ['Einkauf', 'shop'], clean: ['Reinigung', 'clean'], budget: ['Budget', 'budget'] };
+const areaPred = { vf: a => a === 'vf', church: a => a === 'church' || area(a).parent === 'church', home: a => a === 'home' };
+function navSub(k) {
+  const t = isoOf(), wk = mondayOf(t);
+  if (areaPred[k]) { const n = S.todos.filter(x => areaPred[k](x.area) && !todoDone(x, nextOcc(x, t) || t)).length; return n ? `${n} offen` : 'Alles erledigt'; }
+  if (k === 'plan') return esc(cell(wk, dowOf(t), 1).text) || 'Heute nichts geplant';
+  if (k === 'cal') { let n = 0; for (let d = t; d <= addDays(wk, 6); d = addDays(d, 1)) { const it = itemsOn(d); n += it.ev.length + it.td.filter(x => !todoDone(x, d)).length; } return n ? `${n} Termine und Fristen diese Woche` : 'Diese Woche ist frei'; }
+  if (k === 'shop') { const n = S.shopping.filter(x => !x.done).length; return n ? `${n} auf der Liste` : 'Liste ist leer'; }
+  if (k === 'clean') { const log = (S.cleanLog[t] || []).length, f = SEED.focus[dowOf(t)]; return `${deepInfo(t) ? 'Deep Clean' : esc(f[0])}, Runde ${log} von ${roundIds().length}`; }
+  if (k === 'budget') { const mk = monthKey(t), b = S.budget[mk], bud = b ? num(b.budget) : 0, sp = S.purchases.filter(p => p.date.startsWith(mk)).reduce((s, p) => s + num(p.amount), 0); return bud ? `${eur(bud - sp)} übrig` : 'Noch kein Budget'; }
+  return '';
+}
+const navCard = k => `<button class="navcard photo i-${PAGES[k][1]}" data-a="page-go" data-v="${k}"><span class="ft"><b>${PAGES[k][0]}</b><span class="fs">${navSub(k)}</span></span><span class="chev">${icon('right')}</span></button>`;
+function vMenu() {
+  if (!ui.page) {
+    return `<div class="dash"><header><h1 class="title">Bereiche</h1></header>
+      <h2 class="dash-h">Aufgaben</h2>${['vf', 'church', 'home'].map(navCard).join('')}
+      <h2 class="dash-h">Planung</h2>${['cal', 'plan'].map(navCard).join('')}
+      <h2 class="dash-h">Haushalt</h2>${['shop', 'clean', 'budget'].map(navCard).join('')}</div>`;
+  }
+  const back = `<button class="back" data-a="page-go" data-v="">${icon('left')}Bereiche</button>`;
+  if (ui.page === 'cal') return `<div class="stack"><header>${back}</header>${vCal()}</div>`;
+  const body = areaPred[ui.page] ? vTodos(true) : { plan: vEssen, shop: vShop, clean: vClean, budget: vBudget }[ui.page]();
+  return `<div class="stack"><header>${back}<h1 class="title">${PAGES[ui.page][0]}</h1></header>${body}</div>`;
 }
 
 /* ---------- Wochenrückblick ---------- */
@@ -309,7 +305,7 @@ function inFilter(a) {
   return a === ui.area;
 }
 const LEAD_ST = ['neu', 'gespräch', 'angebot', 'gewonnen', 'verloren'];
-function vTodos() {
+function vTodos(emb) {
   const t = isoOf(), top = S.areas.filter(a => !a.parent);
   const list = S.todos.filter(x => inFilter(x.area));
   const open = list.filter(x => !todoDone(x, nextOcc(x, t)) || (x.repeat && x.repeat !== 'none'));
@@ -322,8 +318,8 @@ function vTodos() {
   const group = (title, arr, showDate) => arr.length ? `<section><h3 class="group-title">${title}</h3><div class="card list">${arr.map(o => todoRow(o.x || o, o.d || t, { showDate })).join('')}</div></section>` : '';
   const none = !late.length && !today.length && !soon.length && !nodate.length;
   const leads = ui.area === 'vf' ? `<section>${sec('Leads', `<button class="more" data-a="lead-new">Neuer Lead</button>`)}${S.leads.length ? S.leads.map(l => `<div class="plain-row"><button class="grow" data-a="lead-edit" data-id="${l.id}"><b style="font-weight:600">${esc(l.name)}</b>${l.note ? `<span class="small muted" style="display:block">${esc(l.note)}</span>` : ''}</button><button class="status" data-s="${l.status}" data-a="lead-next" data-id="${l.id}" aria-label="Status ${l.status}, ändern">${l.status[0].toUpperCase() + l.status.slice(1)}</button></div>`).join('') : '<div class="empty"><b>Noch keine Leads.</b>Trag ein, wen du als Nächstes anrufst.</div>'}</section>` : '';
-  return `<div class="stack"><header><h1 class="title">To-dos</h1></header>
-    <div class="stack-s"><div class="chips" role="group" aria-label="Bereich"><button class="chip" data-a="area" data-id="all" aria-pressed="${ui.area === 'all'}">Alle</button>${top.map(a => `<button class="chip" data-a="area" data-id="${a.id}" aria-pressed="${ui.area === a.id}"><i class="dot" style="--c:${a.color}"></i>${esc(a.name)}</button>`).join('')}</div>
+  return `<div class="stack ${emb ? 'embedded' : ''}">${emb ? `<form class="inline-add" data-a="inline-add" data-area="${ui.area}"><input class="in" id="ia-${ui.area}" type="text" placeholder="Neue Aufgabe, z. B. Hotel anrufen morgen" enterkeyhint="send" autocomplete="off" aria-label="Neue Aufgabe"><button class="btn" type="submit" aria-label="Hinzufügen">${icon('plus')}</button></form>` : '<header><h1 class="title">To-dos</h1></header>'}
+    <div class="stack-s"><div class="chips top-chips" role="group" aria-label="Bereich"><button class="chip" data-a="area" data-id="all" aria-pressed="${ui.area === 'all'}">Alle</button>${top.map(a => `<button class="chip" data-a="area" data-id="${a.id}" aria-pressed="${ui.area === a.id}"><i class="dot" style="--c:${a.color}"></i>${esc(a.name)}</button>`).join('')}</div>
     ${ui.area === 'church' || area(ui.area).parent === 'church' && ui.area !== 'home' ? `<div class="chips" role="group" aria-label="Church Gruppe"><button class="chip" data-a="area" data-id="church" aria-pressed="${ui.area === 'church'}">Alle Church</button>${S.areas.filter(a => a.parent === 'church').map(a => `<button class="chip" data-a="area" data-id="${a.id}" aria-pressed="${ui.area === a.id}"><i class="dot" style="--c:${a.color}"></i>${esc(a.name)}</button>`).join('')}</div>` : ''}</div>
     ${none && !(ui.area === 'vf' && S.leads.length) ? `<div class="empty"><b>Alles erledigt.</b>Nichts offen in diesem Bereich.</div>` : ''}
     ${group('Überfällig', late, true)}${group('Heute', today, false)}${group('Demnächst', soon, true)}${group('Ohne Datum', nodate, false)}
@@ -344,30 +340,6 @@ function fold(k, title, meta, body, o = {}) {
   return `<div class="${cls}"><button class="foldh ${card && img ? 'photo i-' + img : ''}" data-a="fold" data-k="${k}" aria-expanded="${open}">${head}<span class="chev">${icon('down')}</span></button><div class="foldw"><div class="foldb"><div class="foldi">${body}</div></div></div></div>`;
 }
 const slotLine = (k, c) => `<div class="slot p${c.pot < 0 ? 'x' : c.pot}" style="cursor:default"><span class="k">${k}</span><span class="v">${esc(c.text) || 'Nichts geplant'}</span>${c.koch ? '<span class="kt">Kochtag</span>' : ''}</div>`;
-const HUBT = { essen: 'Essen', shop: 'Einkauf', clean: 'Reinigung', budget: 'Budget' };
-function vHome() {
-  if (!ui.home) return vHub();
-  const body = { essen: vEssen, shop: vShop, clean: vClean, budget: vBudget }[ui.home]();
-  return `<div class="stack"><header><button class="back" data-a="hub-go" data-v="">${icon('left')}Haushalt</button><h1 class="title">${HUBT[ui.home]}</h1></header>${body}</div>`;
-}
-function vHub() {
-  const t = isoOf(), wk = mondayOf(t), di = dowOf(t), lunch = cell(wk, di, 1).text;
-  const open = S.shopping.filter(x => !x.done), miss = Object.values(S.pantry).filter(v => v === 'fehlt').length;
-  const log = S.cleanLog[t] || [], all = roundIds().length, f = SEED.focus[di], deep = deepInfo(t);
-  const mk = monthKey(t), b = S.budget[mk], bud = b ? num(b.budget) : 0, spent = S.purchases.filter(p => p.date.startsWith(mk)).reduce((a, p) => a + num(p.amount), 0);
-  const go = (v, label) => `<button class="btn ghost block" style="margin-top:14px" data-a="hub-go" data-v="${v}">${label}</button>`;
-  const essen = `<div class="stack-s">${slotLine('Früh', cell(wk, di, 0))}${slotLine('Mittag', cell(wk, di, 1))}${slotLine('Abend', cell(wk, di, 2))}</div>${go('essen', 'Kochplan öffnen')}`;
-  const shop = `${open.length ? open.slice(0, 6).map(i => `<div class="row">${chk(false, `data-a="shop-tg" data-id="${i.id}" aria-label="${esc(i.text)}"`)}<span class="row-body"><span class="t">${esc(i.text)}</span></span></div>`).join('') + (open.length > 6 ? `<p class="small muted" style="margin-top:6px">und ${open.length - 6} weitere</p>` : '') : '<p class="muted">Die Liste ist leer.</p>'}${go('shop', 'Einkaufsliste öffnen')}`;
-  const clean = `<p class="muted small">${deep ? esc(SEED.deep[deep].title) : esc(f[1])}</p><div class="bar" style="margin:12px 0"><i style="--p:${log.length / all}"></i></div><div class="pills">${SEED.round.map((r, i) => `<span class="pill">${r[0]} ${r[2].filter((_, j) => log.includes(`r${i}-${j}`)).length}/${r[2].length}</span>`).join('')}</div>${go('clean', 'Runde öffnen')}`;
-  const budget = bud ? `<div class="bigfig"><span class="muted small">Übrig</span><div class="v ${bud - spent < 0 ? 'neg' : ''}">${eur(bud - spent)}</div><div class="bar"><i style="--p:${Math.min(1, spent / bud)}"></i></div><span class="small muted">${eur(spent)} von ${eur(bud)} ausgegeben</span></div>${go('budget', 'Budget öffnen')}` : `<p class="muted">Noch kein Budget. ${spent ? eur(spent) + ' ausgegeben.' : ''}</p>${go('budget', 'Budget öffnen')}`;
-  return `<div class="dash"><header><h1 class="title">Haushalt</h1></header>
-    ${fold('h-essen', 'Essen', '', essen, { icon: 'food', sub: lunch ? 'Heute Mittag: ' + esc(lunch) : 'Heute nichts geplant' })}
-    ${fold('h-shop', 'Einkauf', '', shop, { icon: 'cart', sub: open.length ? `${open.length} auf der Liste${miss ? ', ' + miss + ' im Vorrat fehlen' : ''}` : 'Liste ist leer' })}
-    ${fold('h-clean', 'Reinigung', '', clean, { icon: 'sparkle', sub: `${esc(deep ? 'Deep Clean' : f[0])}, Runde ${log.length} von ${all}` })}
-    ${fold('h-budget', 'Budget', '', budget, { icon: 'wallet', sub: bud ? `${eur(bud - spent)} übrig im ${fmt(mk + '-01', { month: 'long' })}` : 'Noch kein Budget' })}
-  </div>`;
-}
-
 function vEssen() {
   const t = isoOf(), sub = seg('essen', [['plan', 'Kochplan'], ['gerichte', 'Gerichte']]);
   if (ui.essen === 'gerichte') {
@@ -538,11 +510,11 @@ function toast(m) { const e = toastEl(); e.textContent = m; e.classList.add('on'
 function toggleIn(map, key, id) { const a = map[key] || (map[key] = []); const i = a.indexOf(id); i >= 0 ? a.splice(i, 1) : a.push(id); }
 
 const A = {
-  tab: d => { if (d.t === 'home' && ui.tab === 'home') ui.home = null; ui.tab = d.t; animateNext = true; commit(); window.scrollTo(0, 0); },
-  goto: d => { ui.tab = d.t; if (d.sub) ui.home = d.sub; animateNext = true; commit(); window.scrollTo(0, 0); },
+  tab: d => { if (d.t === 'menu' && ui.tab === 'menu') ui.page = null; ui.tab = d.t; animateNext = true; commit(); window.scrollTo(0, 0); },
   seg: d => { ui[d.key] = d.v; commit(); },
   'new-in': d => itemSheet({ kind: 'todo', area: d.area === 'church' ? 'church' : d.area }),
-  'todos-for': d => { ui.area = d.area; ui.tab = 'todos'; animateNext = true; commit(); window.scrollTo(0, 0); },
+  'page-go': d => { ui.page = d.v || null; if (areaPred[ui.page]) ui.area = ui.page; commit(); window.scrollTo(0, 0); },
+  'todos-for': d => { ui.area = d.area; ui.page = d.area; ui.tab = 'menu'; animateNext = true; commit(); window.scrollTo(0, 0); },
   'wk-prev': () => { ui.calSel = addDays(ui.calSel, -7); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
   'wk-next': () => { ui.calSel = addDays(ui.calSel, 7); ui.calMonth = ui.calSel.slice(0, 7); commit(); },
   'prio-tg': d => {
@@ -552,10 +524,10 @@ const A = {
     if (arr[+d.i]) S.history.push({ k: 'prio', title, date: d.date, i: +d.i });
     commit();
   },
-  'goto-todos': () => { ui.area = 'all'; ui.tab = 'todos'; animateNext = true; commit(); window.scrollTo(0, 0); },
+  'goto-todos': () => { ui.area = 'all'; ui.page = null; ui.tab = 'menu'; animateNext = true; commit(); window.scrollTo(0, 0); },
   'rev-prev': () => { ui.revWk = addDays(ui.revWk, -7); commit(); },
   'rev-next': () => { ui.revWk = addDays(ui.revWk, 7); commit(); },
-  'goto-review': d => { ui.revWk = d.wk; ui.calMode = 'review'; ui.tab = 'cal'; animateNext = true; commit(); window.scrollTo(0, 0); },
+  'goto-review': d => { ui.revWk = d.wk; ui.calMode = 'review'; ui.tab = 'menu'; ui.page = 'cal'; animateNext = true; commit(); window.scrollTo(0, 0); },
   'rev-copy': async () => { const txt = reviewText(reviewFor(ui.revWk)); try { await navigator.clipboard.writeText(txt); toast('Rückblick kopiert'); } catch (e) { toast('Kopieren hat nicht geklappt'); } },
   'hub-go': d => { ui.home = d.v || null; commit(); window.scrollTo(0, 0); },
   fold: (d, el) => { const f = el.closest('.fold'), on = !ui.open.has(d.k); on ? ui.open.add(d.k) : ui.open.delete(d.k); f.classList.toggle('open', on); el.setAttribute('aria-expanded', on); },
@@ -563,7 +535,7 @@ const A = {
   area: d => { ui.area = d.id; commit(); },
   'toggle-done': () => { ui.showDone = !ui.showDone; commit(); },
   'clear-done': () => { S.todos = S.todos.filter(t => !((t.repeat || 'none') === 'none' && t.done)); commit(); },
-  new: d => itemSheet({ kind: ui.tab === 'cal' || d.d ? 'event' : 'todo', date: d.d || (ui.tab === 'cal' ? ui.calSel : ''), area: undefined }),
+  new: d => itemSheet({ kind: ui.page === 'cal' || d.d ? 'event' : 'todo', date: d.d || (ui.page === 'cal' ? ui.calSel : ''), area: areaPred[ui.page] ? ui.area : undefined }),
   edit: d => itemSheet({ kind: d.k, id: d.id }),
   'sheet-kind': d => itemSheet({ kind: d.k, title: $('#f-title')?.value, date: $('#f-date')?.value, area: $('#f-area')?.value }),
   'tg-todo': d => {
