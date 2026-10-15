@@ -444,8 +444,8 @@ const LAUNCH = [
 ];
 function launchBody(){
   const h = new Date().getHours(), hi = h<12 ? 'Good morning' : h<18 ? 'Good afternoon' : 'Good evening';
-  return `<div class="launch"><header class="lhead"><span class="eyebrow">${hi}</span><h1 class="page-title">What do you want to do?</h1></header>
-  <div class="lgrid">${LAUNCH.map((x,i)=>`<button class="lcard" style="--i:${i}" data-act="tab" data-v="${x[0]}"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${x[3]}</svg><b>${x[1]}</b><small>${x[2]}</small></button>`).join('')}</div></div>`;
+  return `<header class="dayhead"><span class="eyebrow">${hi}</span><h1 class="page-title">What shall we do?</h1></header>
+  <div class="lgrid">${LAUNCH.map((x,i)=>`<button class="lcard" style="--i:${i}" data-act="tab" data-v="${x[0]}"><svg class="li" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${x[3]}</svg><span class="lt"><b>${x[1]}</b><small>${x[2]}</small></span><svg class="la" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>`).join('')}</div>`;
 }
 function view(){
   const body = ui.draft ? builder() : seg(ui.tab) + {home:launchBody,cal:home,calendar:home,today,wardrobe,closet,looks,snaps,mood,beauty}[ui.tab]();
