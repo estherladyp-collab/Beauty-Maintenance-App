@@ -319,7 +319,7 @@ async function flushDraft(){
 function saveDraftSoon(){ clearTimeout(draftTimer); draftTimer = setTimeout(flushDraft, 400); }
 function restoreDraft(d){
   if(!d) return false;
-  ui.tab = (d.tab==='today'||d.tab==='calendar') ? 'home' : (d.tab || ui.tab); ui.draft = d.draft || null; ui.btab = d.btab || 'outfit'; ui.omode = d.omode || 'split';
+  ui.tab = (d.tab==='today'||d.tab==='calendar') ? 'cal' : (d.tab || ui.tab); ui.draft = d.draft || null; ui.btab = d.btab || 'outfit'; ui.omode = d.omode || 'split';
   ui.assignDay = d.assignDay ?? null; ui.adraft = d.adraft || null; ui.sheet = d.sheet || null;
   if(ui.sheet && ui.sheet.type==='appt' && !ui.adraft) ui.sheet = null;
   if(d.calSel) ui.calSel = d.calSel; if(d.cal) ui.cal = d.cal;
@@ -342,7 +342,7 @@ let lastDay = isoDay();
 document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden'){ persist(); flushDraft(); syncUp(); } else if(isoDay()!==lastDay){ lastDay = isoDay(); render(); } });
 window.addEventListener('pagehide', () => { persist(); flushDraft(); syncUp(); });
 
-let ui = {launch:true, fold:{}, tab:'home', cat:'all', draft:null, sheet:null, ptag:'fav', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', lcat:'all', lsub:'all', pcat:'all', psub:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
+let ui = {fold:{}, tab:'home', cat:'all', draft:null, sheet:null, ptag:'fav', occ:'all', selMode:false, sel:[], hsel:{}, stage:'all', acc:{}, hc:'all', lcat:'all', lsub:'all', pcat:'all', psub:'all', bg:'all', lightbox:null, vsel:{}, sty:'all', cal:{y:new Date().getFullYear(),m:new Date().getMonth()}, calSel:isoDay(), adraft:null, btab:'outfit', omode:'split', tsrc:'ward', cfil:'all', assignDay:null};
 let toast = '';
 
 /* ---------- garments ---------- */
@@ -427,7 +427,7 @@ function lookNotes(look){
 /* ---------- views ---------- */
 const HOME_SVG = '<path d="M4 11.2 12 4l8 7.2V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/>';
 const NAV = [
-  ['home','Home',['home','calendar'],HOME_SVG],
+  ['home','Home',['home','cal'],HOME_SVG],
   ['care','Care',['beauty','mood'],'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 16.5v3M17 18h3"/>'],
   ['looks','Looks',['looks','snaps'],'<path d="M12 7.5a2.3 2.3 0 1 0-2.3-2.3M12 7.5V10l8 5.2a1 1 0 0 1-.6 1.8H4.6a1 1 0 0 1-.6-1.8L12 10"/>'],
   ['wardrobe','Wardrobe',['wardrobe','closet'],'<path d="M8.5 4L3 7l2 4 3-1.5V20h8v-10.5l3 1.5 2-4-5.5-3a3.5 3.5 0 0 1-7 0z"/>']
@@ -438,24 +438,19 @@ function seg(tab){ const g = NAV.find(n => n[2].includes(tab)); const subs = g &
 
 const LAUNCH = [
   ['looks','Outfit plan','Build and plan your looks','<path d="M12 7.5a2.3 2.3 0 1 0-2.3-2.3M12 7.5V10l8 5.2a1 1 0 0 1-.6 1.8H4.6a1 1 0 0 1-.6-1.8L12 10"/>'],
-  ['home','Beauty calendar','Appointments and what is due','<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>'],
-  ['beauty','Care routine','Check off your daily habits','<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>'],
-  ['kits','Toolkits','Lash kit and nail kit checklists','<path d="M5 6.5l1.6 1.6L9.5 5M5 12.5l1.6 1.6 2.9-3.1M5 18.5l1.6 1.6 2.9-3.1M13 7h6M13 13h6M13 19h6"/>'],
-  ['wardrobe','Wardrobe','Your closet and wishlist','<path d="M8.5 4L3 7l2 4 3-1.5V20h8v-10.5l3 1.5 2-4-5.5-3a3.5 3.5 0 0 1-7 0z"/>'],
-  ['mood','Inspiration','Hair, nails and style ideas','<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>']
+  ['cal','Beauty calendar','Appointments and what is due','<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>'],
+  ['mood','Inspiration','Hair, nails and style ideas','<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'],
+  ['beauty','Care routine','Daily habits and your kits','<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>']
 ];
-function launcher(){
+function launchBody(){
   const h = new Date().getHours(), hi = h<12 ? 'Good morning' : h<18 ? 'Good afternoon' : 'Good evening';
-  return `<div class="brand brand-fixed" aria-hidden="true"><img class="medal d" src="${(window.MUSE_LOGO||{}).medal||''}" alt=""><img class="medal g" src="${(window.MUSE_LOGO||{}).gold||''}" alt="">Maintaining You</div>
-  <main class="shell launch"><header class="lhead"><span class="eyebrow">${hi}</span><h1 class="page-title">What do you want to do?</h1></header>
-  <div class="lgrid">${LAUNCH.map((x,i)=>`<button class="lcard" style="--i:${i}" data-act="launch" data-v="${x[0]}"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${x[3]}</svg><b>${x[1]}</b><small>${x[2]}</small></button>`).join('')}</div>
-  <button class="linkbtn lskip" data-act="launch" data-v="home">Skip to my home</button></main>`;
+  return `<div class="launch"><header class="lhead"><span class="eyebrow">${hi}</span><h1 class="page-title">What do you want to do?</h1></header>
+  <div class="lgrid">${LAUNCH.map((x,i)=>`<button class="lcard" style="--i:${i}" data-act="tab" data-v="${x[0]}"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${x[3]}</svg><b>${x[1]}</b><small>${x[2]}</small></button>`).join('')}</div></div>`;
 }
 function view(){
-  if(ui.launch && !ui.draft && !ui.sheet) return launcher();
-  const body = ui.draft ? builder() : seg(ui.tab) + {home,calendar:home,today,wardrobe,closet,looks,snaps,mood,beauty}[ui.tab]();
+  const body = ui.draft ? builder() : seg(ui.tab) + {home:launchBody,cal:home,calendar:home,today,wardrobe,closet,looks,snaps,mood,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true"><img class="medal d" src="${(window.MUSE_LOGO||{}).medal||''}" alt=""><img class="medal g" src="${(window.MUSE_LOGO||{}).gold||''}" alt="">Maintaining You</div>
-  <main class="shell ${ui.enter?'enter':''}"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="menubtn" data-act="menu" aria-label="What do you want to do?"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><circle cx="6" cy="6" r="1.8"/><circle cx="12" cy="6" r="1.8"/><circle cx="18" cy="6" r="1.8"/><circle cx="6" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="18" cy="12" r="1.8"/><circle cx="6" cy="18" r="1.8"/><circle cx="12" cy="18" r="1.8"/><circle cx="18" cy="18" r="1.8"/></svg></button><button class="avatar" data-act="profile" aria-label="Your photo">${(state.profile&&state.profile.photo)?`<img src="${state.profile.photo}" alt="">`:'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg>'}</button><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
+  <main class="shell ${ui.enter?'enter':''}"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="avatar" data-act="profile" aria-label="Your photo">${(state.profile&&state.profile.photo)?`<img src="${state.profile.photo}" alt="">`:'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg>'}</button><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${NAV.map(g=>`<button data-act="tab" data-v="${(ui.last&&ui.last[g[0]])||g[2][0]}" ${g[2].includes(ui.tab)&&!ui.draft?'aria-current="page"':''}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${g[3]}</svg><span>${g[1]}</span></button>`).join('')}</div></nav>
   ${true ? '' : `<label class="fab" title="Add pictures" aria-label="Add pictures"><span aria-hidden="true">＋</span><input type="file" id="picfab" accept="image/*" multiple hidden></label>`}${ui.sheet ? sheet() : ''}${ui.lightbox?`<div class="lightbox" data-act="lbclose" role="dialog" aria-label="Photo"><img src="${ui.lightbox}" alt=""></div>`:''}${toast?`<div role="status" class="note warn" style="position:fixed;left:16px;right:16px;bottom:80px;z-index:50;max-width:420px;margin:auto">${esc(toast)}</div>`:''}`;
 }
@@ -1216,7 +1211,7 @@ function setToast(t){ toast=t; render(); setTimeout(()=>{toast='';render();},220
 function logToday(){ const t=isoDay(); if(!state.log.includes(t)) state.log.push(t); }
 
 const actions = {
-  tab(v){ if(v==='calendar'||v==='today') v='home'; ui.fromAppt=false; ui.arrange=false; ui.enter=true; ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
+  tab(v){ if(v==='calendar'||v==='today') v='cal'; ui.fromAppt=false; ui.arrange=false; ui.enter=true; ui.tab=v; const g=NAV.find(n=>n[2].includes(v)); if(g && g[0]!=='home'){ ui.last=ui.last||{}; ui.last[g[0]]=v; } ui.draft=null; ui.assignDay=null; window.scrollTo(0,0); },
   cat(v){ ui.cat=v; ui.sty='all'; ui.occ='all'; ui.bg='all'; },
   bg(v){ ui.bg=v; ui.sty='all'; },
   sty(v){ ui.sty=v; },
@@ -1279,7 +1274,7 @@ const actions = {
     if(!d.name.trim()) d.name=ui.assignDay!==null ? DAYFULL[ui.assignDay]+' look' : 'Look '+(state.looks.length+1);
     if(d.id && state.looks.some(l=>l.id===d.id)){ const i=state.looks.findIndex(l=>l.id===d.id); state.looks[i]=d; } else { const sig=x=>JSON.stringify([x.slots,x.vars||{}]), twin=state.looks.find(l=>sig(l)===sig(d)); if(twin){ d.id=twin.id; state.looks[state.looks.indexOf(twin)]=Object.assign({},twin,d,{forDay:twin.forDay!==undefined?twin.forDay:d.forDay}); } else { d.id=uid(); state.looks.push(d); } }
     if(fa){ const a=ui.adraft; a.lookId=d.id; if(a.title===defTitle('outfit')||!String(a.title||'').trim()||/^Outfit: /.test(a.title)) a.title='Outfit: '+d.name; ui.sheet={type:'appt'}; ui.fromAppt=false; }
-    else if(ui.assignDay!==null){ state.plan[ui.assignDay]=d.id; ui.tab='home'; } else ui.tab='looks';
+    else if(ui.assignDay!==null){ state.plan[ui.assignDay]=d.id; ui.tab='cal'; } else ui.tab='looks';
     ui.assignDay=null; save(); ui.draft=null; ui.hstyle=null; if(!fa) window.scrollTo(0,0); },
   assign(v){ const day=+v, cur=state.looks.find(l=>l.id===state.plan[day]);
     actions.newlook(); ui.assignDay=day;
@@ -1332,7 +1327,7 @@ const actions = {
   togglepic(v){ const d=ui.draft; d.pics=d.pics||[]; const i=d.pics.indexOf(v); if(i>=0) d.pics.splice(i,1); else d.pics.push(v); },
   calprev(){ const c=ui.cal; c.m--; if(c.m<0){c.m=11;c.y--;} },
   calnext(){ const c=ui.cal; c.m++; if(c.m>11){c.m=0;c.y++;} },
-  calsel(v){ ui.calSel=v; ui.arrange=false; if(ui.tab==='home'||ui.tab==='calendar') ui.fold.hday=true; },
+  calsel(v){ ui.calSel=v; ui.arrange=false; if(ui.tab==='cal'||ui.tab==='calendar') ui.fold.hday=true; },
   newappt(v,el){ const t=v||'hair'; ui.adraft={id:uid(),type:t,title:defTitle(t,'salon'),where:'salon',date:(el&&el.currentTarget&&el.currentTarget.dataset.today)?isoDay():(ui.calSel||isoDay()),time:'',notes:'',prep:prepFor(t,'salon'),pics:[],edited:false,done:false};
     ui.sheet={type:'appt',isNew:true}; },
   editappt(v){ ui.adraft=JSON.parse(JSON.stringify(state.appts.find(a=>a.id===v))); ui.sheet={type:'appt'}; },
@@ -1428,7 +1423,7 @@ const actions = {
   delprod(){ state.products = state.products.filter(p=>p.id!==ui.pdraft.id); save(); ui.sheet=null; ui.pdraft=null; },
 
   opensnap(v){ ui.sheet = {type:'snap', date: v||isoDay(), photo:null, sel:null, note:''}; },
-  newapptday(v){ ui.calSel = v; ui.tab='home'; ui.fold.hday=true; },
+  newapptday(v){ ui.calSel = v; ui.tab='cal'; ui.fold.hday=true; },
   snapplan(v){ const s=ui.sheet, day=s.date, plans=state.appts.filter(a=>a.date===day&&LOOK_TYPES.includes(a.type)); const cur = s.sel || plans.map(a=>a.id); s.sel = cur.includes(v) ? cur.filter(x=>x!==v) : [...cur, v]; },
   viewsnap(v){ ui.sheet = {type:'snapview', id:v}; },
   favsnap(v){ const sn=state.snaps.find(x=>x.id===v), m=mondayOf(sn.date), on=!sn.fav; state.snaps.forEach(x => { if(mondayOf(x.date)===m) x.fav=false; }); sn.fav=on; save(); },
@@ -1446,8 +1441,6 @@ const actions = {
     setToast(gained.length ? 'New badge: '+gained[0][1] : w.complete ? 'Full week. Nice.' : `Snapped. ${w.snapped} of ${w.planned||w.snapped} this week.`);
     if(assetsNs){ fetch(sn.photo).then(r=>r.blob()).then(b=>assetsNs.upload(b)).then(r=>{ sn.aid = r.id; save(); }).catch(()=>{}); } },
 
-  menu(){ ui.launch = true; window.scrollTo(0,0); },
-  launch(v){ ui.launch = false; ui.enter = true; if(v==='kits'){ ui.tab='beauty'; ui.fold.kit_lash = true; ui.fold.kit_nail = true; window.scrollTo(0,0); setTimeout(() => { const e = document.querySelector('[data-v="kit_lash"]'); if(e) e.scrollIntoView({behavior:'smooth',block:'start'}); }, 60); return; } actions.tab(v); },
   fold(v){ ui.fold[v]=!ui.fold[v]; },
   kit(v){ state.kit = state.kit || {}; if(state.kit[v]) delete state.kit[v]; else state.kit[v] = true; save(); },
   wtools(){ ui.wtools=!ui.wtools; },
