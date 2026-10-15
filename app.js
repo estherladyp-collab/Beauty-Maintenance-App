@@ -427,7 +427,7 @@ function lookNotes(look){
 /* ---------- views ---------- */
 const HOME_SVG = '<path d="M4 11.2 12 4l8 7.2V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/>';
 const NAV = [
-  ['home','Home',['home','cal'],HOME_SVG],
+  ['home','Home',['home'],HOME_SVG],
   ['care','Care',['beauty','mood'],'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 16.5v3M17 18h3"/>'],
   ['looks','Looks',['looks','snaps'],'<path d="M12 7.5a2.3 2.3 0 1 0-2.3-2.3M12 7.5V10l8 5.2a1 1 0 0 1-.6 1.8H4.6a1 1 0 0 1-.6-1.8L12 10"/>'],
   ['wardrobe','Wardrobe',['wardrobe','closet'],'<path d="M8.5 4L3 7l2 4 3-1.5V20h8v-10.5l3 1.5 2-4-5.5-3a3.5 3.5 0 0 1-7 0z"/>']
@@ -448,7 +448,7 @@ function launchBody(){
   <div class="lgrid">${LAUNCH.map((x,i)=>`<button class="lcard" style="--i:${i}" data-act="tab" data-v="${x[0]}"><svg class="li" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${x[3]}</svg><span class="lt"><b>${x[1]}</b><small>${x[2]}</small></span><svg class="la" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>`).join('')}</div>`;
 }
 function view(){
-  const body = ui.draft ? builder() : seg(ui.tab) + {home:launchBody,cal:home,calendar:home,today,wardrobe,closet,looks,snaps,mood,beauty}[ui.tab]();
+  const body = ui.draft ? builder() : (ui.tab==='cal'?'<button class="backhome" data-act="tab" data-v="home">‹ Home</button>':'') + seg(ui.tab) + {home:launchBody,cal:home,calendar:home,today,wardrobe,closet,looks,snaps,mood,beauty}[ui.tab]();
   return `<div class="brand brand-fixed" aria-hidden="true"><img class="medal d" src="${(window.MUSE_LOGO||{}).medal||''}" alt=""><img class="medal g" src="${(window.MUSE_LOGO||{}).gold||''}" alt="">Maintaining You</div>
   <main class="shell ${ui.enter?'enter':''}"><header class="top"><span class="saved" id="savedmark" role="status">✓ Saved</span><span class="eyebrow">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span><button class="avatar" data-act="profile" aria-label="Your photo">${(state.profile&&state.profile.photo)?`<img src="${state.profile.photo}" alt="">`:'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg>'}</button><button class="themebtn" data-act="themes" aria-label="Choose app colors"><i></i></button></header>${body}</main>
   <nav class="nav" aria-label="Main"><div class="nav-in">${NAV.map(g=>`<button data-act="tab" data-v="${(ui.last&&ui.last[g[0]])||g[2][0]}" ${g[2].includes(ui.tab)&&!ui.draft?'aria-current="page"':''}><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${g[3]}</svg><span>${g[1]}</span></button>`).join('')}</div></nav>

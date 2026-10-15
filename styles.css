@@ -1184,3 +1184,4 @@ body.dragging{overflow-x:hidden;-webkit-user-select:none;user-select:none}
 @keyframes lpop{0%{opacity:0;transform:translateY(28px)}100%{opacity:1;transform:none}}
 @keyframes lfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @media (prefers-reduced-motion:reduce){.lcard{animation:lpopr .01s forwards}@keyframes lpopr{to{opacity:1}}}
+.backhome{display:inline-flex;align-items:center;gap:4px;margin:2px 0 8px;padding:6px 0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--goldtxt,#8a6528);background:none;border:0;cursor:pointer}
