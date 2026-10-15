@@ -1164,3 +1164,10 @@ body.dragging{overflow-x:hidden;-webkit-user-select:none;user-select:none}
 .cmr{margin-top:9px;font-size:13px}.cmr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cmr i{justify-self:center;width:16px;height:16px;border-radius:50%;border:1px dashed var(--line)}
 .cmr i.got{background:var(--gold);border:1px solid var(--gold)}.cmr i.fut{opacity:.4}
+
+/* toolkits */
+.kitrow{display:flex;gap:14px;align-items:center;padding:9px 0;border-top:1px solid var(--line,rgba(0,0,0,.08))}
+.kitrow:first-of-type{border-top:0}
+.kitrow b{font-weight:500;display:block}
+.kitrow small{display:block;font-size:12px;color:var(--muted)}
+.foldh small{margin-left:8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}

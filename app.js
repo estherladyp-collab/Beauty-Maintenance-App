@@ -210,7 +210,7 @@ function applyTheme(t){
   if(window.MUSE_SPLASH) window.MUSE_SPLASH({bg, ink, ac, dark});
 }
 /* ---------- cloud backup of plans/looks/status (private per person, survives cleared browser data) ---------- */
-const LIGHT = ['order','appts','looks','plan','routine','rlog','log','wears','theme','shops','snaps','products','series'];
+const LIGHT = ['order','appts','looks','plan','routine','rlog','log','wears','theme','shops','snaps','products','series','kit'];
 let dbc = null, lastSent = {}, upTimer = null, cloudOk = false, assetsNs = null, dlNs = null;
 const withTimeout = (p,ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
 async function dbInit(){
@@ -251,6 +251,7 @@ function init(){
       const a = (state.items||[]).find(i => i.id===from), b = (state.items||[]).find(i => i.id===to); if(!a || !b) return;
       a.variants.forEach(v => { if(!b.variants.some(x => x.id===v.id)) b.variants.push(v); }); b.name = nm; syncHave(b);
       state.items = state.items.filter(i => i!==a); (state.looks||[]).forEach(l => { Object.keys(l.slots||{}).forEach(k => { if(l.slots[k]===from) l.slots[k] = to; }); }); }); }
+  state.kit = state.kit || {};
   state.rlog = state.rlog || {}; Object.keys(state.routine||{}).forEach(id => { if(state.routine[id] && !(state.rlog[id]||[]).length) state.rlog[id] = [state.routine[id]]; });
   state.appts = state.appts || []; state.snaps = state.snaps || []; state.products = state.products || []; state.series = state.series || {}; state.order = state.order || {};
   if(window.MUSE_PRODUCTS){ state.seedProd = state.seedProd || {}; if(state.seedProd1) state.seedProd['prod-bq-venus'] = true; window.MUSE_PRODUCTS.forEach(p => { if(state.seedProd[p.id]) return; state.seedProd[p.id] = true; if(!state.products.some(x => x.id===p.id)) state.products.push({...p}); }); }
@@ -1035,6 +1036,13 @@ function homeFolds(sel,dayAppts,dayDue,upcoming){
   ${foldBox('hdo','What would you like to do?',homeTiles())}</section>`;
 }
 
+const KITS = [
+  ['lash','Lash kit','Everything for doing your own lashes.',[['l1','Lashes','clusters or strips'],['l2','Lash glue','bonder or glue for clusters'],['l3','Tweezers','fine tip, for placing'],['l4','Lash glue remover','for taking them off safely'],['l5','Spoolie brush','to comb them into place']]],
+  ['nail','Nail kit','Everything for doing your own nails.',[['n1','Nails','press-ons or tips'],['n2','Nail glue',''],['n3','LED lamp','to cure gel'],['n4','Nail file and buffer',''],['n5','Cuticle pusher',''],['n6','Base and top coat',''],['n7','Remover','']]]
+];
+function kitBox(k){ const have = state.kit || {}, n = k[3].filter(i => have[i[0]]).length;
+  return `<div class="kit"><p class="lede" style="margin-bottom:10px">${esc(k[2])} ${n===k[3].length?'Ready ✦':'Tap what you already have.'}</p>${k[3].map(i => `<div class="kitrow"><button class="chk ${have[i[0]]?'on':''}" data-act="kit" data-v="${i[0]}" aria-pressed="${!!have[i[0]]}" aria-label="${have[i[0]]?'Unmark ':'Mark '}${esc(i[1])} as owned"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><div><b>${esc(i[1])}</b>${i[2]?`<small>${esc(i[2])}</small>`:''}</div></div>`).join('')}</div>`; }
+
 function beauty(){
   const warm = COLORS.filter(c => c[2]===1);
   const rows = ROUTINE.map(r => ({r, c: careState(r)}));
@@ -1046,7 +1054,8 @@ function beauty(){
   <section><h2>${soon.length?'Everything else':'Your routine'}</h2><div class="list" style="margin-top:14px">${rest.map(x=>taskP(x.r)).join('')}</div></section>
   ${weekReview()}
   ${careProgress()}
-  <section class="folds">${open('prod','My products',`${(state.products||[]).length?`<div class="prodlist">${state.products.map(p=>`<div><span class="eyebrow">${esc(areaName(p.area))}</span>${prodCard(p)}</div>`).join('')}</div>`:'<p class="lede">Nothing saved yet.</p>'}<div style="margin-top:14px"><button class="btn small" data-act="addprod">＋ Add product</button></div>`)}
+  <section class="folds">${KITS.map(k => { const n = k[3].filter(i => (state.kit||{})[i[0]]).length; return open('kit_'+k[0],`${esc(k[1])}<small> ${n} of ${k[3].length}</small>`,kitBox(k)); }).join('')}
+  ${open('prod','My products',`${(state.products||[]).length?`<div class="prodlist">${state.products.map(p=>`<div><span class="eyebrow">${esc(areaName(p.area))}</span>${prodCard(p)}</div>`).join('')}</div>`:'<p class="lede">Nothing saved yet.</p>'}<div style="margin-top:14px"><button class="btn small" data-act="addprod">＋ Add product</button></div>`)}
   ${open('guide','Style guide',`<div class="guide"><div><div class="eyebrow">Inverted triangle</div><h3>Balance the shoulders</h3><ul><li>V-necks, wraps and scoop necks open up the top.</li><li>Wide-leg trousers, A-line and pleated skirts add volume below.</li><li>Belt at the waist, keep detail on the bottom half.</li><li>Go easy on boat necks, puff sleeves and halters.</li></ul></div><div><div class="eyebrow">Warm undertone</div><h3>Gold, earth and glow</h3><ul><li>Gold jewelry over silver.</li><li>Bronze, terracotta and coral blush. Brown and rosewood lips.</li><li>Milky nude and sheer pink nails.</li></ul></div></div><div class="palette" style="margin-top:18px">${warm.map(c=>`<div class="pal"><i style="background:${c[1]}"></i>${c[0]}</div>`).join('')}</div>`)}
   ${open('backup','Backup',`<p class="lede" style="margin-bottom:14px">Your plans are saved to your account. This file is an extra copy, or a way to move to another device.</p><div class="row"><button class="btn small" data-act="export">Save backup</button><label class="btn small ghost" style="cursor:pointer">Load backup<input type="file" id="import" accept="application/json" hidden></label></div>`)}</section>`;
 }
@@ -1421,6 +1430,7 @@ const actions = {
     if(assetsNs){ fetch(sn.photo).then(r=>r.blob()).then(b=>assetsNs.upload(b)).then(r=>{ sn.aid = r.id; save(); }).catch(()=>{}); } },
 
   fold(v){ ui.fold[v]=!ui.fold[v]; },
+  kit(v){ state.kit = state.kit || {}; if(state.kit[v]) delete state.kit[v]; else state.kit[v] = true; save(); },
   wtools(){ ui.wtools=!ui.wtools; },
   weekshift(v){ const d=new Date((ui.calSel||isoDay())+'T12:00:00'); d.setDate(d.getDate()+(+v)); ui.calSel=isoDay(d); },
   themes(){ ui.sheet={type:'theme'}; },
